@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Modal from '@/components/modals/Modal';
 import AddSkillModal from '@/components/modals/AddSkillModal';
 import EditSkillsModal from '@/components/modals/EditSkillsModal';
+import SkillCard from '@/components/features/dashboard/cards/SkillCard';
+import SkillActionCard from '@/components/features/dashboard/cards/SkillActionCard';
 import { PointCategory, Student } from '@/lib/types';
 import {
   fetchPointCategoriesByClassIds,
@@ -24,6 +26,23 @@ const addCacheBuster = (iconPath: string, cacheKey?: string | number): string =>
   const version = cacheKey || Date.now();
   return `${iconPath}${separator}v=${version}`;
 };
+
+const skillsByScopeCache = new Map<string, PointCategory[]>();
+
+function toSkillScopeKey(classIds: string[]): string {
+  return [...classIds].sort().join(',');
+}
+
+function normalizeCategoryIcons(data: PointCategory[]): PointCategory[] {
+  return data.map((category) => ({
+    ...category,
+    icon: category.icon?.includes('/images/classes/icons/icon-pos-')
+      ? category.icon.replace('/images/classes/icons/icon-pos-', '/images/dashboard/award-points-icons/icons-positive/icon-pos-')
+      : category.icon?.includes('/images/classes/icons/icon-neg-')
+      ? category.icon.replace('/images/classes/icons/icon-neg-', '/images/dashboard/award-points-icons/icons-negative/icon-neg-')
+      : category.icon,
+  }));
+}
 
 interface AwardPointsModalProps {
   isOpen: boolean;
@@ -73,7 +92,7 @@ export default function AwardPointsModal({
   const [imageCacheKey, setImageCacheKey] = useState<number>(Date.now());
 
   // Fetch categories function
-  const fetchCategories = useCallback(async () => {
+  const fetchCategories = useCallback(async (force = false) => {
     if (!isOpen) {
       setIsLoading(false);
       return;
@@ -87,21 +106,19 @@ export default function AwardPointsModal({
       const classIdsToFetch = (selectedClassIds && selectedClassIds.length > 0)
         ? selectedClassIds 
         : [classId];
+      const cacheKey = toSkillScopeKey(classIdsToFetch);
+      const cached = skillsByScopeCache.get(cacheKey);
+      if (!force && cached) {
+        setCategories(cached);
+        return;
+      }
 
       const data = await fetchPointCategoriesByClassIds(classIdsToFetch);
-
-      // Normalize icon paths for categories (convert old paths to new paths)
-      const normalizedData = (data || []).map((category: any) => ({
-        ...category,
-        icon: category.icon?.includes('/images/classes/icons/icon-pos-')
-          ? category.icon.replace('/images/classes/icons/icon-pos-', '/images/dashboard/award-points-icons/icons-positive/icon-pos-')
-          : category.icon?.includes('/images/classes/icons/icon-neg-')
-          ? category.icon.replace('/images/classes/icons/icon-neg-', '/images/dashboard/award-points-icons/icons-negative/icon-neg-')
-          : category.icon
-      }));
+      const normalizedData = normalizeCategoryIcons(data || []);
 
       // For multi-class mode, we might have duplicate categories, so we'll use unique ones
       // For now, we'll just use all categories (they should be class-specific anyway)
+      skillsByScopeCache.set(cacheKey, normalizedData);
       setCategories(normalizedData);
     } catch (err) {
       console.error('Unexpected error fetching categories:', err);
@@ -110,6 +127,10 @@ export default function AwardPointsModal({
       setIsLoading(false);
     }
   }, [isOpen, classId, selectedClassIds]);
+
+  const refreshCategories = useCallback(() => {
+    void fetchCategories(true);
+  }, [fetchCategories]);
 
   // Fetch categories when modal opens or classId/selectedClassIds changes
   useEffect(() => {
@@ -402,81 +423,45 @@ export default function AwardPointsModal({
                     if (!category) return null;
                     
                     return (
-                      <div
+                      <SkillCard
                         key={skill.id}
+                        id={skill.id}
+                        name={skill.name}
+                        points={skill.points}
+                        icon={skill.icon}
+                        imageCacheKey={imageCacheKey}
                         onClick={() => handleAwardSkill(category)}
-                        className="bg-white font-spartan rounded-3xl hover:bg-blue-100 hover:rounded-3xl shadow-md p-6 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group cursor-pointer aspect-square flex flex-col"
-                      >
-                        {/* Skill Icon */}
-                        <div className="flex justify-center mb-1 pointer-events-none flex-shrink-0">
-                          {skill.icon ? (
-                            <img
-                              key={`${skill.id}-${imageCacheKey}`}
-                              src={addCacheBuster(skill.icon, imageCacheKey)}
-                              alt={skill.name}
-                              width={100}
-                              height={100}
-                              className="rounded-xl bg-[#FDF2F0] object-contain"
-                              decoding="async"
-                            />
-                          ) : (
-                            <div className="w-[100px] h-[100px] rounded-xl bg-[#FDF2F0] flex items-center justify-center">
-                              <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        {/* Skill Name */}
-                        <div className="text-center mb-0 pointer-events-none flex-shrink-0">
-                          <h3 className="text-lg font-semibold text-gray-900">{skill.name}</h3>
-                        </div>
-                        {/* Points Badge */}
-                        <div className="text-center pointer-events-none mt-auto">
-                          <div className="inline-flex items-center px-3 py-0 rounded-full bg-[#FDF2F0] text-red-400 text-xl font-large font-bold">
-                            +{skill.points}
-                          </div>
-                        </div>
-                      </div>
+                        addCacheBuster={addCacheBuster}
+                      />
                     );
                   })}
                   {/* Add Skills Card */}
-                  <button
+                  <SkillActionCard
+                    title="Add skills"
                     onClick={() => setManageSkillsModalOpen(true)}
-                    className="bg-white font-spartan rounded-3xl hover:bg-blue-100 hover:rounded-3xl shadow-md p-4 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group cursor-pointer aspect-square flex flex-col border-2 border-purple-500 border-dashed hover:border-purple-600"
-                  >
-                    <div className="flex flex-col items-center justify-center flex-1">
-                      <div className="flex justify-center mb-1 pointer-events-none flex-shrink-0">
-                        <div className="rounded-xl bg-[#FDF2F0] p-2 flex items-center justify-center text-purple-500">
-                          <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="text-center mb-1 pointer-events-none flex-shrink-0">
-                        <h3 className="text-sm font-semibold text-purple-600">Add skills</h3>
-                      </div>
-                    </div>
-                  </button>
+                    borderClassName="border-purple-500 hover:border-purple-600"
+                    titleClassName="text-purple-600"
+                    iconClassName="text-purple-500"
+                    icon={(
+                      <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                    )}
+                  />
                   {/* Edit Skills Card */}
-                  <button
+                  <SkillActionCard
+                    title="Edit Skills"
                     onClick={() => setEditModalOpen(true)}
-                    className="bg-white font-spartan rounded-3xl hover:bg-blue-100 hover:rounded-3xl shadow-md p-4 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group cursor-pointer aspect-square flex flex-col border-2 border-gray-300 border-dashed hover:border-gray-400"
-                  >
-                    <div className="flex flex-col items-center justify-center flex-1">
-                      <div className="flex justify-center mb-1 pointer-events-none flex-shrink-0">
-                        <div className="rounded-xl bg-[#FDF2F0] p-2 flex items-center justify-center text-gray-600">
-                          <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="text-center mb-1 pointer-events-none flex-shrink-0">
-                        <h3 className="text-sm font-semibold text-gray-600">Edit Skills</h3>
-                      </div>
-                    </div>
-                  </button>
+                    borderClassName="border-gray-300 hover:border-gray-400"
+                    titleClassName="text-gray-600"
+                    iconClassName="text-gray-600"
+                    icon={(
+                      <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    )}
+                  />
                 </div>
               )}
             </>
@@ -500,81 +485,45 @@ export default function AwardPointsModal({
                     if (!category) return null;
                     
                     return (
-                      <div
+                      <SkillCard
                         key={skill.id}
+                        id={skill.id}
+                        name={skill.name}
+                        points={skill.points}
+                        icon={skill.icon}
+                        imageCacheKey={imageCacheKey}
                         onClick={() => handleAwardSkill(category)}
-                        className="bg-white font-spartan rounded-3xl hover:bg-blue-100 hover:rounded-3xl shadow-md p-6 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group cursor-pointer aspect-square flex flex-col"
-                      >
-                        {/* Skill Icon */}
-                        <div className="flex justify-center mb-1 pointer-events-none flex-shrink-0">
-                          {skill.icon ? (
-                            <img
-                              key={`${skill.id}-${imageCacheKey}`}
-                              src={addCacheBuster(skill.icon, imageCacheKey)}
-                              alt={skill.name}
-                              width={100}
-                              height={100}
-                              className="rounded-xl bg-[#FDF2F0] object-contain"
-                              decoding="async"
-                            />
-                          ) : (
-                            <div className="w-[100px] h-[100px] rounded-xl bg-[#FDF2F0] flex items-center justify-center">
-                              <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        {/* Skill Name */}
-                        <div className="text-center mb-0 pointer-events-none flex-shrink-0">
-                          <h3 className="text-lg font-semibold text-gray-900">{skill.name}</h3>
-                        </div>
-                        {/* Points Badge */}
-                        <div className="text-center pointer-events-none mt-auto">
-                          <div className="inline-flex items-center px-3 py-0 rounded-full bg-[#FDF2F0] text-red-400 text-xl font-large font-bold">
-                            {skill.points}
-                          </div>
-                        </div>
-                      </div>
+                        addCacheBuster={addCacheBuster}
+                      />
                     );
                   })}
                   {/* Add Skills Card */}
-                  <button
+                  <SkillActionCard
+                    title="Add skills"
                     onClick={() => setManageSkillsModalOpen(true)}
-                    className="bg-white font-spartan rounded-3xl hover:bg-blue-100 hover:rounded-3xl shadow-md p-4 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group cursor-pointer aspect-square flex flex-col border-2 border-purple-500 border-dashed hover:border-purple-600"
-                  >
-                    <div className="flex flex-col items-center justify-center flex-1">
-                      <div className="flex justify-center mb-1 pointer-events-none flex-shrink-0">
-                        <div className="rounded-xl bg-[#FDF2F0] p-2 flex items-center justify-center text-purple-500">
-                          <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="text-center mb-1 pointer-events-none flex-shrink-0">
-                        <h3 className="text-sm font-semibold text-purple-600">Add skills</h3>
-                      </div>
-                    </div>
-                  </button>
+                    borderClassName="border-purple-500 hover:border-purple-600"
+                    titleClassName="text-purple-600"
+                    iconClassName="text-purple-500"
+                    icon={(
+                      <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                    )}
+                  />
                   {/* Edit Skills Card */}
-                  <button
+                  <SkillActionCard
+                    title="Edit Skills"
                     onClick={() => setEditModalOpen(true)}
-                    className="bg-white font-spartan rounded-3xl hover:bg-blue-100 hover:rounded-3xl shadow-md p-4 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group cursor-pointer aspect-square flex flex-col border-2 border-gray-300 border-dashed hover:border-gray-400"
-                  >
-                    <div className="flex flex-col items-center justify-center flex-1">
-                      <div className="flex justify-center mb-1 pointer-events-none flex-shrink-0">
-                        <div className="rounded-xl bg-[#FDF2F0] p-2 flex items-center justify-center text-gray-600">
-                          <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="text-center mb-1 pointer-events-none flex-shrink-0">
-                        <h3 className="text-sm font-semibold text-gray-600">Edit Skills</h3>
-                      </div>
-                    </div>
-                  </button>
+                    borderClassName="border-gray-300 hover:border-gray-400"
+                    titleClassName="text-gray-600"
+                    iconClassName="text-gray-600"
+                    icon={(
+                      <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    )}
+                  />
                 </div>
               )}
             </>
@@ -642,7 +591,7 @@ export default function AwardPointsModal({
         isOpen={isManageSkillsModalOpen} 
         onClose={() => setManageSkillsModalOpen(false)} 
         classId={classId}
-        refreshCategories={fetchCategories}
+        refreshCategories={refreshCategories}
         skillType={activeTab === 'positive' ? 'positive' : activeTab === 'negative' ? 'negative' : 'positive'}
       />
 
@@ -653,7 +602,7 @@ export default function AwardPointsModal({
         classId={classId}
         categories={categories}
         isLoading={isLoading}
-        refreshCategories={fetchCategories}
+        refreshCategories={refreshCategories}
         skillType={activeTab === 'positive' ? 'positive' : activeTab === 'negative' ? 'negative' : undefined}
       />
     </>

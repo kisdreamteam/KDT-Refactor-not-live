@@ -4,8 +4,8 @@ import { useState, useMemo } from 'react';
 import Modal from '@/components/modals/Modal';
 import { createClient } from '@/lib/client';
 import EditSkillModal from '@/components/modals/EditSkillModal';
+import EditSkillCard from '@/components/features/dashboard/cards/EditSkillCard';
 import { PointCategory } from '@/lib/types';
-import Image from 'next/image';
 
 interface EditSkillsModalProps {
   isOpen: boolean;
@@ -49,25 +49,6 @@ export default function EditSkillsModal({
   // Get points value from category (support both points and default_points)
   const getPointsValue = (category: PointCategory): number => {
     return category.points ?? category.default_points ?? 0;
-  };
-
-  // Get skill icon
-  const getSkillIcon = (skillName: string) => {
-    return (
-      <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>
-    );
-  };
-
-  // Get skill icon colors
-  const getSkillColor = (skillName: string): string => {
-    const colors = ['#EF4444', '#10B981', '#FBBF24', '#F97316', '#3B82F6', '#F59E0B', '#8B5CF6'];
-    let hash = 0;
-    for (let i = 0; i < skillName.length; i++) {
-      hash = skillName.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
   };
 
   const handleDeleteClick = (skill: PointCategory) => {
@@ -214,85 +195,22 @@ export default function EditSkillsModal({
               <div className="grid grid-cols-4 gap-3">
                 {filteredSkills.map((category) => {
                   const pointsValue = getPointsValue(category);
-                  const isPositive = pointsValue > 0;
                   const isDeletingThis = isDeleting === category.id;
                   const isHovered = hoveredSkillId === category.id;
 
                   return (
-                    <div
+                    <EditSkillCard
                       key={category.id}
-                      onClick={() => handleEditSkill(category)}
-                      onMouseEnter={() => setHoveredSkillId(category.id)}
-                      onMouseLeave={() => setHoveredSkillId(null)}
-                      className="bg-white font-spartan rounded-3xl hover:bg-blue-100 hover:rounded-3xl shadow-md p-6 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative group cursor-pointer aspect-square flex flex-col"
-                    >
-                      {isHovered ? (
-                        // Show "Edit" text on hover
-                        <div className="flex flex-col items-center justify-center flex-1">
-                          <div className="text-purple-600 mb-2">
-                            <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </div>
-                          <span className="text-lg font-semibold text-purple-600">Edit</span>
-                        </div>
-                      ) : (
-                        // Show skill info normally
-                        <>
-                          {/* Skill Icon */}
-                          <div className="flex justify-center mb-1 pointer-events-none flex-shrink-0">
-                            {category.icon ? (
-                              <Image
-                                src={category.icon}
-                                alt={category.name}
-                                width={100}
-                                height={100}
-                                className="rounded-xl bg-[#FDF2F0] object-contain"
-                              />
-                            ) : (
-                              <div className="w-[100px] h-[100px] rounded-xl bg-[#FDF2F0] flex items-center justify-center">
-                                <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                              </div>
-                            )}
-                          </div>
-                          {/* Skill Name */}
-                          <div className="text-center mb-0 pointer-events-none flex-shrink-0">
-                            <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
-                          </div>
-                          {/* Points Badge */}
-                          <div className="text-center pointer-events-none mt-auto">
-                            <div className={`inline-flex items-center px-3 py-0 rounded-full bg-[#FDF2F0] ${isPositive ? 'text-red-400' : 'text-red-600'} text-xl font-large font-bold`}>
-                              {isPositive ? '+' : ''}{pointsValue}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                      
-                      {/* Delete button - always visible in corner */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleDeleteClick(category);
-                        }}
-                        disabled={isDeletingThis || isLoadingCategories}
-                        className="absolute top-2 left-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10"
-                        title="Delete skill"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                      
-                      {isDeletingThis && (
-                        <div className="absolute inset-0 bg-gray-100 bg-opacity-90 flex items-center justify-center rounded-3xl z-20">
-                          <span className="text-sm text-gray-600">Deleting...</span>
-                        </div>
-                      )}
-                    </div>
+                      category={category}
+                      pointsValue={pointsValue}
+                      isHovered={isHovered}
+                      isDeleting={isDeletingThis}
+                      isLoading={isLoadingCategories}
+                      onEdit={() => handleEditSkill(category)}
+                      onHoverStart={() => setHoveredSkillId(category.id)}
+                      onHoverEnd={() => setHoveredSkillId(null)}
+                      onDelete={() => handleDeleteClick(category)}
+                    />
                   );
                 })}
               </div>
