@@ -9,6 +9,7 @@ import IconNoCircleX from '@/components/iconsCustom/iconNoCircleX';
 import IconStarTrophy from '@/components/iconsCustom/iconStarTrophy';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
+import { STUDENT_EVENTS } from '@/lib/events/students';
 
 export default function BottomNavMulti() {
   const [selectedCount, setSelectedCount] = useState(0);
@@ -36,46 +37,46 @@ export default function BottomNavMulti() {
 
     checkRecentlySelected();
 
-    window.addEventListener('selectionCountChanged', handleSelectionCountChange as EventListener);
+    window.addEventListener(STUDENT_EVENTS.SELECTION_COUNT_CHANGED, handleSelectionCountChange as EventListener);
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('recentlySelectedCleared', handleStorageChange);
-    window.addEventListener('recentlySelectedUpdated', handleStorageChange);
+    window.addEventListener(STUDENT_EVENTS.RECENTLY_SELECTED_CLEARED, handleStorageChange);
+    window.addEventListener(STUDENT_EVENTS.RECENTLY_SELECTED_UPDATED, handleStorageChange);
     
     return () => {
-      window.removeEventListener('selectionCountChanged', handleSelectionCountChange as EventListener);
+      window.removeEventListener(STUDENT_EVENTS.SELECTION_COUNT_CHANGED, handleSelectionCountChange as EventListener);
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('recentlySelectedCleared', handleStorageChange);
-      window.removeEventListener('recentlySelectedUpdated', handleStorageChange);
+      window.removeEventListener(STUDENT_EVENTS.RECENTLY_SELECTED_CLEARED, handleStorageChange);
+      window.removeEventListener(STUDENT_EVENTS.RECENTLY_SELECTED_UPDATED, handleStorageChange);
     };
   }, []);
 
   const handleSelectAll = () => {
-    window.dispatchEvent(new CustomEvent('selectAll'));
+    window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.SELECT_ALL));
   };
 
   const handleSelectNone = () => {
     if (selectedCount > 0) {
-      window.dispatchEvent(new CustomEvent('selectNone'));
+      window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.SELECT_NONE));
     }
   };
 
   const handleCancel = () => {
-    window.dispatchEvent(new CustomEvent('toggleMultiSelect'));
+    window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.TOGGLE_MULTI_SELECT));
   };
 
   const handleAwardPoints = () => {
-    window.dispatchEvent(new CustomEvent('awardPoints'));
+    window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.AWARD_POINTS));
   };
 
   const handleRecentlySelect = () => {
     if (hasRecentlySelected) {
-      window.dispatchEvent(new CustomEvent('recentlySelect'));
+      window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.RECENTLY_SELECT));
     }
   };
 
   const handleInverseSelect = () => {
     if (selectedCount > 0) {
-      window.dispatchEvent(new CustomEvent('inverseSelect'));
+      window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.INVERSE_SELECT));
     }
   };
 

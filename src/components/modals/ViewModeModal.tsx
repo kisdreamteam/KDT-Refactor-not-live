@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useDashboard } from '@/context/DashboardContext';
+import { emitSeatingEditMode } from '@/lib/events/students';
 
 interface ViewModeModalProps {
   isOpen: boolean;
@@ -21,11 +22,11 @@ export default function ViewModeModal({ isOpen, onClose }: ViewModeModalProps) {
       // Keep an explicit view token to prevent layout preference effect from re-applying stale seating defaults.
       params.set('view', 'grid');
       params.delete('mode');
-      window.dispatchEvent(new CustomEvent('seatingChartEditMode', { detail: { isEditMode: false } }));
+      emitSeatingEditMode({ isEditMode: false });
     } else {
       params.set('view', view);
       params.delete('mode');
-      window.dispatchEvent(new CustomEvent('seatingChartEditMode', { detail: { isEditMode: false } }));
+      emitSeatingEditMode({ isEditMode: false });
     }
     const base = pathname ?? '/';
     const newUrl = params.toString() ? `${base}?${params.toString()}` : base;

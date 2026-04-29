@@ -10,6 +10,7 @@ import LeftNav from '@/components/features/navbars/LeftNav';
 import LeftNavSeatingChartEdit from '@/components/features/navbars/LeftNavSeatingChartEdit';
 import DashboardStage from '@/components/features/dashboard/DashboardStage';
 import EditClassModal from '@/components/modals/EditClassModal';
+import { STUDENT_EVENTS } from '@/lib/events/students';
 
 function DashboardLayoutShell({
   children,
@@ -59,9 +60,9 @@ function DashboardLayoutShell({
       }, 0);
     };
 
-    window.addEventListener('multiSelectStateChanged', handleStateChange as EventListener);
+    window.addEventListener(STUDENT_EVENTS.MULTI_SELECT_STATE_CHANGED, handleStateChange as EventListener);
     return () => {
-      window.removeEventListener('multiSelectStateChanged', handleStateChange as EventListener);
+      window.removeEventListener(STUDENT_EVENTS.MULTI_SELECT_STATE_CHANGED, handleStateChange as EventListener);
     };
   }, []);
 

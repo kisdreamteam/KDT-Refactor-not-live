@@ -13,6 +13,7 @@ import Timer from '@/components/features/dashboard/tools/Timer';
 import Random from '@/components/features/dashboard/tools/Random';
 import CanvasToolbar from '@/components/ui/CanvasToolbar';
 import { StageToolbarProvider } from '@/components/features/dashboard/StageToolbarContext';
+import { STUDENT_EVENTS } from '@/lib/events/students';
 
 interface DashboardStageProps {
   children: React.ReactNode;
@@ -68,7 +69,7 @@ export default function DashboardStage({
               {
                 id: 'close-editor',
                 title: 'Close editor',
-                onClick: () => window.dispatchEvent(new CustomEvent('stageToolbarCloseEditor')),
+                onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_CLOSE_EDITOR)),
                 icon: (
                   <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -80,13 +81,13 @@ export default function DashboardStage({
               {
                 id: 'add',
                 title: 'Create new layout',
-                onClick: () => window.dispatchEvent(new CustomEvent('stageToolbarCreateLayout')),
+                onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_CREATE_LAYOUT)),
                 icon: <IconAddPlus className="w-6 h-6 text-black" />,
               },
               {
                 id: 'edit',
                 title: 'Seating Editor View',
-                onClick: () => window.dispatchEvent(new CustomEvent('stageToolbarOpenSeatingEditor')),
+                onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_OPEN_SEATING_EDITOR)),
                 icon: <IconEditPencil className="w-6 h-6 text-black" strokeWidth={2} />,
               },
             ],
@@ -96,13 +97,13 @@ export default function DashboardStage({
               {
                 id: 'teacher-view',
                 title: "Teacher's view",
-                onClick: () => window.dispatchEvent(new CustomEvent('stageToolbarToggleTeacherView')),
+                onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_TOGGLE_TEACHER_VIEW)),
                 icon: <IconPresentationBoard className="w-6 h-6 text-black" strokeWidth={2} />,
               },
               {
                 id: 'point-log',
                 title: 'Toggle point log',
-                onClick: () => window.dispatchEvent(new CustomEvent('stageToolbarTogglePointLog')),
+                onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_TOGGLE_POINT_LOG)),
                 icon: <IconDocumentClock className="w-6 h-6 text-black" strokeWidth={2} />,
               },
             ],
@@ -133,7 +134,7 @@ export default function DashboardStage({
           {
             id: 'point-log',
             title: 'Toggle point log',
-            onClick: () => window.dispatchEvent(new CustomEvent('stageToolbarTogglePointLog')),
+            onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_TOGGLE_POINT_LOG)),
             icon: <IconDocumentClock className="w-6 h-6 text-black" strokeWidth={2} />,
           },
         ],

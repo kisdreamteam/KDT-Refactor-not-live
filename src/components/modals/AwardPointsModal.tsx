@@ -7,14 +7,8 @@ import EditSkillsModal from '@/components/modals/EditSkillsModal';
 import SkillCard from '@/components/features/dashboard/cards/SkillCard';
 import SkillActionCard from '@/components/features/dashboard/cards/SkillActionCard';
 import { PointCategory, Student } from '@/lib/types';
-import {
-  fetchPointCategoriesByClassIds,
-  fetchStudentIdsByClassId,
-  fetchStudentIdsByClassIds,
-  awardPointsToStudents,
-  getAuthenticatedUserId,
-  awardCustomPointsToStudents,
-} from '@/api/points';
+import { fetchPointCategoriesByClassIds } from '@/api/points';
+import { useAwardPointsService } from '@/features/points/hooks/useAwardPointsService';
 
 // Helper function to add cache-busting parameter to icon URLs
 // Uses modal open state to generate a fresh cache-busting parameter
@@ -90,6 +84,21 @@ export default function AwardPointsModal({
   const [isManageSkillsModalOpen, setManageSkillsModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [imageCacheKey, setImageCacheKey] = useState<number>(Date.now());
+  const { awardSkill, awardCustom } = useAwardPointsService({
+    context: {
+      studentId: student?.id ?? null,
+      classId,
+      selectedClassIds,
+      selectedStudentIds,
+    },
+    student,
+    className,
+    classIcon,
+    onRefresh,
+    onPointsAwarded,
+    onAwardComplete,
+    onClose,
+  });
 
   // Fetch categories function
   const fetchCategories = useCallback(async (force = false) => {
@@ -179,123 +188,12 @@ export default function AwardPointsModal({
     return filtered;
   }, [activeCategories]);
 
-
-  const resolveTargetStudentIds = useCallback(async (): Promise<string[]> => {
-    if (isMultiClassMode && selectedClassIds) {
-      return fetchStudentIdsByClassIds(selectedClassIds);
-    }
-    if (isMultiStudentMode && selectedStudentIds) {
-      return selectedStudentIds;
-    }
-    if (isWholeClassMode) {
-      return fetchStudentIdsByClassId(classId);
-    }
-    if (student) {
-      return [student.id];
-    }
-    return [];
-  }, [isMultiClassMode, selectedClassIds, isMultiStudentMode, selectedStudentIds, isWholeClassMode, classId, student]);
-
-  const afterAwardSuccess = useCallback((pointsValue: number, categoryName: string, categoryIcon?: string) => {
-    if (isMultiClassMode && selectedClassIds && onAwardComplete) {
-      onAwardComplete(selectedClassIds, 'classes');
-    }
-    if (isMultiStudentMode && selectedStudentIds && onAwardComplete) {
-      onAwardComplete(selectedStudentIds, 'students');
-    }
-
-    if (onRefresh) {
-      onRefresh();
-    }
-
-    if (onPointsAwarded) {
-      if (isMultiStudentMode && selectedStudentIds) {
-        onPointsAwarded({
-          studentAvatar: classIcon || '/images/dashboard/student-avatars/avatar-01.png',
-          studentFirstName: `${selectedStudentIds.length} ${selectedStudentIds.length === 1 ? 'Student' : 'Students'}`,
-          points: pointsValue,
-          categoryName,
-          categoryIcon,
-        });
-      } else if (isWholeClassMode) {
-        onPointsAwarded({
-          studentAvatar: classIcon || '/images/dashboard/student-avatars/avatar-01.png',
-          studentFirstName: className || 'Whole Class',
-          points: pointsValue,
-          categoryName,
-          categoryIcon,
-        });
-      } else if (student) {
-        onPointsAwarded({
-          studentAvatar: student.avatar || '/images/dashboard/student-avatars/avatar-01.png',
-          studentFirstName: student.first_name,
-          points: pointsValue,
-          categoryName,
-          categoryIcon,
-        });
-      }
-    }
-
-    onClose();
-  }, [isMultiClassMode, selectedClassIds, onAwardComplete, isMultiStudentMode, selectedStudentIds, onRefresh, onPointsAwarded, classIcon, isWholeClassMode, className, student, onClose]);
-
-  // Handle awarding points for a skill/category
-  const handleAwardSkill = async (category: PointCategory) => {
-    try {
-      const points = category.points ?? category.default_points ?? 0;
-      const studentIds = await resolveTargetStudentIds();
-      if (studentIds.length === 0) {
-        alert('No students found for the current selection.');
-        return;
-      }
-
-      await awardPointsToStudents({
-        studentIds,
-        categoryId: category.id,
-        points,
-        memo: '',
-      });
-
-      afterAwardSuccess(points, category.name, category.icon);
-    } catch (err) {
-      console.error('Unexpected error awarding points:', err);
-      alert('Failed to award points. Please try again.');
-    }
-  };
-
   // Handle custom points submission
   const handleCustomAward = async () => {
-    if (customPoints === 0 || customPoints === null || customPoints === undefined || isNaN(customPoints)) {
-      alert('Please enter a valid point value (positive or negative, but not zero).');
-      return;
-    }
-
-    try {
-      const teacherId = await getAuthenticatedUserId();
-      if (!teacherId) {
-        alert('You must be logged in to award custom points.');
-        return;
-      }
-
-      const studentIds = await resolveTargetStudentIds();
-      if (studentIds.length === 0) {
-        alert('No students found for the current selection.');
-        return;
-      }
-
-      await awardCustomPointsToStudents({
-        studentIds,
-        teacherId,
-        points: customPoints,
-        memo: customMemo,
-      });
-
+    const didSucceed = await awardCustom(customPoints, customMemo);
+    if (didSucceed) {
       setCustomPoints(0);
       setCustomMemo('');
-      afterAwardSuccess(customPoints, customMemo || 'Custom Points');
-    } catch (err) {
-      console.error('Unexpected error awarding custom points:', err);
-      alert('Failed to award custom points. Please try again.');
     }
   };
 
@@ -435,7 +333,7 @@ export default function AwardPointsModal({
                         points={skill.points}
                         icon={skill.icon}
                         imageCacheKey={imageCacheKey}
-                        onClick={() => handleAwardSkill(category)}
+                        onClick={() => void awardSkill(category)}
                         addCacheBuster={addCacheBuster}
                       />
                     );
@@ -497,7 +395,7 @@ export default function AwardPointsModal({
                         points={skill.points}
                         icon={skill.icon}
                         imageCacheKey={imageCacheKey}
-                        onClick={() => handleAwardSkill(category)}
+                        onClick={() => void awardSkill(category)}
                         addCacheBuster={addCacheBuster}
                       />
                     );

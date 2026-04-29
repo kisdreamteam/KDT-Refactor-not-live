@@ -13,6 +13,7 @@ import IconCheckBox from '@/components/iconsCustom/iconCheckBox';
 import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
+import { STUDENT_EVENTS } from '@/lib/events/students';
 
 interface BottomNavStudentsProps {
   currentClassName: string | null;
@@ -174,7 +175,7 @@ export default function BottomNavStudents({
         icon={<IconCheckBox />}
         label="Multiple Select"
         onClick={() => {
-          window.dispatchEvent(new CustomEvent('toggleMultiSelect'));
+          window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.TOGGLE_MULTI_SELECT));
         }}
       />
 

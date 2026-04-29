@@ -18,6 +18,7 @@ import SuccessNotificationModal from '@/components/modals/SuccessNotificationMod
 import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
 import IconEditPencil from '@/components/iconsCustom/iconEditPencil';
 import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
+import { STUDENT_EVENTS, emitSeatingEditMode } from '@/lib/events/students';
 
 interface SeatingChart {
   id: string;
@@ -278,7 +279,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       const base = pathname ?? '/';
       const newUrl = params.toString() ? `${base}?${params.toString()}` : base;
       router.push(newUrl);
-      window.dispatchEvent(new CustomEvent('seatingChartEditMode', { detail: { isEditMode: false } }));
+      emitSeatingEditMode({ isEditMode: false });
     });
   };
 
@@ -290,8 +291,8 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     const handleStageCloseEditor = () => {
       handleCloseRef.current();
     };
-    window.addEventListener('stageToolbarCloseEditor', handleStageCloseEditor);
-    return () => window.removeEventListener('stageToolbarCloseEditor', handleStageCloseEditor);
+    window.addEventListener(STUDENT_EVENTS.STAGE_CLOSE_EDITOR, handleStageCloseEditor);
+    return () => window.removeEventListener(STUDENT_EVENTS.STAGE_CLOSE_EDITOR, handleStageCloseEditor);
   }, []);
 
   // Track the offset from where the user clicked to the group's top-left corner
@@ -429,7 +430,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       }
     };
 
-    window.addEventListener('seatingChartViewSettingsChanged', handleLocalSettingsEvent as EventListener);
+    window.addEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const realtimeChannel = supabase
@@ -459,7 +460,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('seatingChartViewSettingsChanged', handleLocalSettingsEvent as EventListener);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
       void supabase.removeChannel(realtimeChannel);
     };
   }, [activeSeatingLayoutId, applyLayoutViewSettings]);
@@ -815,9 +816,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       handleRandomizeSeating();
     };
 
-    window.addEventListener('seatingChartRandomize', handleRandomize as EventListener);
+    window.addEventListener(STUDENT_EVENTS.SEATING_RANDOMIZE, handleRandomize as EventListener);
     return () => {
-      window.removeEventListener('seatingChartRandomize', handleRandomize as EventListener);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_RANDOMIZE, handleRandomize as EventListener);
     };
   }, [handleRandomizeSeating]);
 
@@ -883,9 +884,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       void saveAllChangesToDatabase(detail?.onSaveComplete);
     };
 
-    window.addEventListener('seatingChartSave', handleSaveSeatingChart);
+    window.addEventListener(STUDENT_EVENTS.SEATING_SAVE, handleSaveSeatingChart);
     return () => {
-      window.removeEventListener('seatingChartSave', handleSaveSeatingChart);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_SAVE, handleSaveSeatingChart);
     };
   }, [saveAllChangesToDatabase]);
 
@@ -895,9 +896,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       setIsClearAllModalOpen(true);
     };
 
-    window.addEventListener('seatingChartClearAllGroups', handleClearAllGroups);
+    window.addEventListener(STUDENT_EVENTS.SEATING_CLEAR_ALL_GROUPS, handleClearAllGroups);
     return () => {
-      window.removeEventListener('seatingChartClearAllGroups', handleClearAllGroups);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_CLEAR_ALL_GROUPS, handleClearAllGroups);
     };
   }, []);
 
@@ -907,9 +908,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       setIsDeleteAllModalOpen(true);
     };
 
-    window.addEventListener('seatingChartDeleteAllGroups', handleDeleteAllGroups);
+    window.addEventListener(STUDENT_EVENTS.SEATING_DELETE_ALL_GROUPS, handleDeleteAllGroups);
     return () => {
-      window.removeEventListener('seatingChartDeleteAllGroups', handleDeleteAllGroups);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_DELETE_ALL_GROUPS, handleDeleteAllGroups);
     };
   }, []);
 
@@ -920,9 +921,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       setColorCodeBy(newColorCodeBy);
     };
 
-    window.addEventListener('seatingChartColorCodeBy', handleColorCodeBy as EventListener);
+    window.addEventListener(STUDENT_EVENTS.SEATING_COLOR_CODE_BY, handleColorCodeBy as EventListener);
     return () => {
-      window.removeEventListener('seatingChartColorCodeBy', handleColorCodeBy as EventListener);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_COLOR_CODE_BY, handleColorCodeBy as EventListener);
     };
   }, []);
 
@@ -1472,9 +1473,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       handleAddMultipleGroups(numGroups);
     };
 
-    window.addEventListener('seatingChartAddMultipleGroups', handleAddMultipleGroupsEvent as EventListener);
+    window.addEventListener(STUDENT_EVENTS.SEATING_ADD_MULTIPLE_GROUPS, handleAddMultipleGroupsEvent as EventListener);
     return () => {
-      window.removeEventListener('seatingChartAddMultipleGroups', handleAddMultipleGroupsEvent as EventListener);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_ADD_MULTIPLE_GROUPS, handleAddMultipleGroupsEvent as EventListener);
     };
   }, [handleAddMultipleGroups]);
 
@@ -1484,9 +1485,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       handleAssignSeats();
     };
 
-    window.addEventListener('seatingChartAutoAssignSeats', handleAutoAssignSeatsEvent);
+    window.addEventListener(STUDENT_EVENTS.SEATING_AUTO_ASSIGN_SEATS, handleAutoAssignSeatsEvent);
     return () => {
-      window.removeEventListener('seatingChartAutoAssignSeats', handleAutoAssignSeatsEvent);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_AUTO_ASSIGN_SEATS, handleAutoAssignSeatsEvent);
     };
   }, [handleAssignSeats]);
 

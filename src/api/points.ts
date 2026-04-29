@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/client';
 import type { PointCategory } from '@/lib/types';
+import { throwApiError } from '@/api/_shared/errors';
+import { getOptionalSessionUserId } from '@/api/_shared/auth';
 
 export type PointLogRow = {
   id: string;
@@ -9,7 +11,7 @@ export type PointLogRow = {
   createdAt: string;
 };
 
-export async function fetchPointCategoriesByClassIds(classIds: string[]): Promise<PointCategory[]> {
+export async function listPointCategoriesByClassIds(classIds: string[]): Promise<PointCategory[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('point_categories')
@@ -17,42 +19,36 @@ export async function fetchPointCategoriesByClassIds(classIds: string[]): Promis
     .in('class_id', classIds)
     .eq('is_archived', false);
 
-  if (error) {
-    throw error;
-  }
+  if (error) throwApiError(error, 'listPointCategoriesByClassIds');
 
   return (data ?? []) as PointCategory[];
 }
 
-export async function fetchStudentIdsByClassIds(classIds: string[]): Promise<string[]> {
+export async function listStudentIdsByClassIds(classIds: string[]): Promise<string[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('students')
     .select('id')
     .in('class_id', classIds);
 
-  if (error) {
-    throw error;
-  }
+  if (error) throwApiError(error, 'listStudentIdsByClassIds');
 
   return (data ?? []).map((s: { id: string }) => s.id);
 }
 
-export async function fetchStudentIdsByClassId(classId: string): Promise<string[]> {
+export async function listStudentIdsByClassId(classId: string): Promise<string[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('students')
     .select('id')
     .eq('class_id', classId);
 
-  if (error) {
-    throw error;
-  }
+  if (error) throwApiError(error, 'listStudentIdsByClassId');
 
   return (data ?? []).map((s: { id: string }) => s.id);
 }
 
-export async function awardPointsToStudents(params: {
+export async function createPointAwardsForStudents(params: {
   studentIds: string[];
   categoryId: string;
   points: number;
@@ -74,20 +70,15 @@ export async function awardPointsToStudents(params: {
   );
 
   if (results.some((err) => err !== null)) {
-    throw new Error('Failed to award points to one or more students.');
+    throwApiError(new Error('Failed to award points to one or more students.'), 'createPointAwardsForStudents');
   }
 }
 
 export async function getAuthenticatedUserId(): Promise<string | null> {
-  const supabase = createClient();
-  const { data: { session }, error } = await supabase.auth.getSession();
-  if (error || !session?.user) {
-    return null;
-  }
-  return session.user.id;
+  return getOptionalSessionUserId();
 }
 
-export async function awardCustomPointsToStudents(params: {
+export async function createCustomPointAwardsForStudents(params: {
   studentIds: string[];
   teacherId: string;
   points: number;
@@ -101,9 +92,7 @@ export async function awardCustomPointsToStudents(params: {
     .select('id, points')
     .in('id', studentIds);
 
-  if (fetchError) {
-    throw fetchError;
-  }
+  if (fetchError) throwApiError(fetchError, 'createCustomPointAwardsForStudents.fetchStudents');
 
   const rows = (students ?? []) as Array<{ id: string; points: number | null }>;
   const results = await Promise.all(
@@ -132,11 +121,11 @@ export async function awardCustomPointsToStudents(params: {
   );
 
   if (results.some((err) => err !== null)) {
-    throw new Error('Failed to apply custom points to one or more students.');
+    throwApiError(new Error('Failed to apply custom points to one or more students.'), 'createCustomPointAwardsForStudents');
   }
 }
 
-export async function fetchPointLogRowsForStudents(params: {
+export async function listPointLogRowsForStudents(params: {
   studentIds: string[];
   studentNameMap: Map<string, string>;
 }): Promise<PointLogRow[]> {
@@ -155,12 +144,8 @@ export async function fetchPointLogRowsForStudents(params: {
     .in('student_id', studentIds)
     .order('created_at', { ascending: false });
 
-  if (pointEventsError) {
-    throw pointEventsError;
-  }
-  if (customEventsError) {
-    throw customEventsError;
-  }
+  if (pointEventsError) throwApiError(pointEventsError, 'listPointLogRowsForStudents.pointEvents');
+  if (customEventsError) throwApiError(customEventsError, 'listPointLogRowsForStudents.customEvents');
 
   const categoryIds = Array.from(
     new Set(
@@ -177,9 +162,7 @@ export async function fetchPointLogRowsForStudents(params: {
       .select('id, name')
       .in('id', categoryIds);
 
-    if (categoriesError) {
-      throw categoriesError;
-    }
+    if (categoriesError) throwApiError(categoriesError, 'listPointLogRowsForStudents.categories');
 
     (categoriesData ?? []).forEach((c: { id: string; name?: string }) => {
       categoryMap.set(c.id, c.name ?? 'Category');
@@ -212,3 +195,11 @@ export async function fetchPointLogRowsForStudents(params: {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
+
+// Legacy aliases for backwards compatibility.
+export const fetchPointCategoriesByClassIds = listPointCategoriesByClassIds;
+export const fetchStudentIdsByClassIds = listStudentIdsByClassIds;
+export const fetchStudentIdsByClassId = listStudentIdsByClassId;
+export const awardPointsToStudents = createPointAwardsForStudents;
+export const awardCustomPointsToStudents = createCustomPointAwardsForStudents;
+export const fetchPointLogRowsForStudents = listPointLogRowsForStudents;

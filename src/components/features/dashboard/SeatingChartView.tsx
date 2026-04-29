@@ -26,6 +26,11 @@ import {
   updateSeatingLayoutName,
 } from '@/api/seating';
 import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
+import {
+  STUDENT_EVENTS,
+  emitSeatingEditMode,
+  emitSeatingLayoutSelected,
+} from '@/lib/events/students';
 
 interface SeatingChart {
   id: string;
@@ -174,9 +179,7 @@ export default function SeatingChartView({
       localStorage.setItem(storageKey, activeSeatingLayoutId);
       
       // Dispatch event with layout ID for BottomNav to pick up
-      window.dispatchEvent(new CustomEvent('seatingChartLayoutSelected', { 
-        detail: { layoutId: activeSeatingLayoutId, classId } 
-      }));
+      emitSeatingLayoutSelected({ layoutId: activeSeatingLayoutId, classId });
     }
   }, [activeSeatingLayoutId, classId]);
 
@@ -276,9 +279,9 @@ export default function SeatingChartView({
       }
     };
 
-    window.addEventListener('seatingChartEditMode', handleSeatingEditMode as EventListener);
+    window.addEventListener(STUDENT_EVENTS.SEATING_EDIT_MODE, handleSeatingEditMode as EventListener);
     return () => {
-      window.removeEventListener('seatingChartEditMode', handleSeatingEditMode as EventListener);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_EDIT_MODE, handleSeatingEditMode as EventListener);
     };
   }, [fetchGroups]);
 
@@ -333,7 +336,7 @@ export default function SeatingChartView({
       }
     };
 
-    window.addEventListener('seatingChartViewSettingsChanged', handleLocalSettingsEvent as EventListener);
+    window.addEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const realtimeChannel = supabase
@@ -359,7 +362,7 @@ export default function SeatingChartView({
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('seatingChartViewSettingsChanged', handleLocalSettingsEvent as EventListener);
+      window.removeEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
       void supabase.removeChannel(realtimeChannel);
     };
   }, [activeSeatingLayoutId, applyLayoutViewSettings]);
@@ -393,7 +396,7 @@ export default function SeatingChartView({
 
   const handleOpenSeatingEditor = useCallback(() => {
     const base = pathname ?? '/';
-    window.dispatchEvent(new CustomEvent('seatingChartEditMode', { detail: { isEditMode: true } }));
+    emitSeatingEditMode({ isEditMode: true });
     const params = new URLSearchParams(searchQuery);
     params.set('mode', 'edit');
     if (activeSeatingLayoutId) params.set('layout', activeSeatingLayoutId);
@@ -422,15 +425,15 @@ export default function SeatingChartView({
       setIsPointLogOpen((v) => !v);
     };
 
-    window.addEventListener('stageToolbarCreateLayout', handleCreateLayout);
-    window.addEventListener('stageToolbarOpenSeatingEditor', handleOpenEditor);
-    window.addEventListener('stageToolbarToggleTeacherView', handleToggleTeacherView);
-    window.addEventListener('stageToolbarTogglePointLog', handleTogglePointLog);
+    window.addEventListener(STUDENT_EVENTS.STAGE_CREATE_LAYOUT, handleCreateLayout);
+    window.addEventListener(STUDENT_EVENTS.STAGE_OPEN_SEATING_EDITOR, handleOpenEditor);
+    window.addEventListener(STUDENT_EVENTS.STAGE_TOGGLE_TEACHER_VIEW, handleToggleTeacherView);
+    window.addEventListener(STUDENT_EVENTS.STAGE_TOGGLE_POINT_LOG, handleTogglePointLog);
     return () => {
-      window.removeEventListener('stageToolbarCreateLayout', handleCreateLayout);
-      window.removeEventListener('stageToolbarOpenSeatingEditor', handleOpenEditor);
-      window.removeEventListener('stageToolbarToggleTeacherView', handleToggleTeacherView);
-      window.removeEventListener('stageToolbarTogglePointLog', handleTogglePointLog);
+      window.removeEventListener(STUDENT_EVENTS.STAGE_CREATE_LAYOUT, handleCreateLayout);
+      window.removeEventListener(STUDENT_EVENTS.STAGE_OPEN_SEATING_EDITOR, handleOpenEditor);
+      window.removeEventListener(STUDENT_EVENTS.STAGE_TOGGLE_TEACHER_VIEW, handleToggleTeacherView);
+      window.removeEventListener(STUDENT_EVENTS.STAGE_TOGGLE_POINT_LOG, handleTogglePointLog);
     };
   }, [classId, currentView, handleOpenSeatingEditor, layouts.length, setIsPointLogOpen]);
 
@@ -513,7 +516,7 @@ export default function SeatingChartView({
         setIsCreateModalOpen(false);
         
         // Navigate to edit mode with the new layout ID
-        window.dispatchEvent(new CustomEvent('seatingChartEditMode', { detail: { isEditMode: true } }));
+        emitSeatingEditMode({ isEditMode: true });
         const params = new URLSearchParams();
         params.set('view', 'seating'); // Required to show seating chart view
         params.set('mode', 'edit'); // Required to show editor

@@ -9,6 +9,17 @@ import IconAutoAssign from '@/components/iconsCustom/iconAutoAssign';
 import IconAddPlus from '@/components/iconsCustom/iconAddPlus';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
+import {
+  emitSeatingAddMultipleGroups,
+  emitSeatingAutoAssignSeats,
+  emitSeatingClearAllGroups,
+  emitSeatingColorCodeBy,
+  emitSeatingDeleteAllGroups,
+  emitSeatingEditMode,
+  emitSeatingRandomize,
+  emitSeatingSave,
+  emitSeatingViewSettingsChanged,
+} from '@/lib/events/students';
 
 interface BottomNavSeatingEditProps {
   currentClassName: string | null;
@@ -46,14 +57,10 @@ export default function BottomNavSeatingEdit({
     layout_orientation?: 'Left' | 'Right';
   }) => {
     if (!layoutId) return;
-    window.dispatchEvent(
-      new CustomEvent('seatingChartViewSettingsChanged', {
-        detail: {
-          layoutId,
-          ...partial,
-        },
-      })
-    );
+    emitSeatingViewSettingsChanged({
+      layoutId,
+      ...partial,
+    });
   };
 
   // Update show_grid in database
@@ -142,47 +149,41 @@ export default function BottomNavSeatingEdit({
   }, [isViewSettingsMenuOpen, isSettingsMenuOpen, isAddGroupsMenuOpen]);
 
   const handleRandomizeSeating = () => {
-    window.dispatchEvent(new CustomEvent('seatingChartRandomize'));
+    emitSeatingRandomize();
   };
 
   const handleClearAllGroups = () => {
-    window.dispatchEvent(new CustomEvent('seatingChartClearAllGroups'));
+    emitSeatingClearAllGroups();
     setIsSettingsMenuOpen(false);
   };
 
   const handleDeleteAllGroups = () => {
-    window.dispatchEvent(new CustomEvent('seatingChartDeleteAllGroups'));
+    emitSeatingDeleteAllGroups();
     setIsSettingsMenuOpen(false);
   };
 
   const handleSaveSeatingChanges = () => {
-    window.dispatchEvent(
-      new CustomEvent('seatingChartSave', {
-        detail: {
-          onSaveComplete: () => {
-            const params = new URLSearchParams(searchParams?.toString() ?? '');
-            params.delete('mode');
-            const base = pathname ?? '/';
-            const newUrl = params.toString() ? `${base}?${params.toString()}` : base;
-            router.push(newUrl);
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('seatingChartEditMode', { detail: { isEditMode: false } }));
-            }, 100);
-          },
-        },
-      })
-    );
+    emitSeatingSave({
+      onSaveComplete: () => {
+        const params = new URLSearchParams(searchParams?.toString() ?? '');
+        params.delete('mode');
+        const base = pathname ?? '/';
+        const newUrl = params.toString() ? `${base}?${params.toString()}` : base;
+        router.push(newUrl);
+        setTimeout(() => {
+          emitSeatingEditMode({ isEditMode: false });
+        }, 100);
+      },
+    });
   };
 
   const handleAddGroups = (numGroups: number) => {
-    window.dispatchEvent(new CustomEvent('seatingChartAddMultipleGroups', { 
-      detail: { numGroups } 
-    }));
+    emitSeatingAddMultipleGroups({ numGroups });
     setIsAddGroupsMenuOpen(false);
   };
 
   const handleAutoAssignSeats = () => {
-    window.dispatchEvent(new CustomEvent('seatingChartAutoAssignSeats'));
+    emitSeatingAutoAssignSeats();
   };
 
   return (
@@ -279,9 +280,7 @@ export default function BottomNavSeatingEdit({
                         e.stopPropagation();
                         const newValue = !colorByGender;
                         setColorByGender(newValue);
-                        window.dispatchEvent(new CustomEvent('seatingChartColorCodeBy', { 
-                          detail: { colorCodeBy: newValue ? 'Gender' : 'Level' } 
-                        }));
+                        emitSeatingColorCodeBy({ colorCodeBy: newValue ? 'Gender' : 'Level' });
                       }}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         colorByGender ? 'bg-purple-600' : 'bg-gray-300'

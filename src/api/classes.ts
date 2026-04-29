@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/client';
 import type { Student } from '@/lib/types';
+import { getOptionalSessionUserId, getRequiredSessionUserId } from '@/api/_shared/auth';
+import { throwApiError } from '@/api/_shared/errors';
 
 export type ClassRecord = {
   id: string;
@@ -24,7 +26,7 @@ function isMissingListAccessibleClassesRpc(error: { code?: string; message?: str
   );
 }
 
-export async function fetchAccessibleClassesForUser(userId: string): Promise<ClassRecord[]> {
+export async function listAccessibleClassesForUser(userId: string): Promise<ClassRecord[]> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc('list_accessible_classes');
   let rows: ClassRecord[] = [];
@@ -40,9 +42,7 @@ export async function fetchAccessibleClassesForUser(userId: string): Promise<Cla
       .order('is_archived', { ascending: true })
       .order('created_at', { ascending: false });
 
-    if (ownerError) {
-      throw ownerError;
-    }
+    if (ownerError) throwApiError(ownerError, 'listAccessibleClassesForUser.fallbackOwnerRows');
 
     rows = (ownerRows || []).map((r) => ({ ...r, is_owner: true }));
   } else {
@@ -55,7 +55,7 @@ export async function fetchAccessibleClassesForUser(userId: string): Promise<Cla
   });
 }
 
-export async function fetchStudentCountsByClassIds(
+export async function getStudentCountsByClassIds(
   classIds: string[]
 ): Promise<Record<string, number>> {
   if (classIds.length === 0) return {};
@@ -66,9 +66,7 @@ export async function fetchStudentCountsByClassIds(
     .select('class_id')
     .in('class_id', classIds);
 
-  if (error) {
-    throw error;
-  }
+  if (error) throwApiError(error, 'getStudentCountsByClassIds');
 
   const countsMap: Record<string, number> = {};
   classIds.forEach((classId) => {
@@ -91,9 +89,7 @@ export async function archiveClass(classId: string, archived: boolean): Promise<
     .update({ is_archived: archived })
     .eq('id', classId);
 
-  if (error) {
-    throw error;
-  }
+  if (error) throwApiError(error, 'archiveClass');
 }
 
 export async function deleteClassPermanently(classId: string): Promise<void> {
@@ -104,44 +100,31 @@ export async function deleteClassPermanently(classId: string): Promise<void> {
     .delete()
     .eq('class_id', classId);
 
-  if (studentsError) {
-    throw studentsError;
-  }
+  if (studentsError) throwApiError(studentsError, 'deleteClassPermanently.deleteStudents');
 
   const { error: classError } = await supabase
     .from('classes')
     .delete()
     .eq('id', classId);
 
-  if (classError) {
-    throw classError;
-  }
+  if (classError) throwApiError(classError, 'deleteClassPermanently.deleteClass');
 }
 
-export async function createClassForCurrentUser(params: {
+export async function createClass(params: {
   className: string;
   grade: string;
   schoolYear: string;
   icon: string;
 }): Promise<void> {
   const supabase = createClient();
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-  const user = session?.user;
-  if (sessionError || !user) {
-    throw new Error('AUTH_REQUIRED');
-  }
+  const userId = await getRequiredSessionUserId();
 
   const { data: rpcData, error } = await supabase.rpc('create_new_class', {
     class_name: params.className,
     class_grade: params.grade,
     class_school_year: params.schoolYear,
   });
-  if (error) {
-    throw error;
-  }
+  if (error) throwApiError(error, 'createClass.createNewClassRpc');
 
   let classId: string | null = null;
   if (rpcData) {
@@ -155,7 +138,7 @@ export async function createClassForCurrentUser(params: {
       .from('classes')
       .select('id')
       .eq('name', params.className)
-      .eq('teacher_id', user.id)
+      .eq('teacher_id', userId)
       .eq('is_archived', false)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -185,14 +168,10 @@ export async function fetchClassById(classId: string): Promise<ClassRecord | nul
 }
 
 export async function getCurrentSessionUserId(): Promise<string | null> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.user?.id ?? null;
+  return getOptionalSessionUserId();
 }
 
-export async function updateClassInfo(params: {
+export async function updateClass(params: {
   classId: string;
   name: string;
   grade: string;
@@ -207,7 +186,7 @@ export async function updateClassInfo(params: {
       icon: params.icon,
     })
     .eq('id', params.classId);
-  if (error) throw error;
+  if (error) throwApiError(error, 'updateClass');
 }
 
 export type CollaboratorTeacherRow = {
@@ -222,7 +201,7 @@ export async function listClassCollaborators(classId: string): Promise<Collabora
   const { data, error } = await supabase.rpc('list_class_collaborators', {
     p_class_id: classId,
   });
-  if (error) throw error;
+  if (error) throwApiError(error, 'listClassCollaborators');
   return Array.isArray(data) ? (data as CollaboratorTeacherRow[]) : [];
 }
 
@@ -231,7 +210,7 @@ export async function lookupTeacherByEmail(email: string): Promise<{ id: string;
   const { data, error } = await supabase.rpc('lookup_teacher_by_email', {
     p_email: email,
   });
-  if (error) throw error;
+  if (error) throwApiError(error, 'lookupTeacherByEmail');
   const row = Array.isArray(data) ? data[0] : data;
   if (!row || !row.id) return null;
   return row as { id: string; name: string | null; email: string };
@@ -244,7 +223,7 @@ export async function addClassCollaborator(classId: string, collaboratorId: stri
     collaborator_id: collaboratorId,
     primary_user: false,
   });
-  if (error) throw error;
+  if (error) throwApiError(error, 'addClassCollaborator');
 }
 
 export async function removeClassCollaborator(collaboratorRowId: string): Promise<void> {
@@ -253,15 +232,22 @@ export async function removeClassCollaborator(collaboratorRowId: string): Promis
     .from('class_collaborators')
     .delete()
     .eq('id', collaboratorRowId);
-  if (error) throw error;
+  if (error) throwApiError(error, 'removeClassCollaborator');
 }
 
-export async function fetchStudentsForClassEdit(classId: string): Promise<Student[]> {
+export async function listStudentsForClassEdit(classId: string): Promise<Student[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from('students')
     .select('id, first_name, last_name, avatar, student_number, gender, class_id, points')
     .eq('class_id', classId);
-  if (error) throw error;
+  if (error) throwApiError(error, 'listStudentsForClassEdit');
   return (data || []) as Student[];
 }
+
+// Legacy aliases for backwards compatibility.
+export const fetchAccessibleClassesForUser = listAccessibleClassesForUser;
+export const fetchStudentCountsByClassIds = getStudentCountsByClassIds;
+export const createClassForCurrentUser = createClass;
+export const updateClassInfo = updateClass;
+export const fetchStudentsForClassEdit = listStudentsForClassEdit;
