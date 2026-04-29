@@ -9,8 +9,8 @@ import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
-import AuthBackLink from '@/layouts/auth/AuthBackLink';
-import AuthCard from '@/layouts/auth/AuthCard';
+import AuthBackLink from '@/components/ui/AuthBackLink';
+import AuthCard from '@/components/ui/AuthCard';
 import AuthPageLayout from '@/layouts/auth/AuthPageLayout';
 
 type Step = 'request' | 'verify';

@@ -10,4 +10,3 @@ export default function AuthCard({ children, className = '' }: AuthCardProps) {
     </div>
   );
 }
-

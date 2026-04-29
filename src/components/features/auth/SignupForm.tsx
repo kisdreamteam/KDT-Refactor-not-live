@@ -8,8 +8,8 @@ import SelectInput from '@/components/ui/SelectInput';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
-import AuthBackLink from '@/layouts/auth/AuthBackLink';
-import AuthCard from '@/layouts/auth/AuthCard';
+import AuthBackLink from '@/components/ui/AuthBackLink';
+import AuthCard from '@/components/ui/AuthCard';
 import Image from 'next/image';
 
 function SignupHeader() {
