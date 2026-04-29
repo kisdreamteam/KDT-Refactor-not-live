@@ -142,8 +142,13 @@ export default function AwardPointsModal({
   }, [isOpen, classId, selectedClassIds, fetchCategories]);
 
   // Filter categories into positive and negative skills
+  const activeCategories = useMemo(
+    () => categories.filter((category) => category.is_archived !== true),
+    [categories]
+  );
+
   const positiveSkills = useMemo(() => {
-    const filtered = categories.filter((category) => {
+    const filtered = activeCategories.filter((category) => {
       const points = category.points ?? category.default_points ?? 0;
       return points > 0;
     }).map((category) => {
@@ -156,10 +161,10 @@ export default function AwardPointsModal({
       };
     });
     return filtered;
-  }, [categories]);
+  }, [activeCategories]);
 
   const negativeSkills = useMemo(() => {
-    const filtered = categories.filter((category) => {
+    const filtered = activeCategories.filter((category) => {
       const points = category.points ?? category.default_points ?? 0;
       return points < 0;
     }).map((category) => {
@@ -172,7 +177,7 @@ export default function AwardPointsModal({
       };
     });
     return filtered;
-  }, [categories]);
+  }, [activeCategories]);
 
 
   const resolveTargetStudentIds = useCallback(async (): Promise<string[]> => {
@@ -419,7 +424,7 @@ export default function AwardPointsModal({
                 <div className="grid grid-cols-4 gap-3">
                   {positiveSkills.map((skill) => {
                     // Find the full category object
-                    const category = categories.find(cat => cat.id === skill.id);
+                    const category = activeCategories.find(cat => cat.id === skill.id);
                     if (!category) return null;
                     
                     return (
@@ -481,7 +486,7 @@ export default function AwardPointsModal({
                 <div className="grid grid-cols-4 gap-3">
                   {negativeSkills.map((skill) => {
                     // Find the full category object
-                    const category = categories.find(cat => cat.id === skill.id);
+                    const category = activeCategories.find(cat => cat.id === skill.id);
                     if (!category) return null;
                     
                     return (

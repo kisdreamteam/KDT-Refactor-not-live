@@ -14,7 +14,8 @@ export async function fetchPointCategoriesByClassIds(classIds: string[]): Promis
   const { data, error } = await supabase
     .from('point_categories')
     .select('*')
-    .in('class_id', classIds);
+    .in('class_id', classIds)
+    .eq('is_archived', false);
 
   if (error) {
     throw error;

@@ -34,6 +34,7 @@ export default function EditSkillsModal({
   // Filter categories into positive and negative skills
   const positiveSkills = useMemo(() => {
     return categories.filter((category) => {
+      if (category.is_archived === true) return false;
       const points = category.points ?? category.default_points ?? 0;
       return points > 0;
     });
@@ -41,6 +42,7 @@ export default function EditSkillsModal({
 
   const negativeSkills = useMemo(() => {
     return categories.filter((category) => {
+      if (category.is_archived === true) return false;
       const points = category.points ?? category.default_points ?? 0;
       return points < 0;
     });
@@ -101,11 +103,10 @@ export default function EditSkillsModal({
         return;
       }
 
-      // Delete the skill from database
-      // Since skills are linked to class_id, deleting removes it for all students in that class
+      // Archive the skill in database (soft delete)
       const { error } = await supabase
         .from('point_categories')
-        .delete()
+        .update({ is_archived: true })
         .eq('id', skillId)
         .eq('class_id', classId); // Extra safety check
 

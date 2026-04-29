@@ -7,6 +7,7 @@ export interface PointCategory {
   class_id: string;
   teacher_id?: string; // Optional, may not always be needed
   icon?: string; // Icon path from database
+  is_archived?: boolean; // Soft-delete flag
 }
 
 export interface Student {
