@@ -15,6 +15,16 @@ import PointsAwardedConfirmationModal from '@/components/modals/PointsAwardedCon
 import ClassPointLogSlidePanel from '@/components/ui/ClassPointLogSlidePanel';
 import { useClassPointLog } from '@/hooks/useClassPointLog';
 import { useAwardPointsFlow } from '@/hooks/useAwardPointsFlow';
+import {
+  createSeatingLayout,
+  deleteSeatingLayoutCascade,
+  fetchLayoutViewSettings,
+  fetchSeatingGroupsWithAssignments,
+  fetchSeatingLayoutsByClassId,
+  type GroupAssignment,
+  type SeatingGroupRecord,
+  updateSeatingLayoutName,
+} from '@/api/seating';
 import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
 
 interface SeatingChart {
@@ -26,27 +36,6 @@ interface SeatingChart {
   show_objects?: boolean;
   layout_orientation?: string;
 }
-
-interface SeatingGroup {
-  id: string;
-  name: string;
-  seating_chart_id: string;
-  sort_order: number;
-  group_columns: number;
-  group_rows?: number;
-  position_x?: number;
-  position_y?: number;
-  created_at: string;
-}
-
-interface StudentSeatAssignment {
-  seating_group_id: string;
-  seat_index: number | null;
-  students: Student | null;
-}
-
-/** Per-group assignment with seat_index for fixed-slot grid (matches editor). */
-type GroupAssignment = { student: Student; seat_index: number };
 
 interface SeatingChartViewProps {
   classId: string;
@@ -75,7 +64,7 @@ export default function SeatingChartView({
   const [layouts, setLayouts] = useState<SeatingChart[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [groups, setGroups] = useState<SeatingGroup[]>([]);
+  const [groups, setGroups] = useState<SeatingGroupRecord[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [groupAssignments, setGroupAssignments] = useState<Map<string, GroupAssignment[]>>(new Map());
   const [groupPositions, setGroupPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
@@ -142,19 +131,7 @@ export default function SeatingChartView({
     try {
       setIsLoading(true);
       setError(null);
-      const supabase = createClient();
-      
-      const { data, error: fetchError } = await supabase
-        .from('seating_charts')
-        .select('*')
-        .eq('class_id', classId)
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        console.error('Error fetching seating charts:', fetchError);
-        setError('Failed to load seating charts. Please try again.');
-        return;
-      }
+      const data = await fetchSeatingLayoutsByClassId(classId);
 
       if (data) {
         setLayouts(data);
@@ -245,23 +222,12 @@ export default function SeatingChartView({
 
     try {
       setIsLoadingGroups(true);
-      const supabase = createClient();
-      
-      // Fetch groups
-      const { data: groupsData, error: groupsError } = await supabase
-        .from('seating_groups')
-        .select('*')
-        .eq('seating_chart_id', activeSeatingLayoutId)
-        .order('sort_order', { ascending: true });
-
-      if (groupsError) {
-        console.error('Error fetching seating groups:', groupsError);
-        return;
-      }
+      const { groups: groupsData, groupAssignments: nextGroupAssignments } =
+        await fetchSeatingGroupsWithAssignments(activeSeatingLayoutId);
 
       if (groupsData) {
         setGroups(groupsData);
-        
+
         // Initialize positions for groups from database or default
         setGroupPositions(prev => {
           const newPositions = new Map(prev);
@@ -279,61 +245,7 @@ export default function SeatingChartView({
           });
           return newPositions;
         });
-        
-        // Fetch student seat assignments for all groups
-        const groupIds = groupsData.map(g => g.id);
-        if (groupIds.length > 0) {
-          const { data: assignmentsData, error: assignmentsError } = await supabase
-            .from('student_seat_assignments')
-            .select('*, students(*)')
-            .in('seating_group_id', groupIds)
-            .order('seating_group_id', { ascending: true })
-            .order('seat_index', { ascending: true });
-
-          if (assignmentsError) {
-            console.error('Error fetching student seat assignments:', assignmentsError);
-            // Continue with empty assignments
-          }
-
-          // Fixed-slot: store per-group list of { student, seat_index } (matches editor, preserves holes)
-          const newGroupAssignments = new Map<string, GroupAssignment[]>();
-          groupsData.forEach(group => {
-            newGroupAssignments.set(group.id, []);
-          });
-
-          if (assignmentsData) {
-            const byGroup = new Map<string, StudentSeatAssignment[]>();
-            for (const a of assignmentsData as StudentSeatAssignment[]) {
-              const gid = a.seating_group_id;
-              if (!byGroup.has(gid)) byGroup.set(gid, []);
-              byGroup.get(gid)!.push(a);
-            }
-            byGroup.forEach((assignments, groupId) => {
-              const withStudent = assignments.filter((a): a is StudentSeatAssignment & { students: Student } =>
-                a.students != null
-              );
-              const hasNull = withStudent.some(a => a.seat_index == null);
-              const sorted = [...withStudent].sort((a, b) => {
-                if (hasNull) {
-                  const cmp = (a.students.first_name ?? '').localeCompare(b.students.first_name ?? '');
-                  return cmp !== 0 ? cmp : (a.students.last_name ?? '').localeCompare(b.students.last_name ?? '');
-                }
-                const sa = a.seat_index ?? Infinity;
-                const sb = b.seat_index ?? Infinity;
-                if (sa !== sb) return sa - sb;
-                return (a.students.first_name ?? '').localeCompare(b.students.first_name ?? '');
-              });
-              newGroupAssignments.set(
-                groupId,
-                sorted.map((a, i) => ({ student: a.students, seat_index: a.seat_index ?? i + 1 }))
-              );
-            });
-          }
-
-          setGroupAssignments(newGroupAssignments);
-        } else {
-          setGroupAssignments(new Map());
-        }
+        setGroupAssignments(nextGroupAssignments);
       } else {
         setGroups([]);
         setGroupAssignments(new Map());
@@ -395,13 +307,8 @@ export default function SeatingChartView({
     const handleViewSettingsUpdate = async () => {
       if (document.visibilityState !== 'visible') return;
       try {
-        const { data, error } = await supabase
-          .from('seating_charts')
-          .select('show_grid, show_objects, layout_orientation')
-          .eq('id', activeSeatingLayoutId)
-          .single();
-
-        if (error || !data) return;
+        const data = await fetchLayoutViewSettings(activeSeatingLayoutId);
+        if (!data) return;
         applyLayoutViewSettings(data);
       } catch {
         // Silently fail
@@ -473,12 +380,9 @@ export default function SeatingChartView({
 
   const handleEditLayoutSave = async (newName: string) => {
     if (!layoutToEdit) return;
-    const supabase = createClient();
-    const { error } = await supabase
-      .from('seating_charts')
-      .update({ name: newName })
-      .eq('id', layoutToEdit.id);
-    if (error) {
+    try {
+      await updateSeatingLayoutName(layoutToEdit.id, newName);
+    } catch (error) {
       console.error('Error updating layout name:', error);
       throw new Error('Failed to update layout name.');
     }
@@ -534,54 +438,7 @@ export default function SeatingChartView({
     if (!layoutToDelete) return;
 
     try {
-      const supabase = createClient();
-      
-      // First, get all groups for this layout
-      const { data: groupsData, error: groupsError } = await supabase
-        .from('seating_groups')
-        .select('id')
-        .eq('seating_chart_id', layoutToDelete.id);
-
-      if (groupsError) {
-        console.error('Error fetching groups for deletion:', groupsError);
-        alert('Failed to delete layout. Please try again.');
-        setIsDeleteModalOpen(false);
-        setLayoutToDelete(null);
-        return;
-      }
-
-      // Delete all student seat assignments for all groups in this layout
-      if (groupsData && groupsData.length > 0) {
-        const groupIds = groupsData.map(g => g.id);
-        for (const groupId of groupIds) {
-          await supabase
-            .from('student_seat_assignments')
-            .delete()
-            .eq('seating_group_id', groupId);
-        }
-
-        // Delete all groups
-        for (const groupId of groupIds) {
-          await supabase
-            .from('seating_groups')
-            .delete()
-            .eq('id', groupId);
-        }
-      }
-
-      // Finally, delete the seating chart itself
-      const { error: deleteError } = await supabase
-        .from('seating_charts')
-        .delete()
-        .eq('id', layoutToDelete.id);
-
-      if (deleteError) {
-        console.error('Error deleting seating chart:', deleteError);
-        alert('Failed to delete layout. Please try again.');
-        setIsDeleteModalOpen(false);
-        setLayoutToDelete(null);
-        return;
-      }
+      await deleteSeatingLayoutCascade(layoutToDelete.id);
 
       // If the deleted layout was selected, clear the selection
       if (activeSeatingLayoutId === layoutToDelete.id) {
@@ -643,25 +500,7 @@ export default function SeatingChartView({
   // Handle create layout
   const handleCreateLayout = async (layoutName: string) => {
     try {
-      const supabase = createClient();
-      
-      const { data, error: insertError } = await supabase
-        .from('seating_charts')
-        .insert({
-          name: layoutName,
-          class_id: classId,
-          show_grid: true,
-          show_objects: true,
-          layout_orientation: 'Left',
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Error creating seating chart:', insertError);
-        alert('Failed to create layout. Please try again.');
-        return;
-      }
+      const data = await createSeatingLayout({ classId, name: layoutName });
 
       if (data) {
         // Store the new layout ID in localStorage

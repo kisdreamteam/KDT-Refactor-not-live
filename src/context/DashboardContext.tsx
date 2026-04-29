@@ -2,37 +2,21 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { createClient } from '@/lib/client';
 import type { Student } from '@/lib/types';
-
-// Define the shape of the Class object (based on our layout.tsx)
-interface Class {
-  id: string;
-  name: string;
-  grade: string;
-  school_year: string;
-  teacher_id: string;
-  is_archived: boolean;
-  created_at: string;
-  icon?: string;
-  is_owner?: boolean;
-}
-
-// Define the shape of the TeacherProfile object
-interface TeacherProfile {
-  id: string;
-  title: string;
-  name: string;
-  role: string;
-  preferred_view?: 'seating' | 'students' | null;
-}
-
-type ViewPreference = 'seating' | 'students';
+import {
+  fetchTeacherProfileById,
+  getSessionUserId,
+  updateTeacherPreferredView,
+  type TeacherProfile,
+  type ViewPreference,
+} from '@/api/auth';
+import { fetchAccessibleClassesForUser, type ClassRecord } from '@/api/classes';
+import { fetchStudentsByClassId } from '@/api/students';
 
 // Define the shape of the data we're sharing
 interface DashboardContextType {
-  classes: Class[];
-  currentClass: Class | null;
+  classes: ClassRecord[];
+  currentClass: ClassRecord | null;
   isLoadingClasses: boolean;
   teacherProfile: TeacherProfile | null;
   isLoadingProfile: boolean;
@@ -68,23 +52,12 @@ let cachedViewPreference: ViewPreference | null = null;
 let teacherProfileFetchPromise: Promise<void> | null = null;
 const studentsByClassCache = new Map<string, Student[]>();
 
-function isMissingListAccessibleClassesRpc(error: { code?: string; message?: string } | null): boolean {
-  if (!error) return false;
-  const msg = (error.message || '').toLowerCase();
-  return (
-    error.code === 'PGRST202' ||
-    error.code === '42883' ||
-    msg.includes('could not find the function') ||
-    msg.includes('schema cache')
-  );
-}
-
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(() => cachedTeacherProfile);
   const [isLoadingProfile, setIsLoadingProfile] = useState(() => !cachedTeacherProfile);
-  const [allClasses, setAllClasses] = useState<Class[]>([]);
+  const [allClasses, setAllClasses] = useState<ClassRecord[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
@@ -116,32 +89,24 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
     setIsLoadingProfile(true);
     teacherProfileFetchPromise = (async () => {
-      const supabase = createClient();
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (sessionError || !user) {
-        if (sessionError) console.error('Session error:', sessionError);
+      const userId = await getSessionUserId();
+      if (!userId) {
         router.replace('/login');
         return;
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, title, name, role, preferred_view')
-        .eq('id', user.id)
-        .single();
-
-      if (error || !data) {
-        if (error) console.error('Error fetching teacher profile:', error?.message || error);
+      const profile = await fetchTeacherProfileById(userId);
+      if (!profile) {
+        console.error('Error fetching teacher profile');
         return;
       }
 
       const preferredView: ViewPreference =
-        data.preferred_view === 'seating' || data.preferred_view === 'students'
-          ? data.preferred_view
+        profile.preferred_view === 'seating' || profile.preferred_view === 'students'
+          ? profile.preferred_view
           : 'students';
       cachedViewPreference = preferredView;
-      cachedTeacherProfile = { ...data, role: data.role || 'teacher' };
+      cachedTeacherProfile = profile;
     })();
 
     try {
@@ -157,41 +122,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const fetchClasses = useCallback(async () => {
     try {
       setIsLoadingClasses(true);
-      const supabase = createClient();
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (sessionError || !user) {
-        if (sessionError) console.error('Session error:', sessionError);
+      const userId = await getSessionUserId();
+      if (!userId) {
         router.replace('/login');
         return;
       }
-
-      const { data, error } = await supabase.rpc('list_accessible_classes');
-      let rows: Class[] = [];
-      if (error) {
-        if (!isMissingListAccessibleClassesRpc(error)) {
-          console.warn('list_accessible_classes failed, falling back:', error.message);
-        }
-        const { data: ownerRows, error: ownerError } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('teacher_id', user.id)
-          .order('is_archived', { ascending: true })
-          .order('created_at', { ascending: false });
-        if (ownerError) {
-          console.error('Error fetching classes (owner fallback):', ownerError?.message || ownerError);
-          return;
-        }
-        rows = (ownerRows || []).map((r) => ({ ...r, is_owner: true }));
-      } else {
-        rows = (data || []) as Class[];
-      }
-
-      const sorted = [...rows].sort((a, b) => {
-        if (a.is_archived !== b.is_archived) return a.is_archived ? 1 : -1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-      setAllClasses(sorted);
+      const rows = await fetchAccessibleClassesForUser(userId);
+      setAllClasses(rows);
     } catch (err) {
       console.error('Unexpected error fetching classes:', err);
     } finally {
@@ -215,29 +152,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
     try {
       setIsLoadingStudents(true);
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('students')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          points,
-          avatar,
-          student_number,
-          gender,
-          class_id
-        `)
-        .eq('class_id', currentClassId)
-        .eq('is_archived', false)
-        .order('last_name', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching students:', error?.message || error);
-        setStudents([]);
-        return;
-      }
-      const next = data || [];
+      const next = await fetchStudentsByClassId(currentClassId);
       studentsByClassCache.set(currentClassId, next);
       setStudents(next);
     } catch (err) {
@@ -252,18 +167,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     setViewPreference(newView);
     cachedViewPreference = newView;
     try {
-      const supabase = createClient();
-      const { data: authData, error: sessionError } = await supabase.auth.getSession();
-      const userId = authData.session?.user?.id ?? teacherProfile?.id;
-      if (sessionError || !userId) {
-        if (sessionError) console.error('Session error while updating preferred view:', sessionError);
+      const sessionUserId = await getSessionUserId();
+      const userId = sessionUserId ?? teacherProfile?.id;
+      if (!userId) {
         return;
       }
-      const { error } = await supabase
-        .from('profiles')
-        .update({ preferred_view: newView })
-        .eq('id', userId);
-      if (error) console.error('Error updating preferred view:', error);
+      await updateTeacherPreferredView(userId, newView);
     } catch (err) {
       console.error('Unexpected error updating preferred view:', err);
     }

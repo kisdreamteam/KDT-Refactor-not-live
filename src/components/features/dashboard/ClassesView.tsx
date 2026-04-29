@@ -8,7 +8,11 @@ import { useDashboard } from '@/context/DashboardContext';
 import LoadingState from '@/components/ui/LoadingState';
 import EmptyState from '@/components/ui/EmptyState';
 import ClassCardsGrid from './maincontent/viewClassesGrid/ClassCardsGrid';
-import { createClient } from '@/lib/client';
+import {
+  archiveClass,
+  deleteClassPermanently,
+  fetchStudentCountsByClassIds,
+} from '@/api/classes';
 
 export default function ClassesView() {
   const { classes, isLoadingClasses, refreshClasses, viewMode } = useDashboard();
@@ -41,37 +45,13 @@ export default function ClassesView() {
 
   const fetchStudentCounts = useCallback(async () => {
     try {
-      const supabase = createClient();
       const classIds = classes.map(cls => cls.id);
 
       if (classIds.length === 0) {
         setStudentCounts({});
         return;
       }
-
-      // Fetch all students for these classes in a single query
-      const { data: students, error } = await supabase
-        .from('students')
-        .select('class_id')
-        .in('class_id', classIds);
-
-      if (error) {
-        console.error('Error fetching student counts:', error);
-        return;
-      }
-
-      // Count students per class
-      const countsMap: Record<string, number> = {};
-      classIds.forEach(classId => {
-        countsMap[classId] = 0;
-      });
-
-      students?.forEach(student => {
-        if (student.class_id && countsMap[student.class_id] !== undefined) {
-          countsMap[student.class_id]++;
-        }
-      });
-
+      const countsMap = await fetchStudentCountsByClassIds(classIds);
       setStudentCounts(countsMap);
     } catch (err) {
       console.error('Error fetching student counts:', err);
@@ -118,25 +98,16 @@ export default function ClassesView() {
     if (!archiveClassId) return;
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('classes')
-        .update({ is_archived: !isArchivedView }) // Toggle archived status
-        .eq('id', archiveClassId);
-
-      if (error) {
-        console.error(`Error ${isArchivedView ? 'unarchiving' : 'archiving'} class:`, error);
-        alert(`Failed to ${isArchivedView ? 'unarchive' : 'archive'} class. Please try again.`);
-        return;
-      }
+      await archiveClass(archiveClassId, !isArchivedView);
 
       console.log(`Class ${isArchivedView ? 'unarchived' : 'archived'} successfully`);
       refreshClasses(); // Refresh the list
       // Dispatch event to refresh sidebar classes
       window.dispatchEvent(new CustomEvent('classUpdated'));
     } catch (err) {
+      console.error(`Error ${isArchivedView ? 'unarchiving' : 'archiving'} class:`, err);
+      alert(`Failed to ${isArchivedView ? 'unarchive' : 'archive'} class. Please try again.`);
       console.error('Unexpected error:', err);
-      alert('An unexpected error occurred. Please try again.');
     } finally {
       setIsArchiveModalOpen(false);
       setArchiveClassId(null);
@@ -175,37 +146,13 @@ export default function ClassesView() {
     if (!deleteClassId) return;
 
     try {
-      const supabase = createClient();
-
-      // First, delete all students in this class
-      const { error: studentsError } = await supabase
-        .from('students')
-        .delete()
-        .eq('class_id', deleteClassId);
-
-      if (studentsError) {
-        console.error('Error deleting students:', studentsError);
-        alert('Failed to delete students. Please try again.');
-        return;
-      }
-
-      // Then delete the class
-      const { error: classError } = await supabase
-        .from('classes')
-        .delete()
-        .eq('id', deleteClassId);
-
-      if (classError) {
-        console.error('Error deleting class:', classError);
-        alert('Failed to delete class. Please try again.');
-        return;
-      }
-
+      await deleteClassPermanently(deleteClassId);
       console.log('Class deleted successfully');
       refreshClasses(); // Refresh the archived classes list
     } catch (err) {
+      console.error('Error deleting class:', err);
+      alert('Failed to delete class. Please try again.');
       console.error('Unexpected error deleting class:', err);
-      alert('An unexpected error occurred. Please try again.');
     } finally {
       setIsDeleteModalOpen(false);
       setDeleteClassId(null);

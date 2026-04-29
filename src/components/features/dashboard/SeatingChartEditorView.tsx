@@ -6,6 +6,11 @@ import { createClient } from '@/lib/client';
 import { useDashboard } from '@/context/DashboardContext';
 import { useSeatingChart } from '@/context/SeatingChartContext';
 import { Student } from '@/lib/types';
+import {
+  fetchLayoutViewSettings,
+  fetchSeatingGroupsWithAssignments,
+  fetchSeatingLayoutsByClassId,
+} from '@/api/seating';
 import CreateLayoutModal from '@/components/modals/CreateLayoutModal';
 import EditGroupModal from '@/components/modals/EditGroupModal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
@@ -300,19 +305,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     try {
       setIsLoading(true);
       setError(null);
-      const supabase = createClient();
-      
-      const { data, error: fetchError } = await supabase
-        .from('seating_charts')
-        .select('*')
-        .eq('class_id', classId)
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        console.error('Error fetching seating charts:', fetchError);
-        setError('Failed to load seating charts. Please try again.');
-        return;
-      }
+      const data = await fetchSeatingLayoutsByClassId(classId);
 
       if (data) {
         setLayouts(data);
@@ -386,17 +379,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       if (!activeSeatingLayoutId) return;
       
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from('seating_charts')
-          .select('show_grid, show_objects, layout_orientation')
-          .eq('id', activeSeatingLayoutId)
-          .single();
-
-        if (error) {
-          console.error('Error fetching layout settings:', error);
-          return;
-        }
+        const data = await fetchLayoutViewSettings(activeSeatingLayoutId);
 
         if (data) {
           // Set values from database (default to true/Left if null)
@@ -420,13 +403,8 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     const handleViewSettingsUpdate = async () => {
       if (document.visibilityState !== 'visible') return;
       try {
-        const { data, error } = await supabase
-          .from('seating_charts')
-          .select('show_grid, show_objects, layout_orientation')
-          .eq('id', activeSeatingLayoutId)
-          .single();
-
-        if (error || !data) return;
+        const data = await fetchLayoutViewSettings(activeSeatingLayoutId);
+        if (!data) return;
         applyLayoutViewSettings(data);
       } catch {
         // Silently fail
@@ -491,19 +469,8 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
 
     try {
       setIsLoadingGroups(true);
-      const supabase = createClient();
-      
-      // Fetch groups
-      const { data: groupsData, error: groupsError } = await supabase
-        .from('seating_groups')
-        .select('*')
-        .eq('seating_chart_id', activeSeatingLayoutId)
-        .order('sort_order', { ascending: true });
-
-      if (groupsError) {
-        console.error('Error fetching seating groups:', groupsError);
-        return;
-      }
+      const { groups: groupsData, groupAssignments: nextGroupAssignments } =
+        await fetchSeatingGroupsWithAssignments(activeSeatingLayoutId);
 
       if (groupsData) {
         setGroups(groupsData);
@@ -525,70 +492,18 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
           });
           return newPositions;
         });
-        
-        // Fetch student seat assignments for all groups
-        const groupIds = groupsData.map(g => g.id);
-        if (groupIds.length > 0) {
-          const { data: assignmentsData, error: assignmentsError } = await supabase
-            .from('student_seat_assignments')
-            .select('*, students(*)')
-            .in('seating_group_id', groupIds)
-            .order('seating_group_id', { ascending: true })
-            .order('seat_index', { ascending: true });
 
-          if (assignmentsError) {
-            console.error('Error fetching student seat assignments:', assignmentsError);
-            // Continue with empty assignments
-          }
+        setGroupAssignments(nextGroupAssignments);
 
-          // Fixed-slot: store per-group list of { student, seat_index } (preserve holes)
-          const newGroupAssignments = new Map<string, GroupAssignment[]>();
-          groupsData.forEach(group => {
-            newGroupAssignments.set(group.id, []);
+        // Calculate unseated students: all students minus assigned students
+        const assignedStudentIds = new Set<string>();
+        nextGroupAssignments.forEach((assignments) => {
+          assignments.forEach((assignment) => {
+            assignedStudentIds.add(assignment.student.id);
           });
-
-          if (assignmentsData) {
-            const byGroup = new Map<string, StudentSeatAssignment[]>();
-            for (const a of assignmentsData as StudentSeatAssignment[]) {
-              const gid = a.seating_group_id;
-              if (!byGroup.has(gid)) byGroup.set(gid, []);
-              byGroup.get(gid)!.push(a);
-            }
-            byGroup.forEach((assignments, groupId) => {
-              const withStudent = assignments.filter((a): a is StudentSeatAssignment & { students: Student } =>
-                a.students != null
-              );
-              const hasNull = withStudent.some(a => a.seat_index == null);
-              const sorted = [...withStudent].sort((a, b) => {
-                if (hasNull) {
-                  const cmp = (a.students.first_name ?? '').localeCompare(b.students.first_name ?? '');
-                  return cmp !== 0 ? cmp : (a.students.last_name ?? '').localeCompare(b.students.last_name ?? '');
-                }
-                const sa = a.seat_index ?? Infinity;
-                const sb = b.seat_index ?? Infinity;
-                if (sa !== sb) return sa - sb;
-                return (a.students.first_name ?? '').localeCompare(b.students.first_name ?? '');
-              });
-              newGroupAssignments.set(
-                groupId,
-                sorted.map((a, i) => ({ student: a.students, seat_index: a.seat_index ?? i + 1 }))
-              );
-            });
-          }
-
-          setGroupAssignments(newGroupAssignments);
-
-          // Calculate unseated students: all students minus assigned students
-          const assignedStudentIds = new Set(
-            assignmentsData?.map((a: StudentSeatAssignment) => a.students?.id).filter(Boolean) || []
-          );
-          const unseated = students.filter(student => !assignedStudentIds.has(student.id));
-          setUnseatedStudents(unseated);
-        } else {
-          // No groups, all students are unseated
-          setGroupAssignments(new Map());
-          setUnseatedStudents(students);
-        }
+        });
+        const unseated = students.filter(student => !assignedStudentIds.has(student.id));
+        setUnseatedStudents(unseated);
       } else {
         setGroups([]);
         setGroupAssignments(new Map());
