@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/client';
+import { signUpWithEmailPassword } from '@/api/auth';
 import TextInput from '@/components/ui/TextInput';
 import SelectInput from '@/components/ui/SelectInput';
 import PasswordInput from '@/components/ui/PasswordInput';
@@ -73,7 +73,6 @@ function SignupAvatar() {
 
 export default function SignupForm() {
   const router = useRouter();
-  const supabase = createClient();
   const [title, setTitle] = useState<string>('Ms.');
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
@@ -119,21 +118,19 @@ export default function SignupForm() {
 
     if (hasError) return;
 
-    const { error } = await supabase.auth.signUp({
-      email: fullEmail,
-      password,
-      options: {
+    try {
+      await signUpWithEmailPassword({
+        email: fullEmail,
+        password,
         data: {
           name: fullName,
           title: title,
-          role: role
-        }
-      }
-    });
-
-    if (error) {
+          role: role,
+        },
+      });
+    } catch (error) {
       console.error('Supabase signUp error:', error);
-      setMessage(error.message ?? 'Failed to sign up. Please try again.');
+      setMessage(error instanceof Error ? error.message : 'Failed to sign up. Please try again.');
       return;
     }
 

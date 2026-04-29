@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/client';
+import { requestPasswordReset, verifyRecoveryOtp } from '@/api/auth';
 import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
@@ -50,7 +50,6 @@ function ForgotHeader({ step }: { step: Step }) {
 
 export default function ForgotPasswordForm() {
   const router = useRouter();
-  const supabase = createClient();
   const [step, setStep] = useState<Step>('request');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -84,10 +83,15 @@ export default function ForgotPasswordForm() {
               e.preventDefault();
               setError('');
               setRequestSubmitting(true);
-              const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+              let resetError: string | null = null;
+              try {
+                await requestPasswordReset(email);
+              } catch (error) {
+                resetError = error instanceof Error ? error.message : 'Could not send code. Try again.';
+              }
               setRequestSubmitting(false);
               if (resetError) {
-                setError(resetError.message ?? 'Could not send code. Try again.');
+                setError(resetError);
                 return;
               }
               setStep('verify');
@@ -139,14 +143,15 @@ export default function ForgotPasswordForm() {
                 return;
               }
               setVerifySubmitting(true);
-              const { error: verifyError } = await supabase.auth.verifyOtp({
-                email,
-                token: otp,
-                type: 'recovery',
-              });
+              let verifyError: string | null = null;
+              try {
+                await verifyRecoveryOtp(email, otp);
+              } catch (error) {
+                verifyError = error instanceof Error ? error.message : 'Invalid code. Try again.';
+              }
               setVerifySubmitting(false);
               if (verifyError) {
-                setError(verifyError.message ?? 'Invalid code. Try again.');
+                setError(verifyError);
                 return;
               }
               router.push('/reset-password');

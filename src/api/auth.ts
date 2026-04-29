@@ -24,6 +24,16 @@ export async function getSessionUserId(): Promise<string | null> {
   return session.user.id;
 }
 
+export async function getSessionUser(): Promise<{ id: string; email?: string } | null> {
+  const supabase = createClient();
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+  if (error || !session?.user) return null;
+  return { id: session.user.id, email: session.user.email };
+}
+
 export async function fetchTeacherProfileById(userId: string): Promise<TeacherProfile | null> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -60,6 +70,74 @@ export async function updateTeacherPreferredView(
     .update({ preferred_view: view })
     .eq('id', userId);
 
+  if (error) {
+    throw error;
+  }
+}
+
+export async function signOutCurrentUser(): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw error;
+  }
+}
+
+export async function signInWithEmailPassword(email: string, password: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    throw error;
+  }
+}
+
+export async function signUpWithEmailPassword(params: {
+  email: string;
+  password: string;
+  redirectTo?: string;
+  data?: Record<string, unknown>;
+}): Promise<void> {
+  const supabase = createClient();
+  const { email, password, redirectTo, data } = params;
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options:
+      redirectTo || data
+        ? {
+            ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+            ...(data ? { data } : {}),
+          }
+        : undefined,
+  });
+  if (error) {
+    throw error;
+  }
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) {
+    throw error;
+  }
+}
+
+export async function verifyRecoveryOtp(email: string, token: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'recovery',
+  });
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateCurrentUserPassword(password: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.updateUser({ password });
   if (error) {
     throw error;
   }

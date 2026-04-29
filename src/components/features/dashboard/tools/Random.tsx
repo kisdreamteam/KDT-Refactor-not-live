@@ -2,13 +2,17 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/client';
 import { Student } from '@/lib/types';
 import Image from 'next/image';
 import AwardPointsModal from '@/components/modals/AwardPointsModal';
 import PointsAwardedConfirmationModal from '@/components/modals/PointsAwardedConfirmationModal';
 import { normalizeAvatarPath } from '@/lib/iconUtils';
 import { useAwardPointsFlow } from '@/hooks/useAwardPointsFlow';
+import {
+  fetchStudentsForRandomByClassId,
+  markStudentAsPicked,
+  resetPickedStudentsByClassId,
+} from '@/api/students';
 
 interface RandomProps {
   onClose: () => void;
@@ -57,20 +61,8 @@ export default function Random({ onClose }: RandomProps) {
       if (!silent) {
         setIsLoading(true);
       }
-      const supabase = createClient();
-      
-      const { data: studentsData, error } = await supabase
-        .from('students')
-        .select('id, first_name, last_name, points, class_id, student_number, gender, avatar, has_been_picked')
-        .eq('class_id', classId)
-        .order('last_name', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching students:', error);
-        return;
-      }
-
-      setStudents(studentsData || []);
+      const studentsData = await fetchStudentsForRandomByClassId(classId);
+      setStudents(studentsData);
     } catch (err) {
       console.error('Unexpected error fetching students:', err);
     } finally {
@@ -152,18 +144,9 @@ export default function Random({ onClose }: RandomProps) {
     }
   }, []);
 
-  const markStudentAsPicked = useCallback(async (studentId: string) => {
+  const markSelectedStudentAsPicked = useCallback(async (studentId: string) => {
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('students')
-        .update({ has_been_picked: true })
-        .eq('id', studentId);
-
-      if (error) {
-        console.error('Error marking student as picked:', error);
-        return;
-      }
+      await markStudentAsPicked(studentId);
 
       // Optimistic local update only — do not refetch here. A silent `setStudents` from Supabase
       // replaces the whole list, remounts reel rows/Images, and layout can shift while
@@ -181,16 +164,7 @@ export default function Random({ onClose }: RandomProps) {
 
     try {
       setIsResetting(true);
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('students')
-        .update({ has_been_picked: false })
-        .eq('class_id', classId);
-
-      if (error) {
-        console.error('Error resetting picked students:', error);
-        return;
-      }
+      await resetPickedStudentsByClassId(classId);
 
       setSelectedStudent(null);
       await fetchStudents();
@@ -274,7 +248,7 @@ export default function Random({ onClose }: RandomProps) {
         setIsSpinning(false);
         setSelectedStudent(selected);
         lastCardIndexRef.current = -1; // Reset for next spin
-        void markStudentAsPicked(selected.id);
+        void markSelectedStudentAsPicked(selected.id);
       }
     };
     

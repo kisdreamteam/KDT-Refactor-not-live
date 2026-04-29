@@ -5,10 +5,26 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Modal from '@/components/modals/Modal';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
-import { createClient } from '@/lib/client';
 import { Student } from '@/lib/types';
 import AddStudentsModal from '@/components/modals/AddStudentsModal';
 import { normalizeAvatarPath } from '@/lib/iconUtils';
+import { getSessionUser } from '@/api/auth';
+import {
+  addClassCollaborator,
+  fetchClassById,
+  fetchStudentsForClassEdit,
+  getCurrentSessionUserId,
+  listClassCollaborators,
+  lookupTeacherByEmail,
+  removeClassCollaborator,
+  updateClassInfo,
+} from '@/api/classes';
+import {
+  bulkUpdateStudents,
+  deleteCustomPointEventsByStudentIds,
+  fetchStudentIdsByClassIdForReset,
+  resetPointsByStudentIds,
+} from '@/api/students';
 
 interface CollaboratorTeacher {
   collaboratorRowId: string;
@@ -87,27 +103,17 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
   const fetchClassData = useCallback(async () => {
     try {
       setIsLoadingData(true);
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const { data, error } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('id', classId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching class:', error);
+      const userId = await getCurrentSessionUserId();
+      const data = await fetchClassById(classId);
+      if (!data) {
+        console.error('Error fetching class');
         return;
       }
 
-      if (data) {
-        setClassName(data.name || '');
-        setGrade(data.grade || '');
-        setSelectedIcon(data.icon || '/images/dashboard/class-icons/icon-1.png');
-        setIsClassOwner(session?.user?.id === data.teacher_id);
-      }
+      setClassName(data.name || '');
+      setGrade(data.grade || '');
+      setSelectedIcon(data.icon || '/images/dashboard/class-icons/icon-1.png');
+      setIsClassOwner(userId === data.teacher_id);
     } catch (err) {
       console.error('Unexpected error fetching class:', err);
     } finally {
@@ -117,17 +123,7 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
 
   const fetchStudents = useCallback(async () => {
     try {
-      const supabase = createClient();
-      const { data: studentsData, error } = await supabase
-        .from('students')
-        .select('id, first_name, last_name, avatar, student_number, gender, class_id, points')
-        .eq('class_id', classId);
-
-      if (error) {
-        console.error('Error fetching students:', error);
-        setStudents([]);
-        return;
-      }
+      const studentsData = await fetchStudentsForClassEdit(classId);
 
       if (studentsData) {
         // Sort by student number first (nulls last), then by first name alphabetically
@@ -169,16 +165,7 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
 
   const fetchTeachers = useCallback(async () => {
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.rpc('list_class_collaborators', {
-        p_class_id: classId,
-      });
-
-      if (error) {
-        console.error('Error fetching collaborators:', error);
-        setTeachers([]);
-        return;
-      }
+      const data = await listClassCollaborators(classId);
 
       if (data && Array.isArray(data)) {
         const list: CollaboratorTeacher[] = data.map(
@@ -220,21 +207,12 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
 
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('classes')
-        .update({
-          name: className.trim(),
-          grade: grade.trim(),
-          icon: selectedIcon
-        })
-        .eq('id', classId);
-
-      if (error) {
-        console.error('Error updating class:', error);
-        alert('Failed to update class. Please try again.');
-        return;
-      }
+      await updateClassInfo({
+        classId,
+        name: className.trim(),
+        grade: grade.trim(),
+        icon: selectedIcon,
+      });
 
       onRefresh();
       onClose();
@@ -265,27 +243,14 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
 
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const myEmail = session?.user?.email?.trim().toLowerCase();
+      const sessionUser = await getSessionUser();
+      const myEmail = sessionUser?.email?.trim().toLowerCase();
       if (myEmail && myEmail === email) {
         alert('You cannot add yourself as a collaborator.');
         return;
       }
 
-      const { data: lookupRows, error: lookupError } = await supabase.rpc('lookup_teacher_by_email', {
-        p_email: email,
-      });
-
-      if (lookupError) {
-        console.error('lookup_teacher_by_email error:', lookupError);
-        alert('Could not look up that teacher. Please try again.');
-        return;
-      }
-
-      const row = Array.isArray(lookupRows) ? lookupRows[0] : lookupRows;
+      const row = await lookupTeacherByEmail(email);
       if (!row || !row.id) {
         setShowNotFoundCollaborator(true);
         return;
@@ -321,22 +286,7 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
     }
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from('class_collaborators').insert({
-        class_id: classId,
-        collaborator_id: pending.id,
-        primary_user: false,
-      });
-
-      if (error) {
-        console.error('Error inserting collaborator:', error);
-        if (error.code === '23505') {
-          alert('That teacher is already a collaborator on this class.');
-        } else {
-          alert('Failed to add collaborator. Please try again.');
-        }
-        return;
-      }
+      await addClassCollaborator(classId, pending.id);
 
       const displayName = pending.name?.trim() || pending.email;
       setCollaboratorSuccessName(displayName);
@@ -346,7 +296,11 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
       onRefresh();
     } catch (err) {
       console.error('Unexpected error confirming collaborator:', err);
-      alert('An unexpected error occurred. Please try again.');
+      if (typeof err === 'object' && err && 'code' in err && (err as { code?: string }).code === '23505') {
+        alert('That teacher is already a collaborator on this class.');
+      } else {
+        alert('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -363,14 +317,7 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
 
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from('class_collaborators').delete().eq('id', collaboratorRowId);
-
-      if (error) {
-        console.error('Error removing teacher:', error);
-        alert('Failed to remove teacher. Please try again.');
-        return;
-      }
+      await removeClassCollaborator(collaboratorRowId);
 
       await fetchTeachers();
       onRefresh();
@@ -414,8 +361,6 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
   const handleSaveAllChanges = async () => {
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      
       // Validate all changes before saving - collect students without first names
       const invalidStudents = students.filter(student => !student.first_name?.trim());
       
@@ -426,10 +371,9 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
         return;
       }
 
-      // Save all changes
-      const updatePromises = students.map(async (student) => {
+      const updates = students.flatMap((student) => {
         const originalStudent = originalStudents.find(s => s.id === student.id);
-        if (!originalStudent) return;
+        if (!originalStudent) return [];
 
         // Check if any field has changed
         const hasChanged = 
@@ -438,33 +382,25 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
           student.student_number !== originalStudent.student_number ||
           student.gender !== originalStudent.gender;
 
-        if (!hasChanged) return;
+        if (!hasChanged) return [];
 
         // Prepare update data
         const updateData: {
+          id: string;
           first_name: string;
           last_name: string | null;
           student_number: number | null;
           gender: string | null;
         } = {
+          id: student.id,
           first_name: student.first_name.trim(),
           last_name: student.last_name?.trim() || null,
           student_number: student.student_number,
           gender: student.gender
         };
-
-        const { error } = await supabase
-          .from('students')
-          .update(updateData)
-          .eq('id', student.id);
-
-        if (error) {
-          console.error(`Error updating student ${student.id}:`, error);
-          throw error;
-        }
+        return [updateData];
       });
-
-      await Promise.all(updatePromises);
+      await bulkUpdateStudents(updates);
       
       // Refresh students and reset change tracking
       await fetchStudents();
@@ -520,56 +456,21 @@ export default function EditClassModal({ isOpen, onClose, classId, onRefresh }: 
     setIsResettingPoints(true);
     
     try {
-      const supabase = createClient();
+      const studentIds = await fetchStudentIdsByClassIdForReset(classId);
       
-      // Get all students in this class
-      const { data: studentsData, error: fetchError } = await supabase
-        .from('students')
-        .select('id')
-        .eq('class_id', classId);
-      
-      if (fetchError) {
-        console.error('Error fetching students:', fetchError);
-        alert('Failed to fetch students. Please try again.');
-        setIsResettingPoints(false);
-        return;
-      }
-      
-      if (!studentsData || studentsData.length === 0) {
+      if (studentIds.length === 0) {
         alert('No students found in this class.');
         setIsResettingPoints(false);
         return;
       }
       
-      const studentIds = studentsData.map(s => s.id);
-      
       // If deleteEvents is true, delete all point events for these students
       if (deleteEvents) {
-        const { error: deleteError } = await supabase
-          .from('custom_point_events')
-          .delete()
-          .in('student_id', studentIds);
-        
-        if (deleteError) {
-          console.error('Error deleting point events:', deleteError);
-          alert('Failed to delete point events. Please try again.');
-          setIsResettingPoints(false);
-          return;
-        }
+        await deleteCustomPointEventsByStudentIds(studentIds);
       }
       
       // Reset all students' points to 0
-      const { error: updateError } = await supabase
-        .from('students')
-        .update({ points: 0 })
-        .in('id', studentIds);
-      
-      if (updateError) {
-        console.error('Error resetting points:', updateError);
-        alert('Failed to reset points. Please try again.');
-        setIsResettingPoints(false);
-        return;
-      }
+      await resetPointsByStudentIds(studentIds);
       
       // Refresh data
       await fetchStudents();

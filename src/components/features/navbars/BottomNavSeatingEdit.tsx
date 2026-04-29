@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { createClient } from '@/lib/client';
+import { updateLayoutViewSettings } from '@/api/seating';
 import IconRandomArrows from '@/components/iconsCustom/iconRandomArrows';
 import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
 import IconAutoAssign from '@/components/iconsCustom/iconAutoAssign';
@@ -63,18 +63,7 @@ export default function BottomNavSeatingEdit({
     setShowGrid(newValue);
     
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('seating_charts')
-        .update({ show_grid: newValue })
-        .eq('id', layoutId);
-
-      if (error) {
-        console.error('Error updating show_grid:', error);
-        // Revert on error
-        setShowGrid(!newValue);
-        return;
-      }
+      await updateLayoutViewSettings(layoutId, { show_grid: newValue });
       emitViewSettingsChanged({ show_grid: newValue });
     } catch (err) {
       console.error('Unexpected error updating show_grid:', err);
@@ -90,18 +79,7 @@ export default function BottomNavSeatingEdit({
     setShowFurniture(newValue);
     
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('seating_charts')
-        .update({ show_objects: newValue })
-        .eq('id', layoutId);
-
-      if (error) {
-        console.error('Error updating show_objects:', error);
-        // Revert on error
-        setShowFurniture(!newValue);
-        return;
-      }
+      await updateLayoutViewSettings(layoutId, { show_objects: newValue });
       emitViewSettingsChanged({ show_objects: newValue });
     } catch (err) {
       console.error('Unexpected error updating show_objects:', err);
@@ -117,18 +95,9 @@ export default function BottomNavSeatingEdit({
     setTeachersDeskLeft(newValue);
     
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('seating_charts')
-        .update({ layout_orientation: newValue ? 'Left' : 'Right' })
-        .eq('id', layoutId);
-
-      if (error) {
-        console.error('Error updating layout_orientation:', error);
-        // Revert on error
-        setTeachersDeskLeft(!newValue);
-        return;
-      }
+      await updateLayoutViewSettings(layoutId, {
+        layout_orientation: newValue ? 'Left' : 'Right',
+      });
       emitViewSettingsChanged({ layout_orientation: newValue ? 'Left' : 'Right' });
     } catch (err) {
       console.error('Unexpected error updating layout_orientation:', err);

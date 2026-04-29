@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Modal from '@/components/modals/Modal';
-import { createClient } from '@/lib/client';
 import { Student } from '@/lib/types';
 import { normalizeAvatarPath } from '@/lib/iconUtils';
+import { updateStudentById } from '@/api/students';
 
 interface EditStudentModalProps {
   isOpen: boolean;
@@ -75,7 +75,6 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
 
     setIsLoading(true);
     try {
-      const supabase = createClient();
       // Convert student_number string to number or null
       const studentNumberValue = studentNumber.trim() 
         ? parseInt(studentNumber.trim(), 10) 
@@ -88,22 +87,13 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
         return;
       }
 
-      const { error } = await supabase
-        .from('students')
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim() || null,
-          student_number: studentNumberValue,
-          gender: gender.trim() || null,
-          avatar: selectedAvatar
-        })
-        .eq('id', student.id);
-
-      if (error) {
-        console.error('Error updating student:', error);
-        alert('Failed to update student. Please try again.');
-        return;
-      }
+      await updateStudentById(student.id, {
+        first_name: firstName.trim(),
+        last_name: lastName.trim() || null,
+        student_number: studentNumberValue,
+        gender: gender.trim() || null,
+        avatar: selectedAvatar,
+      });
 
       onRefresh();
       onClose();

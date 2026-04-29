@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { createClient } from '@/lib/client';
 import { PointCategory } from '@/lib/types';
 import { useAvailablePositiveIcons, useAvailableNegativeIcons } from '@/lib/hooks/useAvailableIcons';
+import { updateSkill } from '@/api/skills';
 
 interface EditSkillFormProps {
   isOpen: boolean;
@@ -57,38 +57,23 @@ export default function EditSkillForm({ isOpen, onClose, skill, refreshCategorie
 
     setIsLoading(true);
     try {
-      const supabase = createClient();
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (sessionError || !user) {
-        if (sessionError) console.error('Authentication failed:', sessionError);
-        alert('You must be logged in to update skills.');
-        setIsLoading(false);
-        return;
-      }
-
-      const { error } = await supabase
-        .from('point_categories')
-        .update({
-          name,
-          points: pointsValue,
-          icon: selectedIcon,
-        })
-        .eq('id', skill.id);
-
-      if (error) {
-        console.error('Error updating skill:', error);
-        alert('Failed to update skill. Please try again.');
-        setIsLoading(false);
-        return;
-      }
+      await updateSkill({
+        skillId: skill.id,
+        name,
+        points: pointsValue,
+        icon: selectedIcon,
+      });
 
       refreshCategories();
       setIsLoading(false);
       onClose();
     } catch (error) {
       console.error('Unexpected error in handleUpdateSkill:', error);
-      alert('An unexpected error occurred. Please try again.');
+      if (error instanceof Error && error.message === 'AUTH_REQUIRED') {
+        alert('You must be logged in to update skills.');
+      } else {
+        alert('Failed to update skill. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

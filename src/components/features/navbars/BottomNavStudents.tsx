@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/client';
 import { useStudentSort } from '@/context/StudentSortContext';
+import { signOutCurrentUser } from '@/api/auth';
 import ViewModeModal from '@/components/modals/ViewModeModal';
 import IconViewDots from '@/components/iconsCustom/iconViewDots';
 import IconRandomArrows from '@/components/iconsCustom/iconRandomArrows';
@@ -67,13 +67,7 @@ export default function BottomNavStudents({
 
   const handleLogout = async () => {
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Logout error:', error);
-        alert('Failed to log out. Please try again.');
-        return;
-      }
+      await signOutCurrentUser();
       router.push('/login');
     } catch (err) {
       console.error('Unexpected error during logout:', err);

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/client';
+import { getSessionUser, updateCurrentUserPassword } from '@/api/auth';
 import FormLabel from '@/components/ui/FormLabel';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
@@ -41,7 +41,6 @@ function ResetHeader() {
 
 export default function ResetPasswordForm() {
   const router = useRouter();
-  const supabase = createClient();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -50,12 +49,9 @@ export default function ResetPasswordForm() {
   const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    const client = createClient();
     let cancelled = false;
     void (async () => {
-      const {
-        data: { session },
-      } = await client.auth.getSession();
+      const session = await getSessionUser();
       if (!cancelled) {
         setHasSession(!!session);
         setSessionChecked(true);
@@ -109,10 +105,15 @@ export default function ResetPasswordForm() {
                 return;
               }
               setSubmitting(true);
-              const { error: updateError } = await supabase.auth.updateUser({ password });
+              let updateError: string | null = null;
+              try {
+                await updateCurrentUserPassword(password);
+              } catch (error) {
+                updateError = error instanceof Error ? error.message : 'Could not update password. Try again.';
+              }
               setSubmitting(false);
               if (updateError) {
-                setError(updateError.message ?? 'Could not update password. Try again.');
+                setError(updateError);
                 return;
               }
               router.push('/login');

@@ -223,3 +223,18 @@ export async function fetchLayoutViewSettings(
 
   return data as LayoutViewSettings;
 }
+
+export async function updateLayoutViewSettings(
+  layoutId: string,
+  patch: LayoutViewSettings
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from('seating_charts')
+    .update(patch)
+    .eq('id', layoutId);
+
+  if (error) {
+    throw error;
+  }
+}

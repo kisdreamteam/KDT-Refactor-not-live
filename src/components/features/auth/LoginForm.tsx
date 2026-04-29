@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/client';
+import { signInWithEmailPassword } from '@/api/auth';
 import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
 import PasswordInput from '@/components/ui/PasswordInput';
@@ -49,7 +49,6 @@ function LoginFooter() {
 
 export default function LoginForm() {
   const router = useRouter();
-  const supabase = createClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -69,10 +68,11 @@ export default function LoginForm() {
         <form className="grid gap-6" onSubmit={async (e) => {
           e.preventDefault();
           setError('');
-          const { error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) {
+          try {
+            await signInWithEmailPassword(email, password);
+          } catch (error) {
             console.error('Login error:', error);
-            setError(error.message ?? 'Failed to sign in. Please try again.');
+            setError(error instanceof Error ? error.message : 'Failed to sign in. Please try again.');
             return;
           }
           setError('');

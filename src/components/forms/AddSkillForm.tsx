@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Modal from '@/components/modals/Modal';
-import { createClient } from '@/lib/client';
 import { useAvailablePositiveIcons, useAvailableNegativeIcons } from '@/lib/hooks/useAvailableIcons';
+import { createSkill } from '@/api/skills';
 
 interface AddSkillFormProps {
   isOpen: boolean;
@@ -97,17 +97,6 @@ export default function AddSkillForm({
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      const user = session?.user;
-
-      if (sessionError || !user) {
-        if (sessionError) console.error('Authentication failed:', sessionError);
-        alert('You must be logged in to add skills.');
-        setIsLoading(false);
-        return;
-      }
-
       const newSkill = {
         name,
         points: pointsValue,
@@ -116,21 +105,24 @@ export default function AddSkillForm({
         icon: selectedIcon,
       };
 
-      const { error } = await supabase.from('point_categories').insert(newSkill);
-
-      if (error) {
-        console.error('Error adding skill:', error);
-        alert('Failed to add skill. Please try again.');
-        setIsLoading(false);
-        return;
-      }
+      await createSkill({
+        classId: newSkill.class_id,
+        name: newSkill.name,
+        points: newSkill.points,
+        type: newSkill.type,
+        icon: newSkill.icon,
+      });
 
       refreshCategories();
       setIsLoading(false);
       setShowSuccessModal(true);
     } catch (error) {
       console.error('Unexpected error in handleAddSkill:', error);
-      alert('An unexpected error occurred. Please try again.');
+      if (error instanceof Error && error.message === 'AUTH_REQUIRED') {
+        alert('You must be logged in to add skills.');
+      } else {
+        alert('Failed to add skill. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

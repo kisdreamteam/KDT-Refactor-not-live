@@ -2,10 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import Modal from '@/components/modals/Modal';
-import { createClient } from '@/lib/client';
 import EditSkillModal from '@/components/modals/EditSkillModal';
 import EditSkillCard from '@/components/features/dashboard/cards/EditSkillCard';
 import { PointCategory } from '@/lib/types';
+import { archiveSkill } from '@/api/skills';
 
 interface EditSkillsModalProps {
   isOpen: boolean;
@@ -66,72 +66,10 @@ export default function EditSkillsModal({
     // Keep confirmation modal open during deletion to show loading state
 
     try {
-      const supabase = createClient();
-      
-      // Use getSession() to avoid "Refresh Token Not Found" when no session exists
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      const user = session?.user;
-
-      if (sessionError || !user) {
-        alert('You must be logged in to delete skills.');
-        setIsDeleting(null);
-        setSkillToDelete(null); // Close confirmation modal
-        return;
-      }
-
-      // Verify the skill belongs to this class before deleting
-      // This ensures security and correct deletion
-      const { data: skillData, error: fetchError } = await supabase
-        .from('point_categories')
-        .select('class_id')
-        .eq('id', skillId)
-        .single();
-
-      if (fetchError || !skillData) {
-        console.error('Error verifying skill:', fetchError);
-        alert('Failed to verify skill. Please try again.');
-        setIsDeleting(null);
-        setSkillToDelete(null);
-        return;
-      }
-
-      // Verify the skill belongs to the current class
-      if (skillData.class_id !== classId) {
-        alert('This skill does not belong to the current class.');
-        setIsDeleting(null);
-        setSkillToDelete(null);
-        return;
-      }
-
-      // Archive the skill in database (soft delete)
-      const { error } = await supabase
-        .from('point_categories')
-        .update({ is_archived: true })
-        .eq('id', skillId)
-        .eq('class_id', classId); // Extra safety check
-
-      if (error) {
-        console.error('Error deleting skill:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        // Provide more specific error message
-        let errorMessage = 'Failed to delete skill. Please try again.';
-        if (error.code === '23503') {
-          errorMessage = 'Cannot delete skill because it is being used by students. Please remove all student awards for this skill first.';
-        } else if (error.message) {
-          errorMessage = `Failed to delete skill: ${error.message}`;
-        }
-        
-        alert(errorMessage);
-        setIsDeleting(null);
-        setSkillToDelete(null); // Close confirmation modal
-        return;
-      }
+      await archiveSkill({
+        skillId,
+        classId,
+      });
 
       console.log('Skill successfully deleted:', skillId);
 
@@ -142,7 +80,15 @@ export default function EditSkillsModal({
       setSkillToDelete(null);
     } catch (error) {
       console.error('Unexpected error:', error);
-      alert('An unexpected error occurred. Please try again.');
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      if (error instanceof Error) {
+        if (error.message === 'AUTH_REQUIRED') {
+          errorMessage = 'You must be logged in to delete skills.';
+        } else if (error.message === 'SKILL_CLASS_MISMATCH') {
+          errorMessage = 'This skill does not belong to the current class.';
+        }
+      }
+      alert(errorMessage);
       setSkillToDelete(null); // Close confirmation modal
     } finally {
       setIsDeleting(null);

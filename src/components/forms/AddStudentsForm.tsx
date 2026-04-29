@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/client';
+import {
+  countStudentsByClassId,
+  insertStudent,
+  insertStudentsBulk,
+} from '@/api/students';
 
 interface AddStudentsFormProps {
   isOpen: boolean;
@@ -54,23 +58,8 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
   //               class with 5 students -> next student gets 6
   const getNextStudentNumber = async (): Promise<number> => {
     try {
-      const supabase = createClient();
-
-      // Count total students in the class
-      const { count, error } = await supabase
-        .from('students')
-        .select('*', { count: 'exact', head: true })
-        .eq('class_id', classId);
-
-      if (error) {
-        console.error('Error counting students:', error);
-        return 1; // Fallback to 1 if error
-      }
-
-      // Next student number = total count + 1
-      // If class is empty (count = 0), first student gets 1
-      // If class has 5 students, next student gets 6
-      return (count || 0) + 1;
+      const count = await countStudentsByClassId(classId);
+      return count + 1;
     } catch (err) {
       console.error('Unexpected error getting next student number:', err);
       return 1; // Ultimate fallback
@@ -115,23 +104,7 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
       console.log('student_number type:', typeof studentData.student_number);
       console.log('classId:', classId);
 
-      // Insert into Supabase
-      const supabase = createClient();
-      const { data, error } = await supabase.from('students').insert(studentData).select();
-
-      if (error) {
-        console.error('Error saving student:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        alert(`Failed to save student: ${error.message}`);
-        return;
-      }
-
-      console.log('Student inserted successfully:', data);
+      await insertStudent(studentData);
 
       // Success: refresh the student list and close modal
       onStudentAdded();
@@ -200,23 +173,7 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
       console.log('Last student number:', newStudents[newStudents.length - 1]?.student_number);
       console.log('classId:', classId);
 
-      // Insert into Supabase
-      const supabase = createClient();
-      const { data, error } = await supabase.from('students').insert(newStudents).select();
-
-      if (error) {
-        console.error('Error importing students:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
-        alert(`Failed to import students: ${error.message}`);
-        return;
-      }
-
-      console.log('Students inserted successfully:', data);
+      await insertStudentsBulk(newStudents);
 
       // Success: refresh the student list and close modal
       onStudentAdded();

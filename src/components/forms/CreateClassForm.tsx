@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { createClient } from '@/lib/client';
+import { createClassForCurrentUser } from '@/api/classes';
 interface CreateClassFormProps {
   onClose: () => void;
 }
@@ -46,113 +46,20 @@ export default function CreateClassForm({ onClose }: CreateClassFormProps) {
     setIsLoading(true);
 
     try {
-      // Initialize Supabase client
-      const supabase = createClient();
-
-      // Use getSession() to avoid "Refresh Token Not Found" when no session exists
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      const user = session?.user;
-      console.log('Current User:', user); // Debug log for user object
-
-      if (sessionError || !user) {
-        if (sessionError) console.error('Session error:', sessionError);
-        alert('You must be logged in to create a class.');
-        return;
-      }
-
-      // Call the database function to create a new class
-      console.log('Calling create_new_class RPC with:', {
-        class_name: className,
-        class_grade: grade,
-        class_school_year: "2025-2026"
+      await createClassForCurrentUser({
+        className,
+        grade,
+        schoolYear: '2025-2026',
+        icon: selectedIcon,
       });
-
-      const { data: rpcData, error } = await supabase.rpc('create_new_class', {
-        class_name: className,
-        class_grade: grade,
-        class_school_year: "2025-2026"
-      });
-
-      console.log('RPC response - data:', rpcData);
-      console.log('RPC response - error:', error);
-
-      if (error) {
-        console.error('Supabase RPC error:', error?.message || error);
-        console.error('Error code:', error?.code);
-        console.error('Error hint:', error?.hint);
-        console.error('Full error object:', error);
-        alert('Failed to create class. Please try again.');
-        return;
-      }
-
-      // Update the class with the random icon
-      // The RPC function returns the created class, so we need to extract the ID
-      let classId: string | null = null;
-      
-      if (rpcData) {
-        // Handle different possible return formats from RPC
-        if (typeof rpcData === 'string') {
-          classId = rpcData;
-        } else if (Array.isArray(rpcData) && rpcData.length > 0) {
-          classId = rpcData[0]?.id || rpcData[0];
-        } else if (rpcData.id) {
-          classId = rpcData.id;
-        }
-      }
-
-      // If we have a class ID, update it with the selected icon
-      if (classId) {
-        const { error: updateError } = await supabase
-          .from('classes')
-          .update({ icon: selectedIcon })
-          .eq('id', classId);
-
-        if (updateError) {
-          console.error('Error updating class icon:', updateError);
-          // Don't fail the whole operation, just log the error
-        } else {
-          console.log('Class icon updated successfully:', selectedIcon);
-        }
-      } else {
-        // If RPC doesn't return ID, try to find the class by name and teacher
-        const { data: classData, error: findError } = await supabase
-          .from('classes')
-          .select('id')
-          .eq('name', className)
-          .eq('teacher_id', user.id)
-          .eq('is_archived', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (!findError && classData) {
-          const { error: updateError } = await supabase
-            .from('classes')
-            .update({ icon: selectedIcon })
-            .eq('id', classData.id);
-
-          if (updateError) {
-            console.error('Error updating class icon:', updateError);
-          } else {
-            console.log('Class icon updated successfully:', selectedIcon);
-          }
-        }
-      }
-
-      console.log('Class created successfully using RPC function');
-      console.log('Class name:', className, 'Grade:', grade);
-      console.log('RPC returned data:', rpcData);
-      console.log('Assigned icon:', selectedIcon);
-      
-      // Close modal - the parent component will handle refreshing the data
       onClose();
-      
     } catch (error) {
       console.error('Unexpected error:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      alert('An unexpected error occurred. Please try again.');
+      if (error instanceof Error && error.message === 'AUTH_REQUIRED') {
+        alert('You must be logged in to create a class.');
+      } else {
+        alert('Failed to create class. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
