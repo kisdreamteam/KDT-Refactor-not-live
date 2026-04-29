@@ -10,8 +10,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import ClassCardsGrid from './maincontent/viewClassesGrid/ClassCardsGrid';
 import { createClient } from '@/lib/client';
 
-export default function AppViewClasses() {
-  const { classes, isLoadingClasses, refreshClasses, viewMode } = useDashboard();  
+export default function ClassesView() {
+  const { classes, isLoadingClasses, refreshClasses, viewMode } = useDashboard();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
@@ -43,35 +43,35 @@ export default function AppViewClasses() {
     try {
       const supabase = createClient();
       const classIds = classes.map(cls => cls.id);
-      
+
       if (classIds.length === 0) {
         setStudentCounts({});
         return;
       }
-      
+
       // Fetch all students for these classes in a single query
       const { data: students, error } = await supabase
         .from('students')
         .select('class_id')
         .in('class_id', classIds);
-      
+
       if (error) {
         console.error('Error fetching student counts:', error);
         return;
       }
-      
+
       // Count students per class
       const countsMap: Record<string, number> = {};
       classIds.forEach(classId => {
         countsMap[classId] = 0;
       });
-      
+
       students?.forEach(student => {
         if (student.class_id && countsMap[student.class_id] !== undefined) {
           countsMap[student.class_id]++;
         }
       });
-      
+
       setStudentCounts(countsMap);
     } catch (err) {
       console.error('Error fetching student counts:', err);
@@ -176,7 +176,7 @@ export default function AppViewClasses() {
 
     try {
       const supabase = createClient();
-      
+
       // First, delete all students in this class
       const { error: studentsError } = await supabase
         .from('students')
@@ -229,11 +229,11 @@ export default function AppViewClasses() {
       )}
 
       {!isLoadingClasses && classes.length === 0 ? (
-        <EmptyState 
-          onAddClick={() => !isArchivedView && setIsModalOpen(true)} 
-          title={isArchivedView ? "No Archived Classes" : undefined}
-          message={isArchivedView ? "Classes you archive will appear here" : undefined}
-          buttonText={isArchivedView ? "" : undefined}
+        <EmptyState
+          onAddClick={() => !isArchivedView && setIsModalOpen(true)}
+          title={isArchivedView ? 'No Archived Classes' : undefined}
+          message={isArchivedView ? 'Classes you archive will appear here' : undefined}
+          buttonText={isArchivedView ? '' : undefined}
         />
       ) : (
         <ClassCardsGrid
@@ -244,7 +244,7 @@ export default function AppViewClasses() {
           onEdit={handleEditClass}
           onArchive={handleArchiveClass}
           onAddClass={() => !isArchivedView && setIsModalOpen(true)}
-          archiveButtonText={isArchivedView ? "Unarchive Class" : "Archive Class"}
+          archiveButtonText={isArchivedView ? 'Unarchive Class' : 'Archive Class'}
           showAddCard={!isArchivedView}
           onDelete={isArchivedView ? handleDeleteClass : undefined}
           showDelete={isArchivedView}
@@ -275,14 +275,14 @@ export default function AppViewClasses() {
           setArchiveClassName('');
         }}
         onConfirm={handleConfirmArchive}
-        title={isArchivedView ? "Unarchive Class" : "Archive Class"}
-        message={isArchivedView 
+        title={isArchivedView ? 'Unarchive Class' : 'Archive Class'}
+        message={isArchivedView
           ? `Are you sure you want to unarchive "${archiveClassName}"? This class will be restored to your main dashboard.`
           : `Are you sure you want to archive "${archiveClassName}"? This class will be moved to your archived classes and removed from the main dashboard.`
         }
-        confirmText={isArchivedView ? "Unarchive" : "Archive"}
+        confirmText={isArchivedView ? 'Unarchive' : 'Archive'}
         cancelText="Cancel"
-        confirmButtonColor={isArchivedView ? "green" : "purple"}
+        confirmButtonColor={isArchivedView ? 'green' : 'purple'}
         icon={
           <svg className={`w-6 h-6 ${isArchivedView ? 'text-green-600' : 'text-purple-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {isArchivedView ? (

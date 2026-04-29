@@ -48,7 +48,7 @@ interface StudentSeatAssignment {
 /** Per-group assignment with seat_index for fixed-slot grid (matches editor). */
 type GroupAssignment = { student: Student; seat_index: number };
 
-interface AppViewSeatingChartProps {
+interface SeatingChartViewProps {
   classId: string;
   /** Shared class roster from parent — avoids duplicate Supabase fetch when toggling grid/seating. */
   students: Student[];
@@ -58,14 +58,14 @@ interface AppViewSeatingChartProps {
   onSelectStudent?: (studentId: string) => void;
 }
 
-export default function AppViewSeatingChart({
+export default function SeatingChartView({
   classId,
   students,
   setStudents,
   isMultiSelectMode = false,
   selectedStudentIds = [],
   onSelectStudent,
-}: AppViewSeatingChartProps) {
+}: SeatingChartViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

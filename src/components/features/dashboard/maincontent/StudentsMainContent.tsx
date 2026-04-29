@@ -3,8 +3,8 @@ import type { Dispatch, SetStateAction } from 'react';
 import type { PointLogRow } from '@/hooks/useClassPointLog';
 import EmptyState from '@/components/ui/EmptyState';
 import ClassPointLogSlidePanel from '@/components/ui/ClassPointLogSlidePanel';
-import AppViewSeatingChart from '@/components/features/dashboard/AppViewSeatingChart';
-import AppViewSeatingChartEditor from '@/components/features/dashboard/AppViewSeatingChartEditor';
+import SeatingChartView from '@/components/features/dashboard/SeatingChartView';
+import SeatingChartEditorView from '@/components/features/dashboard/SeatingChartEditorView';
 import StudentCardsGrid from '@/components/features/dashboard/maincontent/viewStudentsGrid/StudentCardsGrid';
 
 interface StudentsMainContentProps {
@@ -85,9 +85,9 @@ export default function StudentsMainContent({
       >
         {currentView === 'seating' ? (
           (isSeatingEditMode || isEditModeFromURL) ? (
-            <AppViewSeatingChartEditor classId={classId} students={students} />
+            <SeatingChartEditorView classId={classId} students={students} />
           ) : (
-            <AppViewSeatingChart
+            <SeatingChartView
               classId={classId}
               students={students}
               setStudents={setStudents}

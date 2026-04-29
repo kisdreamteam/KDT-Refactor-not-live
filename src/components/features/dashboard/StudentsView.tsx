@@ -15,13 +15,13 @@ import { useClassPointLog } from '@/hooks/useClassPointLog';
 import { useDashboardToolbarInset } from '@/hooks/useDashboardToolbarInset';
 import { useAwardPointsFlow } from '@/hooks/useAwardPointsFlow';
 
-export default function AppViewStudents() {
+export default function StudentsView() {
   const params = useParams();
   const classId = (params?.classId as string | undefined) ?? '';
   const searchParams = useSearchParams();
   const { sortBy } = useStudentSort();
   const { classes, students, setStudents, isLoadingStudents, refreshStudents } = useDashboard();
-  
+
   // Get current view mode from URL
   const currentView = searchParams?.get('view') || 'grid';
   const currentMode = searchParams?.get('mode') || '';
@@ -190,7 +190,7 @@ export default function AppViewStudents() {
     window.addEventListener('recentlySelect', handleRecentlySelect);
     window.addEventListener('awardPoints', handleAwardPoints);
     window.addEventListener('inverseSelect', handleInverseSelect);
-    
+
     return () => {
       window.removeEventListener('toggleMultiSelect', handleToggleEvent);
       window.removeEventListener('selectAll', handleSelectAll);
@@ -242,10 +242,10 @@ export default function AppViewStudents() {
       const newSelection = prev.includes(studentId)
         ? prev.filter(id => id !== studentId)
         : [...prev, studentId];
-      
+
       // Dispatch selection count change event for BottomNav
       window.dispatchEvent(new CustomEvent('selectionCountChanged', { detail: { count: newSelection.length } }));
-      
+
       return newSelection;
     });
   };
@@ -263,7 +263,7 @@ export default function AppViewStudents() {
       localStorage.setItem('lastSelectedStudents', JSON.stringify(selectedIds));
       // Notify BottomNav that recently selected data is now available
       window.dispatchEvent(new CustomEvent('recentlySelectedUpdated'));
-      
+
       // Clear the selection after awarding points
       setSelectedStudentIds([]);
       window.dispatchEvent(new CustomEvent('selectionCountChanged', { detail: { count: 0 } }));
@@ -290,7 +290,7 @@ export default function AppViewStudents() {
   // ensuring the sort order is preserved when switching between views
   const sortedStudents = useMemo(() => {
     const studentsCopy = [...students];
-    
+
     if (sortBy === 'number') {
       return studentsCopy.sort((a, b) => {
         // Handle null student numbers - put them at the end

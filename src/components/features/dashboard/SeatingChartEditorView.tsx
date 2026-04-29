@@ -150,13 +150,13 @@ function getSlotIndex(rowIndex: number, colIndex: number, columns: number): numb
   return rowIndex * columns + colIndex + 1;
 }
 
-interface AppViewSeatingChartEditorProps {
+interface SeatingChartEditorViewProps {
   classId: string;
-  /** Shared class roster from parent — same source as AppViewSeatingChart. */
+  /** Shared class roster from parent — same source as SeatingChartView. */
   students: Student[];
 }
 
-export default function AppViewSeatingChartEditor({ classId, students }: AppViewSeatingChartEditorProps) {
+export default function SeatingChartEditorView({ classId, students }: SeatingChartEditorViewProps) {
   const { selectedStudentForGroup, setSelectedStudentForGroup, setUnseatedStudents, unseatedStudents } = useSeatingChart();
   const { activeSeatingLayoutId, setActiveSeatingLayoutId } = useDashboard();
   const searchParams = useSearchParams();
