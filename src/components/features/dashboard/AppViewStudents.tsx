@@ -218,30 +218,11 @@ export default function AppViewStudents() {
     setOpenDropdownId(null);
   };
 
-  // Handle delete student
+  // Handle delete student (temporarily disabled)
   const handleDeleteStudent = async (studentId: string, studentName: string) => {
-    if (confirm(`Are you sure you want to delete ${studentName}?`)) {
-      try {
-        const supabase = createClient();
-        const { error } = await supabase
-          .from('students')
-          .delete()
-          .eq('id', studentId);
-
-        if (error) {
-          console.error('Error deleting student:', error);
-          alert('Failed to delete student. Please try again.');
-          return;
-        }
-
-        console.log('Student deleted successfully');
-        setOpenDropdownId(null);
-        void refreshStudents();
-      } catch (err) {
-        console.error('Unexpected error deleting student:', err);
-        alert('An unexpected error occurred. Please try again.');
-      }
-    }
+    void studentId;
+    void studentName;
+    setOpenDropdownId(null);
   };
 
   // Handle student card click to open Award Points modal
