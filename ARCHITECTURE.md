@@ -1,33 +1,87 @@
-# Architecture Guide
+# KIS-Points Master Architecture Blueprint
 
-This file is a quick index to the folder-level architecture docs in this project.
+This document defines the structural laws of the KIS-Points codebase. All refactoring and new feature development MUST adhere to these tiers, layers, and boundaries.
 
-## Core Layers
-- [`src/app/README.md`](src/app/README.md)
-- [`src/modules/README.md`](src/modules/README.md)
-- [`src/layouts/README.md`](src/layouts/README.md)
-- [`src/components/features/README.md`](src/components/features/README.md)
-- [`src/components/ui/README.md`](src/components/ui/README.md)
+## 1. Core Architectural Philosophy
+* **"Zero-Spaghetti" Separation:** Visual rendering (React/UI) is strictly separated from Data fetching/logic (Supabase/Math). UI components must never contain direct database calls.
+* **Hybrid Feature-First:** Complex logic is grouped by feature domain (e.g., `/features/points`) rather than technical type, ensuring high cohesion. Generic UI remains global (`/components/ui`).
+* **The "Desk vs. Library" Flow:** We fetch data from Supabase (The Library) once on mount, store it in local Context/Zustand (The Desk), and UI components read/write from The Desk for zero-latency optimistic updates.
+* **The "GOD Box" Physics:** The application operates as a locked, native workstation. The root layout enforces `h-screen w-screen overflow-hidden` to prevent browser-level scrolling, delegating all scrolling to specific internal module panes.
 
-## Domain UI
-- [`src/components/modals/README.md`](src/components/modals/README.md)
-- [`src/components/forms/README.md`](src/components/forms/README.md)
+---
 
-## Data and Logic
-- [`src/api/README.md`](src/api/README.md)
-- [`src/api/_shared/README.md`](src/api/_shared/README.md)
-- [`src/hooks/README.md`](src/hooks/README.md)
-- [`src/context/README.md`](src/context/README.md)
-- [`src/lib/README.md`](src/lib/README.md)
+## 2. The 3-Tier Visual Architecture (Front-of-House)
+This system governs exactly what renders on the screen and how the CSS grid is managed.
 
-## Feature Domain Example
-- [`src/features/points/README.md`](src/features/points/README.md)
+* **Tier 1: Routing (The Front Door)**
+  * **Path:** `/src/app/`
+  * **Rule:** Files here are under 15 lines. No logic, no state. They simply import a Module and return it.
+* **Tier 2: Layouts & Modules (The Skeletons & Stage Managers)**
+  * **Path:** `/src/layouts/`, `/src/modules/`
+  * **Rule:** Layouts control global physics. Modules act as "Stage Managers," dynamically dictating CSS Grid/Flex allocations (e.g., deciding if the sidebar takes 2 columns or is hidden). Context Providers wrap these modules.
+* **Tier 3: Features & Atoms (The Furniture)**
+  * **Path:** `/src/components/ui/`, `/src/components/features/`
+  * **Rule:** Completely "Dumb" components. They accept props, handle local visual toggles (like opening a dropdown), and execute callback functions.
 
-## Recommended Reading Order
-1. `src/app` -> routes and entry points.
-2. `src/modules` -> page assembly.
-3. `src/layouts` -> structural screen scaffolding.
-4. `src/components/features` -> feature orchestration.
-5. `src/components/ui` -> reusable presentational building blocks.
-6. `src/api` + `src/api/_shared` -> data access and error/auth conventions.
-7. `src/hooks`, `src/context`, `src/lib` -> shared logic and utilities.
+---
+
+## 3. The 3-Layer Data Architecture (Back-of-House)
+This system governs how data is validated, calculated, and securely saved.
+
+* **Layer 1: Integration (The Bridge)**
+  * **Path:** `/src/hooks/` or `/src/features/[domain]/hooks/`
+  * **Rule:** Custom React hooks. The ONLY layer allowed to talk to both the UI (React) and the pure logic. Manages loading states, toasts, and context updates.
+* **Layer 2: Domain (Business Logic)**
+  * **Path:** `/src/features/[domain]/services/`
+  * **Rule:** Pure TypeScript/JavaScript math and rules. NO React (`useState`), NO database queries. Data in, calculated data out.
+* **Layer 3: Service (The Plumbing)**
+  * **Path:** `/src/api/`
+  * **Rule:** The ONLY place where `import { supabase }` is permitted. Blindly executes database reads, inserts, and soft deletes based on the Domain layer's output.
+
+---
+
+## 4. Final Directory Map
+
+```text
+/kis-points
+├── /docs                              # Architect Blueprints
+│   ├── architecture.md                # (This file)
+│   └── refactor-plan.md               # Step-by-step checklist
+│
+├── /src
+│   ├── /app                           # TIER 1: ROUTING
+│   │   ├── layout.tsx                 
+│   │   └── /dashboard/page.tsx        # Thin shell returning <DashboardModule />
+│   │
+│   ├── /providers                     # GLOBAL PROVIDERS (Auth, Theme)
+│   │   └── AuthProvider.tsx           
+│   │
+│   ├── /store                         # GLOBAL VISUAL STATE (Zustand)
+│   │   └── useUIStore.ts              # activeModal, sidebarOpen
+│   │
+│   ├── /layouts                       # TIER 2a: SKELETONS
+│   │   └── DashboardLayout.tsx        # The 'GOD Box'
+│   │
+│   ├── /modules                       # TIER 2b: STAGE MANAGERS
+│   │   └── /dashboard
+│   │       ├── DashboardModule.tsx    # Sets CSS Grid, slots in features
+│   │       └── DashboardContext.tsx   # Local specific state (The Desk)
+│   │
+│   ├── /components                    # TIER 3: VISUAL COMPONENTS
+│   │   ├── /ui                        # ATOMS (Agnostic buttons, inputs, cards)
+│   │   └── /features                  # DOMAIN UI
+│   │       ├── /navbars
+│   │       └── /seating               
+│   │
+│   ├── /features                      # DATA LAYER 1 & 2: LOGIC & DOMAIN
+│   │   └── /points
+│   │       ├── useAwardPoints.ts      # Integration Hook
+│   │       └── pointService.ts        # Pure Math/Rules
+│   │
+│   ├── /api                           # DATA LAYER 3: SERVICE LAYER
+│   │   ├── auth.ts                    # Supabase logic
+│   │   └── points.ts                  
+│   │
+│   └── /lib                           # TOOLBOX
+│       ├── client.ts                  # Supabase initializer
+│       └── types.ts                   # Global TS definitions

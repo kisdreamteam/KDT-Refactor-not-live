@@ -1,17 +1,39 @@
-## 1. Directory Structure
-- /src/app: Next.js routing shells only (One-liners that return a Module).
-- /src/modules: Page Assemblers (Combines a Layout with one or more Features).
-- /src/layouts: Screen skeletons & physics (e.g., God Box, Sidebar, Auth Frame).
-- /src/components/features: The "Brain" (Stateful UI logic, Supabase calls, specific domain views).
-- /src/components/ui: Pure UI Atoms (Design system: Buttons, Badges, standard Cards).
-- /src/api: Shared data-fetching logic and direct database interactions.
-- /src/hooks: Logic-only custom React hooks.
-- /src/lib: Shared utilities, Supabase client, and TypeScript types.
+# KIS-Points Master Codebase Rules (The Constitution)
 
-## 2. Refactoring Principles
-- "Module First": No complex logic in /src/app. Always create a Module to assemble the page.
-- "Stage Ownership": The DashboardStage component owns the 3-row vertical flex stack and the Stage-Right toolbar rail.
-- "Logic Extraction": Keep business logic in Features/Hooks. Keep assembly logic in Modules. Keep physical structure in Layouts.
-- "Color Consistency": Never use hardcoded HEX codes. Use Tailwind brand names (brand-purple, brand-pink, brand-cream) defined in tailwind.config.js. If you find or need to use colors other than the brand colors, please prompt me to add them as brand-colors in tailwind.config.js.
-- "Stable Physics": Use Flexbox for all layout alignment. Avoid JS-based DOM measurements (like getBoundingClientRect) for UI positioning unless absolutely necessary.
-- "Bridge & Burn": When moving files, update all imports first, verify the view works, then delete the old source files immediately to prevent "file ghosting."
+You are an expert enterprise SaaS architect assisting in building KIS-Points. Your primary directive is to enforce the "Zero-Spaghetti" architecture. You must strictly obey the Visual 3-Tier System and the Data 3-Layer System.
+
+## 1. THE VISUAL ARCHITECTURE (3-TIER FRONT-END)
+This governs what renders on the screen and layout physics. Do not mix data fetching into these tiers.
+
+* **TIER 1: Routing (The Front Door)**
+  * **Location:** `/src/app/`
+  * **Rule:** Files must be under 15 lines. No React `useState`, no logic, and absolutely ZERO database calls. These files act as thin shells that merely import and return a Tier 2 Module.
+* **TIER 2: Layouts, Modules & Providers (The Skeleton & Stage)**
+  * **Location:** `/src/layouts/`, `/src/modules/`, `/src/providers/`
+  * **Rule:** Layouts govern pure CSS physics (e.g., the `h-screen w-screen overflow-hidden` GOD Box). Modules are the "Stage Managers" that dictate CSS Grid/flex layouts to slot components together. Providers wrap the application/modules to distribute Context ("The Desk").
+* **TIER 3: Features & Atoms (The Furniture)**
+  * **Location:** `/src/components/ui/` (generic atoms), `/src/components/features/` (domain UI)
+  * **Rule:** UI components must be completely "Dumb". They do not know the database exists. They only accept props, manage local visual state (like toggles), and execute callback functions.
+
+## 2. THE DATA ARCHITECTURE (3-LAYER BACK-END)
+This governs how data is calculated, validated, and saved to Supabase.
+
+* **LAYER 1: Integration (Custom Hooks)**
+  * **Location:** `/src/hooks/` or `/src/features/*/hooks/`
+  * **Rule:** The middleman. This layer talks to React (UI) and pure Javascript (Logic). Handles loading states, toast notifications, and updates the local Context ("The Desk") for optimistic UI.
+* **LAYER 2: Domain (Business Logic / Services)**
+  * **Location:** `/src/features/*/services/`
+  * **Rule:** Pure math and business rules (e.g., point calculation logic). Written in pure TypeScript. No React (`useState`), no Supabase (`.insert`). Just pure data in, pure data out.
+* **LAYER 3: Service (Data Access / API)**
+  * **Location:** `/src/api/`
+  * **Rule:** The "Plumbing". This is the ONLY place in the entire application where `import { supabase } from '@client'` is allowed. All DB fetches, inserts, and updates live here.
+
+## 3. STRICT GLOBAL CONSTRAINTS
+* **Database Isolation:** NEVER put a direct Supabase call inside a React UI component. 
+* **Optimistic UI (Desk vs. Library):** Fetch data from Supabase once on load. Store it in Context. UI components must read from and modify the Context for zero-latency updates.
+* **Soft Deletes ONLY:** Never execute a hard `.delete()` on a student or class. Always update the record to `is_archived: true`.
+* **Custom Student Numbering:** Never use auto-incrementing database integers (`id`) for a student's front-end display number. Always respect the custom school numbering logic.
+* **Styling:** Use Tailwind CSS strictly. Do not create custom CSS files unless absolutely necessary for global root variables.
+
+## 4. USING BLUEPRINTS
+If the user mentions `/docs/` or `@architecture-blueprint.md`, you MUST read those explicit markdown files before writing code to understand specific feature folder mapping.
