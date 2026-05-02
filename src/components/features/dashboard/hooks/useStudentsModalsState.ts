@@ -28,9 +28,7 @@ export function useStudentsModalsState(students: Student[]) {
     setOpenDropdownId(null);
   }, [students]);
 
-  const handleDeleteStudent = useCallback(async (studentId: string, studentName: string) => {
-    void studentId;
-    void studentName;
+  const handleDeleteStudent = useCallback(async (_studentId: string, _studentName: string) => {
     setOpenDropdownId(null);
   }, []);
 

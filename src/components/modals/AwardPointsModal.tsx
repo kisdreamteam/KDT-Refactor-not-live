@@ -511,25 +511,3 @@ export default function AwardPointsModal({
     </>
   );
 }
-
-// Helper function to generate an icon based on skill name
-function getSkillIcon(): React.ReactNode {
-  // Default icon for all skills (can be customized based on name if needed)
-  return (
-    <svg className="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-  );
-}
-
-// Helper function to get skill icon colors
-function getSkillColor(skillName: string): string {
-  // Default colors - can be customized based on skill name
-  const colors = ['#EF4444', '#10B981', '#FBBF24', '#F97316', '#3B82F6', '#F59E0B', '#8B5CF6'];
-  // Simple hash function to assign consistent colors
-  let hash = 0;
-  for (let i = 0; i < skillName.length; i++) {
-    hash = skillName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
 import { StudentSortProvider } from '@/context/StudentSortContext';

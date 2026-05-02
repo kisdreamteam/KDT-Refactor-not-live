@@ -52,13 +52,13 @@
 
 ---
 
-## Phase 4: The Skeletons (Visual Tiers 1 & 2)
-*Goal: Enforce the "GOD Box" layout and clean up routing.*
+## Phase 4: The Final Polish (Sweeping the Dust)
+*Goal: Remove tech debt, orphaned files, and unused imports left over from rapid prototyping without breaking the new 3-Layer architecture.*
 
-- [ ] **Tier 1:** Audit `/src/app/**/page.tsx` files. Ensure they are <15 lines and contain zero logic/state.
-- [ ] **Tier 2:** Implement `DashboardLayout.tsx` strictly enforcing `h-screen w-screen overflow-hidden`.
-- [ ] **Tier 2:** Implement `DashboardModule.tsx` to handle the CSS Grid routing (LeftNav + Main Stage).
-- [ ] **Providers:** Move Context Providers out of UI components and wrap them cleanly in the Module or Root layout.
+- [x] **Unused Imports:** Run a workspace-wide audit and safely remove unused React hooks, components, and Supabase imports.
+- [x] **Dead Variables:** Clean up declared but unread parameters in hooks/components (e.g., renaming unused props to `_studentId` for TS compliance).
+- [x] **Orphaned Files:** Safely delete disconnected components and outdated documentation (e.g., `AddGroupModal.tsx`, legacy `README.md` files).
+- [x] **Guardrails:** Verify that no Layer 3 API files (`/src/api/**`) or optimized Contexts (`DashboardContext`, `SeatingChartContext`) were altered during the sweep.
 
 ---
 
