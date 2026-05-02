@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/client';
 import { Student } from '@/lib/types';
 import { useDashboard } from '@/context/DashboardContext';
 import { useSeatingLayoutNav } from '@/context/SeatingLayoutNavContext';
@@ -21,6 +20,7 @@ import {
   fetchLayoutViewSettings,
   fetchSeatingGroupsWithAssignments,
   fetchSeatingLayoutsByClassId,
+  subscribeToSeatingChartRowUpdates,
   type GroupAssignment,
   type SeatingGroupRecord,
   updateSeatingLayoutName,
@@ -305,8 +305,6 @@ export default function SeatingChartView({
   useEffect(() => {
     if (!activeSeatingLayoutId) return;
 
-    const supabase = createClient();
-
     const handleViewSettingsUpdate = async () => {
       if (document.visibilityState !== 'visible') return;
       try {
@@ -339,33 +337,25 @@ export default function SeatingChartView({
     window.addEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    const realtimeChannel = supabase
-      .channel(`seating_chart_view_settings_${activeSeatingLayoutId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'seating_charts',
-          filter: `id=eq.${activeSeatingLayoutId}`,
+    const { unsubscribe } = subscribeToSeatingChartRowUpdates(
+      activeSeatingLayoutId,
+      (nextRow) => {
+        applyLayoutViewSettings(nextRow);
+      },
+      {
+        onRefresh: (payload) => {
+          if (payload.layoutId !== activeSeatingLayoutId) return;
+          void fetchGroups();
         },
-        (payload) => {
-          const nextRow = payload.new as {
-            show_grid?: boolean | null;
-            show_objects?: boolean | null;
-            layout_orientation?: string | null;
-          };
-          applyLayoutViewSettings(nextRow);
-        }
-      )
-      .subscribe();
+      }
+    );
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
-      void supabase.removeChannel(realtimeChannel);
+      unsubscribe();
     };
-  }, [activeSeatingLayoutId, applyLayoutViewSettings]);
+  }, [activeSeatingLayoutId, applyLayoutViewSettings, fetchGroups]);
 
   // Handle delete layout
   const handleDeleteLayout = (layoutId: string, layoutName: string, e: React.MouseEvent) => {

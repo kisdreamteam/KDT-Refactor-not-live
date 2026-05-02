@@ -2,14 +2,27 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { createClient } from '@/lib/client';
 import { useDashboard } from '@/context/DashboardContext';
 import { useSeatingChart } from '@/context/SeatingChartContext';
 import { Student } from '@/lib/types';
 import {
+  createSeatingLayout,
+  deleteAssignmentsForGroupsSequential,
+  deleteSeatingGroupsSequential,
+  deleteStudentSeatAssignmentsForGroupIds,
+  deleteStudentSeatAssignmentsForSeatingGroupId,
+  deleteTeamAssignmentsAndGroup,
   fetchLayoutViewSettings,
   fetchSeatingGroupsWithAssignments,
   fetchSeatingLayoutsByClassId,
+  insertSeatingGroup,
+  insertSeatingGroups,
+  insertStudentSeatAssignments,
+  insertStudentSeatAssignmentsBatched,
+  renumberSeatIndicesForGroup as renumberSeatIndicesForGroupApi,
+  subscribeToSeatingChartRowUpdates,
+  updateSeatingGroupFields,
+  updateSeatingGroupsLayoutBatch,
 } from '@/api/seating';
 import CreateLayoutModal from '@/components/modals/CreateLayoutModal';
 import EditGroupModal from '@/components/modals/EditGroupModal';
@@ -259,16 +272,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
 
   // Renumber seat_index to 1..N for a group (after remove or column change). Keeps display order.
   const renumberSeatIndicesForGroup = useCallback(async (groupId: string) => {
-    const supabase = createClient();
-    const { data: assignments, error } = await supabase
-      .from('student_seat_assignments')
-      .select('id')
-      .eq('seating_group_id', groupId)
-      .order('seat_index', { ascending: true, nullsFirst: false });
-    if (error || !assignments?.length) return;
-    for (let i = 0; i < assignments.length; i++) {
-      await supabase.from('student_seat_assignments').update({ seat_index: i + 1 }).eq('id', assignments[i].id);
-    }
+    await renumberSeatIndicesForGroupApi(groupId);
   }, []);
 
   // Handle close button - navigate back to seating chart view (remove mode=edit)
@@ -399,8 +403,6 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
   useEffect(() => {
     if (!activeSeatingLayoutId) return;
 
-    const supabase = createClient();
-
     const handleViewSettingsUpdate = async () => {
       if (document.visibilityState !== 'visible') return;
       try {
@@ -433,26 +435,13 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     window.addEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    const realtimeChannel = supabase
-      .channel(`seating_chart_view_settings_${activeSeatingLayoutId}_editor`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'seating_charts',
-          filter: `id=eq.${activeSeatingLayoutId}`,
-        },
-        (payload) => {
-          const nextRow = payload.new as {
-            show_grid?: boolean | null;
-            show_objects?: boolean | null;
-            layout_orientation?: string | null;
-          };
-          applyLayoutViewSettings(nextRow);
-        }
-      )
-      .subscribe();
+    const { unsubscribe } = subscribeToSeatingChartRowUpdates(
+      activeSeatingLayoutId,
+      (nextRow) => {
+        applyLayoutViewSettings(nextRow);
+      },
+      { channelSuffix: '_editor' }
+    );
 
     // Low-frequency fallback in case realtime is unavailable.
     const interval = setInterval(handleViewSettingsUpdate, 15000);
@@ -461,7 +450,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
-      void supabase.removeChannel(realtimeChannel);
+      unsubscribe();
     };
   }, [activeSeatingLayoutId, applyLayoutViewSettings]);
 
@@ -570,7 +559,6 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     saveAllChangesInFlightRef.current = true;
     setIsSavingAllChanges(true);
     try {
-      const supabase = createClient();
       const groupIds = groups.map((g) => g.id);
       const groupIdSet = new Set(groupIds);
 
@@ -585,36 +573,34 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         return { group, pos, columns, group_rows };
       });
 
-      const updateResults = await Promise.all(
-        updates.map(({ group, pos, columns, group_rows }) =>
-          supabase
-            .from('seating_groups')
-            .update({
-              position_x: pos.x,
-              position_y: pos.y,
-              group_columns: columns,
-              group_rows,
-            })
-            .eq('id', group.id)
-        )
-      );
+      const layoutUpdates = updates.map(({ group, pos, columns, group_rows }) => ({
+        id: group.id,
+        position_x: pos.x,
+        position_y: pos.y,
+        group_columns: columns,
+        group_rows,
+      }));
 
-      const firstGroupErr = updateResults.find((r) => r.error)?.error;
-      if (firstGroupErr) {
+      try {
+        await updateSeatingGroupsLayoutBatch(layoutUpdates);
+      } catch (firstGroupErr: unknown) {
         console.error('Error updating seating_groups:', firstGroupErr);
-        showSuccessNotification('Error', firstGroupErr.message ?? 'Failed to update groups.');
+        showSuccessNotification(
+          'Error',
+          firstGroupErr instanceof Error ? firstGroupErr.message : 'Failed to update groups.'
+        );
         return;
       }
 
       if (groupIds.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('student_seat_assignments')
-          .delete()
-          .in('seating_group_id', groupIds);
-
-        if (deleteError) {
+        try {
+          await deleteStudentSeatAssignmentsForGroupIds(groupIds);
+        } catch (deleteError: unknown) {
           console.error('Error clearing seat assignments:', deleteError);
-          showSuccessNotification('Error', deleteError.message ?? 'Failed to clear seat assignments.');
+          showSuccessNotification(
+            'Error',
+            deleteError instanceof Error ? deleteError.message : 'Failed to clear seat assignments.'
+          );
           return;
         }
       }
@@ -632,15 +618,15 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       });
 
       if (insertRows.length > 0) {
-        const chunkSize = 500;
-        for (let i = 0; i < insertRows.length; i += chunkSize) {
-          const chunk = insertRows.slice(i, i + chunkSize);
-          const { error: insertError } = await supabase.from('student_seat_assignments').insert(chunk);
-          if (insertError) {
-            console.error('Error inserting seat assignments:', insertError);
-            showSuccessNotification('Error', insertError.message ?? 'Failed to save seat assignments.');
-            return;
-          }
+        try {
+          await insertStudentSeatAssignmentsBatched(insertRows, 500);
+        } catch (insertError: unknown) {
+          console.error('Error inserting seat assignments:', insertError);
+          showSuccessNotification(
+            'Error',
+            insertError instanceof Error ? insertError.message : 'Failed to save seat assignments.'
+          );
+          return;
         }
       }
 
@@ -770,30 +756,21 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
       }
 
       // After all animations, update database
-      const supabase = createClient();
-      
-      // Delete only assignments in the current layout's groups (so other layouts are untouched)
-      const currentLayoutGroupIds = groups.map(g => g.id);
+      const currentLayoutGroupIds = groups.map((g) => g.id);
       if (currentLayoutGroupIds.length > 0) {
-        await supabase
-          .from('student_seat_assignments')
-          .delete()
-          .in('seating_group_id', currentLayoutGroupIds);
+        await deleteStudentSeatAssignmentsForGroupIds(currentLayoutGroupIds);
       }
-      
-      // Insert new assignments with seat_index 1, 2, 3, ... per group
+
       const nextSeatIndexByGroup = new Map<string, number>();
-      groups.forEach(g => nextSeatIndexByGroup.set(g.id, 1));
+      groups.forEach((g) => nextSeatIndexByGroup.set(g.id, 1));
       const assignmentsToInsert = newAssignments.map(({ student, newGroupId }) => {
         const seat_index = nextSeatIndexByGroup.get(newGroupId) ?? 1;
         nextSeatIndexByGroup.set(newGroupId, seat_index + 1);
         return { student_id: student.id, seating_group_id: newGroupId, seat_index };
       });
-      
+
       if (assignmentsToInsert.length > 0) {
-        await supabase
-          .from('student_seat_assignments')
-          .insert(assignmentsToInsert);
+        await insertStudentSeatAssignments(assignmentsToInsert);
       }
       
       // Refresh to ensure sync
@@ -954,25 +931,18 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     if (!activeSeatingLayoutId) return;
 
     try {
-      const supabase = createClient();
-      
-      // Get the max sort_order to place new group at the end
       const maxSortOrder = groups.length > 0 
         ? Math.max(...groups.map(g => g.sort_order))
         : -1;
 
-      // Always place new groups in the top-left corner
-      // User can then drag them to their desired location
       const initialX = 20;
       const initialY = 20;
 
-      // Insert group with all parameters in a single operation
-      // Calculate group_rows: 1 for header + at least 1 row for students (default to 2 total for new empty group)
-      const defaultGroupRows = 2; // 1 header row + 1 student row for new empty groups
+      const defaultGroupRows = 2;
 
-      const { data, error: insertError } = await supabase
-        .from('seating_groups')
-        .insert({
+      let data;
+      try {
+        data = await insertSeatingGroup({
           name: groupName,
           seating_chart_id: activeSeatingLayoutId,
           sort_order: maxSortOrder + 1,
@@ -980,11 +950,8 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
           group_rows: defaultGroupRows,
           position_x: initialX,
           position_y: initialY,
-        })
-        .select()
-        .single();
-
-      if (insertError) {
+        });
+      } catch (insertError: unknown) {
         console.error('Error creating seating group:', insertError);
         console.error('Insert data:', {
           name: groupName,
@@ -995,7 +962,8 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
           position_y: initialY,
         });
         console.error('Full error details:', JSON.stringify(insertError, null, 2));
-        alert(`Failed to create group: ${insertError.message || 'Please check the console for details.'}`);
+        const msg = insertError instanceof Error ? insertError.message : 'Please check the console for details.';
+        alert(`Failed to create group: ${msg}`);
         return;
       }
 
@@ -1020,20 +988,15 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     if (!activeSeatingLayoutId) return;
 
     try {
-      const supabase = createClient();
-      
-      // Get the max sort_order to place new groups at the end
       const maxSortOrder = groups.length > 0 
         ? Math.max(...groups.map(g => g.sort_order))
         : -1;
 
       const groupWidth = getBatchGroupWidth();
 
-      // Default columns for new groups (using 2 as default, same as single group creation)
       const defaultColumns = 2;
       const defaultGroupRows = 2;
 
-      // Calculate positions for each group in grid layout
       type GroupToCreate = {
         name: string;
         seating_chart_id: string;
@@ -1043,7 +1006,6 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         position_x: number;
         position_y: number;
       };
-      // Number new groups after existing ones: if we have 10 groups, new ones are Group 11, 12, ...
       const nextGroupNumber = groups.length + 1;
       const groupsToCreate: GroupToCreate[] = [];
       for (let i = 0; i < numGroups; i++) {
@@ -1060,15 +1022,13 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         });
       }
 
-      // Insert all groups at once
-      const { data: insertedGroups, error: insertError } = await supabase
-        .from('seating_groups')
-        .insert(groupsToCreate)
-        .select();
-
-      if (insertError) {
+      let insertedGroups;
+      try {
+        insertedGroups = await insertSeatingGroups(groupsToCreate);
+      } catch (insertError: unknown) {
         console.error('Error creating multiple groups:', insertError);
-        alert(`Failed to create groups: ${insertError.message || 'Please check the console for details.'}`);
+        const msg = insertError instanceof Error ? insertError.message : 'Please check the console for details.';
+        alert(`Failed to create groups: ${msg}`);
         return;
       }
 
@@ -1096,28 +1056,16 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
 
   const handleCreateLayout = async (layoutName: string) => {
     try {
-      const supabase = createClient();
-      
-      const { data, error: insertError } = await supabase
-        .from('seating_charts')
-        .insert({
-          name: layoutName,
-          class_id: classId,
-          show_grid: true,
-          show_objects: true,
-          layout_orientation: 'Left',
-        })
-        .select()
-        .single();
-
-      if (insertError) {
+      let data;
+      try {
+        data = await createSeatingLayout({ classId, name: layoutName });
+      } catch (insertError: unknown) {
         console.error('Error creating seating chart:', insertError);
         alert('Failed to create layout. Please try again.');
         return;
       }
 
       if (data) {
-        // Refresh layouts and select the new one
         await fetchLayouts();
         setActiveSeatingLayoutId(data.id);
         setIsCreateModalOpen(false);
@@ -1388,8 +1336,6 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     }
 
     try {
-      const supabase = createClient();
-      
       const currentAssignments = groupAssignmentsRef.current;
       const totalSeatedStudents = Array.from(currentAssignments.values()).reduce(
         (sum, assignments) => sum + assignments.length,
@@ -1442,19 +1388,15 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         }
       }
       
-      // Insert all assignments into database
       if (assignments.length > 0) {
-        const { error: insertError } = await supabase
-          .from('student_seat_assignments')
-          .insert(assignments);
-
-        if (insertError) {
+        try {
+          await insertStudentSeatAssignments(assignments);
+        } catch (insertError: unknown) {
           console.error('Error assigning seats:', insertError);
           alert('Failed to assign seats. Please try again.');
           return;
         }
 
-        // Refresh groups to update the UI
         await fetchGroups();
         
         // Note: group_rows is calculated on the fly for responsiveness
@@ -1507,24 +1449,16 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     if (!editingGroup) return;
 
     try {
-      const supabase = createClient();
-      
-      // Update in database
-      const { error: updateError } = await supabase
-        .from('seating_groups')
-        .update({
+      try {
+        await updateSeatingGroupFields(editingGroup.id, {
           name: groupName,
           group_columns: columns,
-        })
-        .eq('id', editingGroup.id);
-
-      if (updateError) {
+        });
+      } catch (updateError: unknown) {
         console.error('Error updating group:', updateError);
         alert('Failed to update team. Please try again.');
         return;
       }
-
-      // Fixed-slot: do not renumber when changing columns.
 
       // Update local state
       setGroups(prev => prev.map(g => 
@@ -1561,20 +1495,13 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     }
 
     try {
-      const supabase = createClient();
-      
-      // Update in database
-      const { error: updateError } = await supabase
-        .from('seating_groups')
-        .update({
+      try {
+        await updateSeatingGroupFields(groupId, {
           name: editingGroupNameValue.trim(),
-        })
-        .eq('id', groupId);
-
-      if (updateError) {
+        });
+      } catch (updateError: unknown) {
         console.error('Error updating group name:', updateError);
         alert('Failed to update group name. Please try again.');
-        // Revert to original
         const originalGroup = groups.find(g => g.id === groupId);
         if (originalGroup) {
           setEditingGroupNameValue(originalGroup.name);
@@ -1582,7 +1509,6 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         return;
       }
 
-      // Update local state
       setGroups(prev => prev.map(g => 
         g.id === groupId 
           ? { ...g, name: editingGroupNameValue.trim() }
@@ -1614,23 +1540,13 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
 
   const handleUpdateGroupColumns = async (groupId: string, columns: number) => {
     try {
-      const supabase = createClient();
-      
-      // Update in database
-      const { error: updateError } = await supabase
-        .from('seating_groups')
-        .update({
-          group_columns: columns,
-        })
-        .eq('id', groupId);
-
-      if (updateError) {
+      try {
+        await updateSeatingGroupFields(groupId, { group_columns: columns });
+      } catch (updateError: unknown) {
         console.error('Error updating group columns:', updateError);
         alert('Failed to update group columns. Please try again.');
         return;
       }
-
-      // Fixed-slot: do not renumber when changing columns.
 
       setGroups(prev => prev.map(g =>
         g.id === groupId
@@ -1656,15 +1572,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     if (!teamToClear) return;
 
     try {
-      const supabase = createClient();
-      
-      // Delete all student assignments for this group
-      const { error: deleteError } = await supabase
-        .from('student_seat_assignments')
-        .delete()
-        .eq('seating_group_id', teamToClear.id);
-
-      if (deleteError) {
+      try {
+        await deleteStudentSeatAssignmentsForSeatingGroupId(teamToClear.id);
+      } catch (deleteError: unknown) {
         console.error('Error clearing team:', deleteError);
         showSuccessNotification(
           'Error',
@@ -1722,21 +1632,9 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     if (!teamToDelete) return;
 
     try {
-      const supabase = createClient();
-      
-      // First, delete all student assignments for this group
-      await supabase
-        .from('student_seat_assignments')
-        .delete()
-        .eq('seating_group_id', teamToDelete.id);
-
-      // Then delete the group itself
-      const { error: deleteError } = await supabase
-        .from('seating_groups')
-        .delete()
-        .eq('id', teamToDelete.id);
-
-      if (deleteError) {
+      try {
+        await deleteTeamAssignmentsAndGroup(teamToDelete.id);
+      } catch (deleteError: unknown) {
         console.error('Error deleting team:', deleteError);
         showSuccessNotification(
           'Error',
@@ -1801,9 +1699,6 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     }
 
     try {
-      const supabase = createClient();
-      
-      // Get all group IDs for the current layout
       const groupIds = groups.map(g => g.id);
       
       if (groupIds.length === 0) {
@@ -1815,20 +1710,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         return;
       }
 
-      // Delete all student assignments for all groups in this layout
-      // Delete each group's assignments
-      let hasError = false;
-      for (const groupId of groupIds) {
-        const { error: deleteError } = await supabase
-          .from('student_seat_assignments')
-          .delete()
-          .eq('seating_group_id', groupId);
-        
-        if (deleteError) {
-          console.error(`Error clearing assignments for group ${groupId}:`, deleteError);
-          hasError = true;
-        }
-      }
+      const hasError = await deleteAssignmentsForGroupsSequential(groupIds);
 
       if (hasError) {
         showSuccessNotification(
@@ -1886,9 +1768,6 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
     }
 
     try {
-      const supabase = createClient();
-      
-      // Get all group IDs for the current layout
       const groupIds = groups.map(g => g.id);
       
       if (groupIds.length === 0) {
@@ -1900,19 +1779,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         return;
       }
 
-      // First, delete all student assignments for all groups
-      let hasAssignmentError = false;
-      for (const groupId of groupIds) {
-        const { error: assignmentError } = await supabase
-          .from('student_seat_assignments')
-          .delete()
-          .eq('seating_group_id', groupId);
-        
-        if (assignmentError) {
-          console.error(`Error deleting assignments for group ${groupId}:`, assignmentError);
-          hasAssignmentError = true;
-        }
-      }
+      const hasAssignmentError = await deleteAssignmentsForGroupsSequential(groupIds);
 
       if (hasAssignmentError) {
         showSuccessNotification(
@@ -1923,19 +1790,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         return;
       }
 
-      // Then delete all groups
-      let hasGroupError = false;
-      for (const groupId of groupIds) {
-        const { error: groupError } = await supabase
-          .from('seating_groups')
-          .delete()
-          .eq('id', groupId);
-        
-        if (groupError) {
-          console.error(`Error deleting group ${groupId}:`, groupError);
-          hasGroupError = true;
-        }
-      }
+      const hasGroupError = await deleteSeatingGroupsSequential(groupIds);
 
       if (hasGroupError) {
         showSuccessNotification(
