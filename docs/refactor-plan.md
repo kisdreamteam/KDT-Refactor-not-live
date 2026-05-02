@@ -41,13 +41,14 @@
 
 ---
 
-## Phase 3: The Bridge (Data Layers 1 & 2)
-*Goal: Connect the UI to the new `/src/api/` layer using custom hooks.*
+## Phase 3: The Bridge & State Management
+*Goal: Connect the UI to the new `/src/api/` layer using optimized, modular custom hooks and Contexts.*
 
-- [ ] **Auth:** Implement `useAuth.ts` hook to replace direct auth orchestration in UI.
-- [ ] **Points:** Implement `useAwardPoints.ts` hook. Route pure math to `awardPointsService.ts` (Domain Layer) before calling API.
-- [ ] **Seating:** Implement `useSeatingChart.ts` hook to manage the drag-and-drop state before saving to API.
-- [ ] **Students:** Implement `useStudents.ts` hook for adding/editing students.
+- [x] **Auth:** Auth state managed cleanly via standard layout/context orchestrators.
+- [x] **Points:** Implemented `useAwardPointsService.ts` and `useAwardPointsFlow.ts` to cleanly separate UI flow from domain-level point math.
+- [x] **Seating:** Implemented `SeatingChartContext.tsx` and view-specific hooks to manage drag-and-drop state and real-time syncing prior to API saves.
+- [x] **Students:** Implemented highly modular hooks (`useStudentsSelection.ts`, `useStudentsModalsState.ts`, `useStudentsToolbarEvents.ts`) to avoid a single monolithic student hook.
+- [x] **Performance Optimization:** Wrapped all Context provider values in `useMemo` and orchestrator functions in `useCallback` (e.g., `DashboardContext.tsx`, `SeatingChartContext.tsx`) to prevent unnecessary UI re-renders.
 
 ---
 

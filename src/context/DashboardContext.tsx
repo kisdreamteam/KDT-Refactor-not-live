@@ -196,25 +196,42 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [allClasses, currentClassId]
   );
 
-  const value: DashboardContextType = {
-    classes,
-    currentClass,
-    isLoadingClasses,
-    teacherProfile,
-    isLoadingProfile,
-    students,
-    setStudents,
-    isLoadingStudents,
-    isLoading: isLoadingProfile || isLoadingClasses || isLoadingStudents,
-    refreshClasses: fetchClasses,
-    refreshStudents: fetchStudents,
-    viewMode,
-    setViewMode,
-    viewPreference,
-    updateViewPreference,
-    activeSeatingLayoutId,
-    setActiveSeatingLayoutId,
-  };
+  const value = useMemo<DashboardContextType>(
+    () => ({
+      classes,
+      currentClass,
+      isLoadingClasses,
+      teacherProfile,
+      isLoadingProfile,
+      students,
+      setStudents,
+      isLoadingStudents,
+      isLoading: isLoadingProfile || isLoadingClasses || isLoadingStudents,
+      refreshClasses: fetchClasses,
+      refreshStudents: fetchStudents,
+      viewMode,
+      setViewMode,
+      viewPreference,
+      updateViewPreference,
+      activeSeatingLayoutId,
+      setActiveSeatingLayoutId,
+    }),
+    [
+      classes,
+      currentClass,
+      isLoadingClasses,
+      teacherProfile,
+      isLoadingProfile,
+      students,
+      isLoadingStudents,
+      fetchClasses,
+      fetchStudents,
+      viewMode,
+      viewPreference,
+      updateViewPreference,
+      activeSeatingLayoutId,
+    ]
+  );
 
   return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
 }

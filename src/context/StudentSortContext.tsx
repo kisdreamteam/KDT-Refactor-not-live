@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 
 export type SortOption = 'number' | 'alphabetical' | 'points';
 
@@ -40,8 +40,13 @@ export function StudentSortProvider({ children }: { children: ReactNode }) {
     }
   }, [sortBy]);
 
+  const value = useMemo(
+    () => ({ sortBy, setSortBy }),
+    [sortBy]
+  );
+
   return (
-    <StudentSortContext.Provider value={{ sortBy, setSortBy }}>
+    <StudentSortContext.Provider value={value}>
       {children}
     </StudentSortContext.Provider>
   );

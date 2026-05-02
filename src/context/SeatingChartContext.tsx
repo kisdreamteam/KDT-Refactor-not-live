@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, ReactNode, Dispatch, SetStateAction } from 'react';
 import { Student } from '@/lib/types';
 
 interface SeatingChartContextType {
@@ -17,7 +17,7 @@ export function SeatingChartProvider({ children }: { children: ReactNode }) {
   const [unseatedStudents, setUnseatedStudents] = useState<Student[]>([]);
   const [selectedStudentForGroup, setSelectedStudentForGroup] = useState<Student | null>(null);
 
-  const addStudentToGroup = (studentId: string, groupId: string) => {
+  const addStudentToGroup = useCallback((studentId: string, groupId: string) => {
     // Remove student from unseated list
     setUnseatedStudents(prev => prev.filter(s => s.id !== studentId));
     // Clear selection
@@ -26,18 +26,21 @@ export function SeatingChartProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new CustomEvent('addStudentToGroup', { 
       detail: { studentId, groupId } 
     }));
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      unseatedStudents,
+      setUnseatedStudents,
+      selectedStudentForGroup,
+      setSelectedStudentForGroup,
+      addStudentToGroup,
+    }),
+    [unseatedStudents, selectedStudentForGroup, addStudentToGroup]
+  );
 
   return (
-    <SeatingChartContext.Provider
-      value={{
-        unseatedStudents,
-        setUnseatedStudents,
-        selectedStudentForGroup,
-        setSelectedStudentForGroup,
-        addStudentToGroup,
-      }}
-    >
+    <SeatingChartContext.Provider value={value}>
       {children}
     </SeatingChartContext.Provider>
   );
