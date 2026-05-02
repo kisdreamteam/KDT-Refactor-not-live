@@ -31,12 +31,13 @@
 - [x] Move `StudentsView.tsx` calls to `/src/api/students.ts` (Layer 3 verified: no `createClient` in view/modals/grid; points via `awardPointsService` → `@/api/points`; students via context + API modals)
 - [x] Move `ClassesView.tsx` calls to `/src/api/classes.ts` (no `ClassesView.tsx` in repo; use this name for the classes grid view)
 - [x] Classes UI sub-components (`EditClassModal.tsx`, `CreateClassModal.tsx`, `ClassCardsGrid.tsx`): Layer 3 verified — no direct Supabase; `@/api/*` only
-- [ ] Extract Supabase from SeatingChartView.tsx and SeatingChartEditorView.tsx
+- [x] Extract Supabase from SeatingChartView.tsx and SeatingChartEditorView.tsx
 
 **Features**
-- [ ] Move `points.ts` (Ensure it aligns with standard API formatting)
-- [ ] Move `SeatingChartView.tsx` and `SeatingChartEditorView.tsx` calls to `/src/api/seating.ts`
-- [ ] Move all Student/Skill Modal calls (Add, Edit, Delete) to respective API files.
+- [x] Move `points.ts` (Ensure it aligns with standard API formatting)
+- [x] Move `SeatingChartView.tsx` and `SeatingChartEditorView.tsx` calls to `/src/api/seating.ts`
+- [x] Move all Student/Skill Modal calls (Add, Edit, Delete) to respective API files.
+- [x] implement Layer 3 seating chart extraction with real-time cross-tab sync
 
 ---
 
