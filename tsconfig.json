@@ -24,9 +24,6 @@
       }
     ],
     "paths": {
-      "@/context/*": [
-        "./src/context/*"
-      ],
       "@/assets/*": [
         "./src/assets/*"
       ],

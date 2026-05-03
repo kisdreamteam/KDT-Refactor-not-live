@@ -94,4 +94,5 @@
 
 - [x] **Dashboard layout:** [`DashboardLayout.tsx`](../src/layouts/dashboard/DashboardLayout.tsx) no longer wraps `DashboardProvider`, `StudentSortProvider`, or `SeatingLayoutNavProvider`; sync components listed in Phase 4.5 mount directly.
 - [x] **Deleted files:** `DashboardContext.tsx`, `StudentSortContext.tsx`, `SeatingLayoutNavContext.tsx`, `StageToolbarContext.tsx`.
-- [ ] **Verification:** Re-run the Phase 4.8 / 4.9 manual checklist (sort persist, active/archived filter, seating layout flows, multi-select, profile title) after release branches merge.
+- [x] **Automated verification:** `npm run build` passes on the context-free layout.
+- [ ] **Manual verification:** Re-run the Phase 4.8 / 4.9 checklist (sort persist, active/archived filter, seating layout flows, multi-select, profile title) before release as needed.

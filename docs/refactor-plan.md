@@ -26,7 +26,7 @@
 - [x] Move [`ForgotPasswordForm.tsx`](../src/components/features/auth/ForgotPasswordForm.tsx) & [`ResetPasswordForm.tsx`](../src/components/features/auth/ResetPasswordForm.tsx) calls to [`auth.ts`](../src/api/auth.ts)
 
 **Core Dashboard Data**
-- [x] Move [`DashboardContext.tsx`](../src/context/DashboardContext.tsx) initial fetching calls to [`students.ts`](../src/api/students.ts) and [`classes.ts`](../src/api/classes.ts)
+- [x] Move former dashboard context class/roster fetching into [`students.ts`](../src/api/students.ts) and [`classes.ts`](../src/api/classes.ts) (legacy `DashboardContext.tsx` removed; see [`zustand-migration-plan.md`](zustand-migration-plan.md))
 - [x] Move [`CreateClassForm.tsx`](../src/components/forms/CreateClassForm.tsx) calls to [`classes.ts`](../src/api/classes.ts)
 - [x] Move [`StudentsView.tsx`](../src/components/features/dashboard/StudentsView.tsx) calls to [`students.ts`](../src/api/students.ts) (Layer 3 verified: no `createClient` in view/modals/grid; points via [`awardPointsService`](../src/features/points/services/awardPointsService.ts) → [`points.ts`](../src/api/points.ts); students via context + API modals)
 - [x] Move [`ClassesView.tsx`](../src/components/features/dashboard/ClassesView.tsx) calls to [`classes.ts`](../src/api/classes.ts) (classes grid view)
@@ -46,9 +46,9 @@
 
 - [x] **Auth:** Auth state managed cleanly via standard layout/context orchestrators.
 - [x] **Points:** Implemented [`useAwardPointsService.ts`](../src/features/points/hooks/useAwardPointsService.ts) (integration) + [`awardPointsService.ts`](../src/features/points/services/awardPointsService.ts) (domain), and [`useAwardPointsFlow.ts`](../src/hooks/useAwardPointsFlow.ts) for confirmation/modal glue.
-- [x] **Seating:** Implemented [`SeatingChartContext.tsx`](../src/context/SeatingChartContext.tsx) and [`useSeatingChartEditor`](../src/features/seating/hooks/useSeatingChart.ts) for editor “desk” state, DnD, and real-time sync prior to API saves.
+- [x] **Seating:** Editor “desk” state, DnD, and real-time sync live in [`useSeatingChartEditor`](../src/features/seating/hooks/useSeatingChart.ts) with [`useSeatingStore`](../src/stores/useSeatingStore.ts) (legacy `SeatingChartContext.tsx` removed; see [`zustand-migration-plan.md`](zustand-migration-plan.md)).
 - [x] **Students:** Implemented modular hooks under [`/src/components/features/dashboard/hooks/`](../src/components/features/dashboard/hooks/) (`useStudentsSelection.ts`, `useStudentsModalsState.ts`, `useStudentsToolbarEvents.ts`, …).
-- [x] **Performance Optimization:** Wrapped Context provider values in `useMemo` and orchestrators in `useCallback` (e.g. [`DashboardContext.tsx`](../src/context/DashboardContext.tsx), [`SeatingChartContext.tsx`](../src/context/SeatingChartContext.tsx)).
+- [x] **Performance Optimization:** Wrapped provider values in `useMemo` and orchestrators in `useCallback` where contexts existed; dashboard/seating chrome now use Zustand strict selectors (see [`zustand-migration-plan.md`](zustand-migration-plan.md)).
 
 ---
 
@@ -58,7 +58,7 @@
 - [x] **Unused Imports:** Run a workspace-wide audit and safely remove unused React hooks, components, and Supabase imports.
 - [x] **Dead Variables:** Clean up declared but unread parameters in hooks/components (e.g., renaming unused props to `_studentId` for TS compliance).
 - [x] **Orphaned Files:** Safely delete disconnected components and outdated documentation (e.g., `AddGroupModal.tsx`, legacy `README.md` files).
-- [x] **Guardrails:** Verify that no Layer 3 API files under [`/src/api/`](../src/api/) or optimized Contexts ([`DashboardContext`](../src/context/DashboardContext.tsx), [`SeatingChartContext`](../src/context/SeatingChartContext.tsx)) were altered during the sweep.
+- [x] **Guardrails:** Verify that no Layer 3 API files under [`/src/api/`](../src/api/) were altered during the sweep; dashboard/seating UI state is in Zustand stores, not React Context.
 - [x] **Seating editor hook:** Extracted complex state from [`SeatingChartEditorView.tsx`](../src/components/features/dashboard/SeatingChartEditorView.tsx) into [`useSeatingChart.ts`](../src/features/seating/hooks/useSeatingChart.ts) (**named export:** `useSeatingChartEditor`; not the context hook `useSeatingChart`). The hook holds the “Desk” and coordinates with [`@/api/seating`](../src/api/seating.ts) for batch saves.
 
 ---
@@ -68,4 +68,4 @@
 
 - [x] **Navbars:** Decouple [`BottomNavStudents`](../src/components/features/navbars/BottomNavStudents.tsx) / [`BottomNavSeatingEdit`](../src/components/features/navbars/BottomNavSeatingEdit.tsx) from persistence; shell + [`SeatingEditBottomNavBridge`](../src/components/features/navbars/SeatingEditBottomNavBridge.tsx) + [`useSeatingEditBottomNav`](../src/features/seating/hooks/useSeatingEditBottomNav.ts).
 - [x] **Modals:** Presentational modals with `onSubmit` / parents wiring API (e.g. [`EditStudentModal`](../src/components/modals/EditStudentModal.tsx), [`AddSkillForm`](../src/components/forms/AddSkillForm.tsx)); class edit lives in [`EditClassModalRoot`](../src/features/classes/components/EditClassModalRoot.tsx) with a thin [`EditClassModal`](../src/components/modals/EditClassModal.tsx) façade.
-- [x] **Atoms:** Keep shared UI under [`/src/components/ui/`](../src/components/ui/) free of `@/api` / Supabase; compose only via props and callbacks (see [architecture-plan.mdd](architecture-plan.md) §2 Tier 3).
+- [x] **Atoms:** Keep shared UI under [`/src/components/ui/`](../src/components/ui/) free of `@/api` / Supabase; compose only via props and callbacks (see [architecture-plan.md](architecture-plan.md) §2 Tier 3).
