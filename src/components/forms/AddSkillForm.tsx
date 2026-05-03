@@ -4,13 +4,20 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Modal from '@/components/modals/Modal';
 import { useAvailablePositiveIcons, useAvailableNegativeIcons } from '@/lib/hooks/useAvailableIcons';
-import { createSkill } from '@/api/skills';
+
+export type AddSkillFormSubmitValues = {
+  classId: string;
+  name: string;
+  points: number;
+  type: 'positive' | 'negative';
+  icon: string;
+};
 
 interface AddSkillFormProps {
   isOpen: boolean;
   onClose: () => void;
   classId: string;
-  refreshCategories: () => void;
+  onSubmit: (values: AddSkillFormSubmitValues) => Promise<void>;
   skillType?: 'positive' | 'negative';
 }
 
@@ -18,7 +25,7 @@ export default function AddSkillForm({
   isOpen,
   onClose,
   classId,
-  refreshCategories,
+  onSubmit,
   skillType = 'positive',
 }: AddSkillFormProps) {
   const [skillName, setSkillName] = useState<string>('');
@@ -54,17 +61,19 @@ export default function AddSkillForm({
       const newValue = skillType === 'positive' ? 1 : -1;
       setPoints(newValue);
       previousValueRef.current = newValue;
-      const iconPath = skillType === 'positive'
-        ? '/images/dashboard/award-points-icons/icons-positive/icon-pos-6.png'
-        : '/images/dashboard/award-points-icons/icons-negative/icon-neg-6.png';
+      const iconPath =
+        skillType === 'positive'
+          ? '/images/dashboard/award-points-icons/icons-positive/icon-pos-6.png'
+          : '/images/dashboard/award-points-icons/icons-negative/icon-neg-6.png';
       setSelectedIcon(iconPath);
     } else {
       const newValue = skillType === 'positive' ? 1 : -1;
       setPoints(newValue);
       previousValueRef.current = newValue;
-      const iconPath = skillType === 'positive'
-        ? '/images/dashboard/award-points-icons/icons-positive/icon-pos-6.png'
-        : '/images/dashboard/award-points-icons/icons-negative/icon-neg-6.png';
+      const iconPath =
+        skillType === 'positive'
+          ? '/images/dashboard/award-points-icons/icons-positive/icon-pos-6.png'
+          : '/images/dashboard/award-points-icons/icons-negative/icon-neg-6.png';
       setSelectedIcon(iconPath);
     }
   }, [isOpen, skillType]);
@@ -73,9 +82,10 @@ export default function AddSkillForm({
     const newValue = skillType === 'positive' ? 1 : -1;
     setPoints(newValue);
     previousValueRef.current = newValue;
-    const iconPath = skillType === 'positive'
-      ? '/images/dashboard/award-points-icons/icons-positive/icon-pos-6.png'
-      : '/images/dashboard/award-points-icons/icons-negative/icon-neg-6.png';
+    const iconPath =
+      skillType === 'positive'
+        ? '/images/dashboard/award-points-icons/icons-positive/icon-pos-6.png'
+        : '/images/dashboard/award-points-icons/icons-negative/icon-neg-6.png';
     setSelectedIcon(iconPath);
   }, [skillType]);
 
@@ -97,24 +107,14 @@ export default function AddSkillForm({
     setIsLoading(true);
 
     try {
-      const newSkill = {
+      await onSubmit({
+        classId,
         name,
         points: pointsValue,
         type,
-        class_id: classId,
         icon: selectedIcon,
-      };
-
-      await createSkill({
-        classId: newSkill.class_id,
-        name: newSkill.name,
-        points: newSkill.points,
-        type: newSkill.type,
-        icon: newSkill.icon,
       });
 
-      refreshCategories();
-      setIsLoading(false);
       setShowSuccessModal(true);
     } catch (error) {
       console.error('Unexpected error in handleAddSkill:', error);
@@ -157,9 +157,10 @@ export default function AddSkillForm({
     const newValue = skillType === 'positive' ? 1 : -1;
     setPoints(newValue);
     previousValueRef.current = newValue;
-    const iconPath = skillType === 'positive'
-      ? '/images/dashboard/award-points-icons/icons-positive/icon-pos-6.png'
-      : '/images/dashboard/award-points-icons/icons-negative/icon-neg-6.png';
+    const iconPath =
+      skillType === 'positive'
+        ? '/images/dashboard/award-points-icons/icons-positive/icon-pos-6.png'
+        : '/images/dashboard/award-points-icons/icons-negative/icon-neg-6.png';
     setSelectedIcon(iconPath);
     setShowSuccessModal(false);
   };
@@ -281,6 +282,7 @@ export default function AddSkillForm({
 
             <div className="flex justify-end gap-3 pt-2">
               <button
+                type="button"
                 onClick={handleCancel}
                 disabled={isLoading}
                 className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -288,7 +290,8 @@ export default function AddSkillForm({
                 Cancel
               </button>
               <button
-                onClick={handleAddSkill}
+                type="button"
+                onClick={() => void handleAddSkill()}
                 disabled={isLoading}
                 className="px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -304,12 +307,14 @@ export default function AddSkillForm({
           <h3 className="text-xl font-semibold text-gray-900 mb-2">New skill added successfully!</h3>
           <div className="flex gap-3 justify-center">
             <button
+              type="button"
               onClick={handleAddAnotherSkill}
               className="px-6 py-2.5 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors"
             >
               Add Another Skill
             </button>
             <button
+              type="button"
               onClick={handleReturn}
               className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >

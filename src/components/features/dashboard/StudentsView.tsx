@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useStudentSort } from '@/context/StudentSortContext';
 import { useDashboard } from '@/context/DashboardContext';
@@ -17,6 +17,8 @@ import { useStudentsModalsState } from './hooks/useStudentsModalsState';
 import { useStudentsSelection } from './hooks/useStudentsSelection';
 import { useStudentsToolbarEvents } from './hooks/useStudentsToolbarEvents';
 import { useStudentsUrlState } from './hooks/useStudentsUrlState';
+import { updateStudentById } from '@/api/students';
+import type { EditStudentModalSubmitValues } from '@/components/modals/EditStudentModal';
 
 export default function StudentsView() {
   const params = useParams();
@@ -110,6 +112,15 @@ export default function StudentsView() {
   const handleStudentAdded = async () => {
     await refreshStudents(true);
   };
+
+  const handleSubmitEditStudent = useCallback(
+    async ({ studentId, ...patch }: EditStudentModalSubmitValues) => {
+      await updateStudentById(studentId, patch);
+      await refreshStudents(true);
+      closeEditStudentModal();
+    },
+    [refreshStudents, closeEditStudentModal]
+  );
 
   const { sortedStudents, totalClassPoints } = useSortedStudents(students, sortBy);
 
@@ -210,6 +221,7 @@ export default function StudentsView() {
         }}
         onAwardComplete={handleAwardComplete}
         onPointsAwarded={handlePointsAwarded}
+        onSubmitEditStudent={handleSubmitEditStudent}
       />
     </>
   );

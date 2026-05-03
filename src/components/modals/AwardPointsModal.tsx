@@ -8,6 +8,8 @@ import SkillCard from '@/components/features/dashboard/cards/SkillCard';
 import SkillActionCard from '@/components/features/dashboard/cards/SkillActionCard';
 import { PointCategory, Student } from '@/lib/types';
 import { fetchPointCategoriesByClassIds } from '@/api/points';
+import { createSkill } from '@/api/skills';
+import type { AddSkillFormSubmitValues } from '@/components/forms/AddSkillForm';
 import { useAwardPointsService } from '@/features/points/hooks/useAwardPointsService';
 
 // Helper function to add cache-busting parameter to icon URLs
@@ -140,6 +142,20 @@ export default function AwardPointsModal({
   const refreshCategories = useCallback(() => {
     void fetchCategories(true);
   }, [fetchCategories]);
+
+  const handleSubmitAddSkill = useCallback(
+    async (values: AddSkillFormSubmitValues) => {
+      await createSkill({
+        classId: values.classId,
+        name: values.name,
+        points: values.points,
+        type: values.type,
+        icon: values.icon,
+      });
+      refreshCategories();
+    },
+    [refreshCategories]
+  );
 
   // Fetch categories when modal opens or classId/selectedClassIds changes
   useEffect(() => {
@@ -490,11 +506,11 @@ export default function AwardPointsModal({
       </Modal>
       
       {/* Add Skills Modal */}
-      <AddSkillModal 
-        isOpen={isManageSkillsModalOpen} 
-        onClose={() => setManageSkillsModalOpen(false)} 
+      <AddSkillModal
+        isOpen={isManageSkillsModalOpen}
+        onClose={() => setManageSkillsModalOpen(false)}
         classId={classId}
-        refreshCategories={refreshCategories}
+        onSubmit={handleSubmitAddSkill}
         skillType={activeTab === 'positive' ? 'positive' : activeTab === 'negative' ? 'negative' : 'positive'}
       />
 

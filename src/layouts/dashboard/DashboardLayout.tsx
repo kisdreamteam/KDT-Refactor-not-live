@@ -1,16 +1,51 @@
 'use client';
 
-import { useEffect, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
-import { StudentSortProvider } from '@/context/StudentSortContext';
+import { StudentSortProvider, useStudentSort } from '@/context/StudentSortContext';
 import { SeatingChartProvider } from '@/context/SeatingChartContext';
 import { SeatingLayoutNavProvider, SeatingLayoutNavData } from '@/context/SeatingLayoutNavContext';
 import LeftNav from '@/components/features/navbars/LeftNav';
 import LeftNavSeatingChartEdit from '@/components/features/navbars/LeftNavSeatingChartEdit';
-import DashboardStage from '@/components/features/dashboard/DashboardStage';
+import DashboardStage, { type DashboardStageProps } from '@/components/features/dashboard/DashboardStage';
 import EditClassModal from '@/components/modals/EditClassModal';
 import { STUDENT_EVENTS } from '@/lib/events/students';
+import { signOutCurrentUser } from '@/api/auth';
+
+type DashboardStageSlotProps = Omit<
+  DashboardStageProps,
+  'studentSortBy' | 'onStudentSortChange' | 'onLogoutStudentsNav' | 'onToggleMultiSelect'
+>;
+
+function DashboardStageSlot(props: DashboardStageSlotProps) {
+  const { sortBy, setSortBy } = useStudentSort();
+  const router = useRouter();
+
+  const onLogoutStudentsNav = useCallback(async () => {
+    try {
+      await signOutCurrentUser();
+      router.push('/login');
+    } catch (err) {
+      console.error('Unexpected error during logout:', err);
+      alert('An unexpected error occurred. Please try again.');
+    }
+  }, [router]);
+
+  const onToggleMultiSelect = useCallback(() => {
+    window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.TOGGLE_MULTI_SELECT));
+  }, []);
+
+  return (
+    <DashboardStage
+      {...props}
+      studentSortBy={sortBy}
+      onStudentSortChange={setSortBy}
+      onLogoutStudentsNav={onLogoutStudentsNav}
+      onToggleMultiSelect={onToggleMultiSelect}
+    />
+  );
+}
 
 function DashboardLayoutShell({
   children,
@@ -120,7 +155,7 @@ function DashboardLayoutShell({
               </div>
             </div>
             <div className="flex-1 h-full overflow-hidden pl-2 pr-2 pt-2">
-              <DashboardStage
+              <DashboardStageSlot
                 isSeatingView={isSeatingView}
                 showCanvasToolbar={!isClassesRootView}
                 isEditMode={isEditMode}
@@ -139,7 +174,7 @@ function DashboardLayoutShell({
                 onRandomClick={() => setIsRandomOpen(true)}
               >
                 {children}
-              </DashboardStage>
+              </DashboardStageSlot>
             </div>
           </div>
         </SeatingLayoutNavProvider>

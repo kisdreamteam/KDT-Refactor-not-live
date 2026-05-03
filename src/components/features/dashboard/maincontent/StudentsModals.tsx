@@ -1,4 +1,5 @@
 import type { Student } from '@/lib/types';
+import type { EditStudentModalSubmitValues } from '@/components/modals/EditStudentModal';
 import AddStudentsModal from '@/components/modals/AddStudentsModal';
 import AwardPointsModal from '@/components/modals/AwardPointsModal';
 import EditStudentModal from '@/components/modals/EditStudentModal';
@@ -29,6 +30,7 @@ interface StudentsModalsProps {
   onCloseConfirmationModal: () => void;
   onAwardComplete: (selectedIds: string[], type: 'classes' | 'students') => void;
   onPointsAwarded: (info: AwardPointsInfo) => void;
+  onSubmitEditStudent: (values: EditStudentModalSubmitValues) => Promise<void>;
 }
 
 export default function StudentsModals({
@@ -55,6 +57,7 @@ export default function StudentsModals({
   onCloseConfirmationModal,
   onAwardComplete,
   onPointsAwarded,
+  onSubmitEditStudent,
 }: StudentsModalsProps) {
   return (
     <>
@@ -104,7 +107,7 @@ export default function StudentsModals({
         isOpen={isEditStudentModalOpen}
         onClose={onCloseEditStudentModal}
         student={editingStudent}
-        onRefresh={onStudentAdded}
+        onSubmit={onSubmitEditStudent}
       />
 
       {awardInfo && (

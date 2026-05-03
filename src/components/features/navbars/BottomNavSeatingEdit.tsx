@@ -1,117 +1,44 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { updateLayoutViewSettings } from '@/api/seating';
+import type { SeatingEditBottomNavViewProps } from '@/features/seating/hooks/useSeatingEditBottomNav';
 import IconRandomArrows from '@/components/iconsCustom/iconRandomArrows';
 import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
 import IconAutoAssign from '@/components/iconsCustom/iconAutoAssign';
 import IconAddPlus from '@/components/iconsCustom/iconAddPlus';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
-import {
-  emitSeatingAddMultipleGroups,
-  emitSeatingAutoAssignSeats,
-  emitSeatingClearAllGroups,
-  emitSeatingColorCodeBy,
-  emitSeatingDeleteAllGroups,
-  emitSeatingEditMode,
-  emitSeatingRandomize,
-  emitSeatingSave,
-  emitSeatingViewSettingsChanged,
-} from '@/lib/events/students';
 
-interface BottomNavSeatingEditProps {
+interface BottomNavSeatingEditProps extends SeatingEditBottomNavViewProps {
   currentClassName: string | null;
-  /** Current class ID (when on a class page) for opening Edit Class modal */
   classId?: string | null;
-  /** Called when user chooses Edit Class from settings menu */
   onEditClass?: () => void;
 }
 
-export default function BottomNavSeatingEdit({ 
+export default function BottomNavSeatingEdit({
   currentClassName,
   classId = null,
   onEditClass,
+  showGrid,
+  showFurniture,
+  teachersDeskLeft,
+  colorByGender,
+  onToggleShowGrid,
+  onToggleShowFurniture,
+  onToggleTeachersDeskLeft,
+  onToggleColorByGender,
+  onRandomize,
+  onClearAllGroups,
+  onDeleteAllGroups,
+  onAddGroups,
+  onAutoAssignSeats,
 }: BottomNavSeatingEditProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
   const [isViewSettingsMenuOpen, setIsViewSettingsMenuOpen] = useState(false);
   const viewSettingsButtonRef = useRef<HTMLDivElement>(null);
-  const [showGrid, setShowGrid] = useState(true);
-  const [showFurniture, setShowFurniture] = useState(true);
-  const [teachersDeskLeft, setTeachersDeskLeft] = useState(true);
-  const [colorByGender, setColorByGender] = useState(true);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const settingsButtonRef = useRef<HTMLDivElement>(null);
   const [isAddGroupsMenuOpen, setIsAddGroupsMenuOpen] = useState(false);
   const addGroupsButtonRef = useRef<HTMLDivElement>(null);
-  
-  // Get layout ID from URL
-  const layoutId = searchParams?.get('layout');
-
-  const emitViewSettingsChanged = (partial: {
-    show_grid?: boolean;
-    show_objects?: boolean;
-    layout_orientation?: 'Left' | 'Right';
-  }) => {
-    if (!layoutId) return;
-    emitSeatingViewSettingsChanged({
-      layoutId,
-      ...partial,
-    });
-  };
-
-  // Update show_grid in database
-  const handleToggleShowGrid = async (newValue: boolean) => {
-    if (!layoutId) return;
-    
-    setShowGrid(newValue);
-    
-    try {
-      await updateLayoutViewSettings(layoutId, { show_grid: newValue });
-      emitViewSettingsChanged({ show_grid: newValue });
-    } catch (err) {
-      console.error('Unexpected error updating show_grid:', err);
-      // Revert on error
-      setShowGrid(!newValue);
-    }
-  };
-
-  // Update show_objects in database
-  const handleToggleShowFurniture = async (newValue: boolean) => {
-    if (!layoutId) return;
-    
-    setShowFurniture(newValue);
-    
-    try {
-      await updateLayoutViewSettings(layoutId, { show_objects: newValue });
-      emitViewSettingsChanged({ show_objects: newValue });
-    } catch (err) {
-      console.error('Unexpected error updating show_objects:', err);
-      // Revert on error
-      setShowFurniture(!newValue);
-    }
-  };
-
-  // Update layout_orientation in database
-  const handleToggleTeachersDeskLeft = async (newValue: boolean) => {
-    if (!layoutId) return;
-    
-    setTeachersDeskLeft(newValue);
-    
-    try {
-      await updateLayoutViewSettings(layoutId, {
-        layout_orientation: newValue ? 'Left' : 'Right',
-      });
-      emitViewSettingsChanged({ layout_orientation: newValue ? 'Left' : 'Right' });
-    } catch (err) {
-      console.error('Unexpected error updating layout_orientation:', err);
-      // Revert on error
-      setTeachersDeskLeft(!newValue);
-    }
-  };
 
   useEffect(() => {
     if (!isViewSettingsMenuOpen && !isSettingsMenuOpen && !isAddGroupsMenuOpen) return;
@@ -148,50 +75,25 @@ export default function BottomNavSeatingEdit({
     return () => document.removeEventListener('click', handleClickOutside, true);
   }, [isViewSettingsMenuOpen, isSettingsMenuOpen, isAddGroupsMenuOpen]);
 
-  const handleRandomizeSeating = () => {
-    emitSeatingRandomize();
-  };
-
   const handleClearAllGroups = () => {
-    emitSeatingClearAllGroups();
+    onClearAllGroups();
     setIsSettingsMenuOpen(false);
   };
 
   const handleDeleteAllGroups = () => {
-    emitSeatingDeleteAllGroups();
+    onDeleteAllGroups();
     setIsSettingsMenuOpen(false);
   };
 
-  const handleSaveSeatingChanges = () => {
-    emitSeatingSave({
-      onSaveComplete: () => {
-        const params = new URLSearchParams(searchParams?.toString() ?? '');
-        params.delete('mode');
-        const base = pathname ?? '/';
-        const newUrl = params.toString() ? `${base}?${params.toString()}` : base;
-        router.push(newUrl);
-        setTimeout(() => {
-          emitSeatingEditMode({ isEditMode: false });
-        }, 100);
-      },
-    });
-  };
-
   const handleAddGroups = (numGroups: number) => {
-    emitSeatingAddMultipleGroups({ numGroups });
+    onAddGroups(numGroups);
     setIsAddGroupsMenuOpen(false);
-  };
-
-  const handleAutoAssignSeats = () => {
-    emitSeatingAutoAssignSeats();
   };
 
   return (
     <BaseBottomNav className="overflow-visible">
       <div className="flex items-center justify-between w-full">
-        {/* Left side buttons */}
         <div className="flex flex-row items-center gap-2 sm:gap-4 md:gap-8 lg:gap-15">
-          {/* View Settings Button */}
           {currentClassName && (
             <div className="relative flex-shrink-0" ref={viewSettingsButtonRef}>
               <BotNavGrayButton
@@ -203,8 +105,7 @@ export default function BottomNavSeatingEdit({
                 }}
                 stopPropagation={true}
               />
-              
-              {/* View Settings Dropdown Menu */}
+
               {isViewSettingsMenuOpen && (
                 <div
                   data-view-settings-menu
@@ -212,13 +113,13 @@ export default function BottomNavSeatingEdit({
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                 >
-                  {/* Show Grid Toggle */}
                   <div className="px-4 py-2 flex items-center justify-between hover:bg-gray-50">
                     <span className="text-sm text-gray-700 font-medium">Show Grid</span>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleToggleShowGrid(!showGrid);
+                        void onToggleShowGrid(!showGrid);
                       }}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         showGrid ? 'bg-purple-600' : 'bg-gray-300'
@@ -231,14 +132,14 @@ export default function BottomNavSeatingEdit({
                       />
                     </button>
                   </div>
-                  
-                  {/* Show Furniture Toggle */}
+
                   <div className="px-4 py-2 flex items-center justify-between hover:bg-gray-50">
                     <span className="text-sm text-gray-700 font-medium">Show Furniture</span>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleToggleShowFurniture(!showFurniture);
+                        void onToggleShowFurniture(!showFurniture);
                       }}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         showFurniture ? 'bg-purple-600' : 'bg-gray-300'
@@ -251,14 +152,14 @@ export default function BottomNavSeatingEdit({
                       />
                     </button>
                   </div>
-                  
-                  {/* Teacher's Desk Left Toggle */}
+
                   <div className="px-4 py-2 flex items-center justify-between hover:bg-gray-50">
                     <span className="text-sm text-gray-700 font-medium">Teacher's Desk Left</span>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleToggleTeachersDeskLeft(!teachersDeskLeft);
+                        void onToggleTeachersDeskLeft(!teachersDeskLeft);
                       }}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         teachersDeskLeft ? 'bg-purple-600' : 'bg-gray-300'
@@ -271,16 +172,14 @@ export default function BottomNavSeatingEdit({
                       />
                     </button>
                   </div>
-                  
-                  {/* Color by Gender Toggle */}
+
                   <div className="px-4 py-2 flex items-center justify-between hover:bg-gray-50">
                     <span className="text-sm text-gray-700 font-medium">Color by Gender</span>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const newValue = !colorByGender;
-                        setColorByGender(newValue);
-                        emitSeatingColorCodeBy({ colorCodeBy: newValue ? 'Gender' : 'Level' });
+                        onToggleColorByGender();
                       }}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         colorByGender ? 'bg-purple-600' : 'bg-gray-300'
@@ -293,17 +192,15 @@ export default function BottomNavSeatingEdit({
                       />
                     </button>
                   </div>
-                  
-                  {/* Color by Level Toggle (Disabled) */}
+
                   <div className="px-4 py-2 flex items-center justify-between hover:bg-gray-50 opacity-50">
                     <span className="text-sm text-gray-700 font-medium">Color by Level</span>
                     <button
+                      type="button"
                       disabled
                       className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors bg-gray-300 cursor-not-allowed"
                     >
-                      <span
-                        className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"
-                      />
+                      <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1" />
                     </button>
                   </div>
                 </div>
@@ -311,8 +208,6 @@ export default function BottomNavSeatingEdit({
             </div>
           )}
 
-
-          {/* Add Groups Button */}
           {currentClassName && (
             <div className="relative flex-shrink-0" ref={addGroupsButtonRef}>
               <BotNavGrayButton
@@ -324,8 +219,7 @@ export default function BottomNavSeatingEdit({
                 }}
                 stopPropagation={true}
               />
-              
-              {/* Add Groups Dropdown Menu */}
+
               {isAddGroupsMenuOpen && (
                 <div
                   data-add-groups-menu
@@ -335,6 +229,7 @@ export default function BottomNavSeatingEdit({
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                     <button
+                      type="button"
                       key={num}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -350,23 +245,20 @@ export default function BottomNavSeatingEdit({
             </div>
           )}
 
-          {/* Auto Assign Seats Button */}
           {currentClassName && (
             <BotNavGrayButton
               icon={<IconAutoAssign />}
               label="Auto Assign Seats"
-              onClick={handleAutoAssignSeats}
+              onClick={onAutoAssignSeats}
             />
           )}
 
-          {/* Randomize Button */}
           <BotNavGrayButton
             icon={<IconRandomArrows />}
             label="Randomize Seats"
-            onClick={handleRandomizeSeating}
+            onClick={onRandomize}
           />
 
-          {/* Settings Button */}
           {currentClassName && (
             <div className="relative flex-shrink-0" ref={settingsButtonRef}>
               <BotNavGrayButton
@@ -378,8 +270,7 @@ export default function BottomNavSeatingEdit({
                 }}
                 stopPropagation={true}
               />
-              
-              {/* Settings Dropdown Menu */}
+
               {isSettingsMenuOpen && (
                 <div
                   data-settings-menu
@@ -387,9 +278,9 @@ export default function BottomNavSeatingEdit({
                   onClick={(e) => e.stopPropagation()}
                   onMouseDown={(e) => e.stopPropagation()}
                 >
-                  {/* Edit Class Option */}
                   {classId && onEditClass && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onEditClass();
@@ -400,8 +291,8 @@ export default function BottomNavSeatingEdit({
                       Edit Class
                     </button>
                   )}
-                  {/* Clear All Groups Option */}
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleClearAllGroups();
@@ -410,9 +301,9 @@ export default function BottomNavSeatingEdit({
                   >
                     Clear All Groups
                   </button>
-                  
-                  {/* Delete All Groups Option */}
+
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteAllGroups();
@@ -426,20 +317,19 @@ export default function BottomNavSeatingEdit({
             </div>
           )}
         </div>
-        
-        {/* Right side - Add Group Button */}
+
         <div className="flex items-center">
-          <div 
+          <div
             onClick={() => handleAddGroups(1)}
             className="w-16 sm:w-24 md:w-32 lg:w-[200px] rounded-xl bg-red-400 text-white p-1 sm:p-2 md:p-2.5 lg:p-3 hover:bg-pink-50 hover:shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 flex-shrink-0"
           >
-            {/* Add/Plus icon */}
             <IconAddPlus className="w-3 h-3 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 lg:w-5 lg:h-5 text-white" />
-            <h2 className="font-semibold text-white text-xs sm:text-sm md:text-base lg:text-base hidden sm:inline">Add group</h2>
+            <h2 className="font-semibold text-white text-xs sm:text-sm md:text-base lg:text-base hidden sm:inline">
+              Add group
+            </h2>
           </div>
         </div>
       </div>
     </BaseBottomNav>
   );
 }
-

@@ -59,7 +59,7 @@
 - [x] **Dead Variables:** Clean up declared but unread parameters in hooks/components (e.g., renaming unused props to `_studentId` for TS compliance).
 - [x] **Orphaned Files:** Safely delete disconnected components and outdated documentation (e.g., `AddGroupModal.tsx`, legacy `README.md` files).
 - [x] **Guardrails:** Verify that no Layer 3 API files (`/src/api/**`) or optimized Contexts (`DashboardContext`, `SeatingChartContext`) were altered during the sweep.
-[ ] The Next Priority (useSeatingChart.ts): Extract complex state management from SeatingChartEditorView.tsx.
+[x] The Next Priority (useSeatingChart.ts): Extract complex state management from SeatingChartEditorView.tsx.
     Extract the Logic: Move dragging, dropping, and allocation state to src/features/seating/hooks/useSeatingChart.ts. Zero-Latency "Desk": Hook manages local React state (The Desk) and coordinates with @/api/seating (The Library) for batch saving.
 
 ---
@@ -67,6 +67,6 @@
 ## Phase 5: The Furniture (Visual Tier 3)
 *Goal: Make UI components "dumb" and agnostic.*
 
-- [ ] **Navbars:** Decouple `BottomNavStudents` and `BottomNavSeatingEdit` from database logic; pass actions via props/hooks.
-- [ ] **Modals:** Ensure modals (e.g., `EditStudentModal`) only manage local visual state (open/close, form text) and fire a hook function on submit.
+- [x] **Navbars:** Decouple `BottomNavStudents` and `BottomNavSeatingEdit` from database logic; pass actions via props/hooks.
+- [x] **Modals:** Ensure modals (e.g., `EditStudentModal`) only manage local visual state (open/close, form text) and fire a hook function on submit.
 - [ ] **Atoms:** Ensure

@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { useStudentSort } from '@/context/StudentSortContext';
-import { signOutCurrentUser } from '@/api/auth';
+import type { SortOption } from '@/context/StudentSortContext';
 import ViewModeModal from '@/components/modals/ViewModeModal';
 import IconViewDots from '@/components/iconsCustom/iconViewDots';
 import IconRandomArrows from '@/components/iconsCustom/iconRandomArrows';
@@ -13,30 +11,32 @@ import IconCheckBox from '@/components/iconsCustom/iconCheckBox';
 import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
-import { STUDENT_EVENTS } from '@/lib/events/students';
 
 interface BottomNavStudentsProps {
   currentClassName: string | null;
   onTimerClick: () => void;
   onRandomClick: () => void;
-  /** When true (e.g. seating chart view), Sorting button is shown but disabled */
   sortingDisabled?: boolean;
-  /** Current class ID (when on a class page) for opening Edit Class modal */
   classId?: string | null;
-  /** Called when user chooses Edit Class from settings menu */
   onEditClass?: () => void;
+  sortBy: SortOption;
+  onSortChange: (next: SortOption) => void;
+  onLogout: () => void;
+  onToggleMultiSelect: () => void;
 }
 
-export default function BottomNavStudents({ 
-  currentClassName, 
+export default function BottomNavStudents({
+  currentClassName,
   onTimerClick,
   onRandomClick,
   sortingDisabled = false,
   classId = null,
   onEditClass,
+  sortBy,
+  onSortChange,
+  onLogout,
+  onToggleMultiSelect,
 }: BottomNavStudentsProps) {
-  const { sortBy, setSortBy } = useStudentSort();
-  const router = useRouter();
   const [isSortPopupOpen, setIsSortPopupOpen] = useState(false);
   const sortButtonRef = useRef<HTMLDivElement>(null);
   const [isSettingsPopupOpen, setIsSettingsPopupOpen] = useState(false);
@@ -44,7 +44,6 @@ export default function BottomNavStudents({
   const [isViewPopupOpen, setIsViewPopupOpen] = useState(false);
   const viewButtonRef = useRef<HTMLDivElement>(null);
 
-  // Close any open popup when clicking outside its trigger container.
   useEffect(() => {
     if (!isSortPopupOpen && !isSettingsPopupOpen && !isViewPopupOpen) return;
 
@@ -66,19 +65,8 @@ export default function BottomNavStudents({
     return () => document.removeEventListener('click', handleClickOutside, true);
   }, [isSortPopupOpen, isSettingsPopupOpen, isViewPopupOpen]);
 
-  const handleLogout = async () => {
-    try {
-      await signOutCurrentUser();
-      router.push('/login');
-    } catch (err) {
-      console.error('Unexpected error during logout:', err);
-      alert('An unexpected error occurred. Please try again.');
-    }
-  };
-
   return (
     <BaseBottomNav className="overflow-visible">
-      {/* View Button - Only show when on a class page */}
       {currentClassName && (
         <div className="relative flex-shrink-0" ref={viewButtonRef}>
           <BotNavGrayButton
@@ -90,28 +78,14 @@ export default function BottomNavStudents({
             }}
             stopPropagation={true}
           />
-          <ViewModeModal 
-            isOpen={isViewPopupOpen} 
-            onClose={() => setIsViewPopupOpen(false)} 
-          />
+          <ViewModeModal isOpen={isViewPopupOpen} onClose={() => setIsViewPopupOpen(false)} />
         </div>
       )}
 
-      {/* Random Button */}
-      <BotNavGrayButton
-        icon={<IconRandomArrows />}
-        label="Random"
-        onClick={onRandomClick}
-      />
+      <BotNavGrayButton icon={<IconRandomArrows />} label="Random" onClick={onRandomClick} />
 
-      {/* Timer Button */}
-      <BotNavGrayButton
-        icon={<IconTimerClock />}
-        label="Timer"
-        onClick={onTimerClick}
-      />
+      <BotNavGrayButton icon={<IconTimerClock />} label="Timer" onClick={onTimerClick} />
 
-      {/* Sorting Button - Only show when on a class page; disabled in seating view */}
       {currentClassName && (
         <div className="relative flex-shrink-0" ref={sortButtonRef}>
           <BotNavGrayButton
@@ -124,17 +98,15 @@ export default function BottomNavStudents({
             stopPropagation={true}
             enabled={!sortingDisabled}
           />
-          {/* Sort Popup */}
           {isSortPopupOpen && (
-            <div 
-              className="absolute bottom-full left-0 mb-2 bg-blue-100 rounded-lg shadow-lg border-4 border-brand-purple py-2 z-[100] min-w-[200px]"
-            >
+            <div className="absolute bottom-full left-0 mb-2 bg-blue-100 rounded-lg shadow-lg border-4 border-brand-purple py-2 z-[100] min-w-[200px]">
               <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-200">
                 Sort by:
               </div>
               <button
+                type="button"
                 onClick={() => {
-                  setSortBy('number');
+                  onSortChange('number');
                   setIsSortPopupOpen(false);
                 }}
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
@@ -144,8 +116,9 @@ export default function BottomNavStudents({
                 Student Number
               </button>
               <button
+                type="button"
                 onClick={() => {
-                  setSortBy('alphabetical');
+                  onSortChange('alphabetical');
                   setIsSortPopupOpen(false);
                 }}
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
@@ -155,8 +128,9 @@ export default function BottomNavStudents({
                 Alphabetical
               </button>
               <button
+                type="button"
                 onClick={() => {
-                  setSortBy('points');
+                  onSortChange('points');
                   setIsSortPopupOpen(false);
                 }}
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
@@ -170,16 +144,12 @@ export default function BottomNavStudents({
         </div>
       )}
 
-      {/* Multiple Select Button */}
       <BotNavGrayButton
         icon={<IconCheckBox />}
         label="Multiple Select"
-        onClick={() => {
-          window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.TOGGLE_MULTI_SELECT));
-        }}
+        onClick={onToggleMultiSelect}
       />
 
-      {/* Settings Button */}
       <div className="relative flex-shrink-0" ref={settingsButtonRef}>
         <BotNavGrayButton
           icon={<IconSettingsWheel />}
@@ -191,13 +161,11 @@ export default function BottomNavStudents({
           stopPropagation={true}
         />
 
-        {/* Settings Popup */}
         {isSettingsPopupOpen && (
-          <div 
-            className="absolute bottom-full left-0 mb-2 bg-blue-100 rounded-lg shadow-lg border-4 border-brand-purple py-2 z-[100] min-w-[200px]"
-          >
+          <div className="absolute bottom-full left-0 mb-2 bg-blue-100 rounded-lg shadow-lg border-4 border-brand-purple py-2 z-[100] min-w-[200px]">
             {classId && onEditClass && (
               <button
+                type="button"
                 onClick={() => {
                   onEditClass();
                   setIsSettingsPopupOpen(false);
@@ -208,7 +176,8 @@ export default function BottomNavStudents({
               </button>
             )}
             <button
-              onClick={handleLogout}
+              type="button"
+              onClick={onLogout}
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
             >
               Log out
@@ -219,4 +188,3 @@ export default function BottomNavStudents({
     </BaseBottomNav>
   );
 }
-

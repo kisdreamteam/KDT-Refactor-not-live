@@ -4,16 +4,25 @@ import { useState, useEffect, useRef } from 'react';
 import Modal from '@/components/modals/Modal';
 import { Student } from '@/lib/types';
 import { normalizeAvatarPath } from '@/lib/iconUtils';
-import { updateStudentById } from '@/api/students';
+
+/** Payload passed to `onSubmit` (Layer 1 / parent persists via `@/api/students`). */
+export type EditStudentModalSubmitValues = {
+  studentId: string;
+  first_name: string;
+  last_name: string | null;
+  student_number: number | null;
+  gender: string | null;
+  avatar: string;
+};
 
 interface EditStudentModalProps {
   isOpen: boolean;
   onClose: () => void;
   student: Student | null;
-  onRefresh: () => void;
+  onSubmit: (values: EditStudentModalSubmitValues) => Promise<void>;
 }
 
-export default function EditStudentModal({ isOpen, onClose, student, onRefresh }: EditStudentModalProps) {
+export default function EditStudentModal({ isOpen, onClose, student, onSubmit }: EditStudentModalProps) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [studentNumber, setStudentNumber] = useState('');
@@ -24,13 +33,11 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  // Generate array of available student avatars (avatar-01.png through avatar-40.png)
   const availableAvatars = Array.from({ length: 40 }, (_, i) => {
     const number = String(i + 1).padStart(2, '0');
     return `/images/dashboard/student-avatars/avatar-${number}.png`;
   });
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -44,18 +51,15 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
     }
   }, [isAvatarDropdownOpen]);
 
-  // Load student data when modal opens
   useEffect(() => {
     if (isOpen && student) {
       setFirstName(student.first_name || '');
       setLastName(student.last_name || '');
-      // Convert number to string for input field
       setStudentNumber(student.student_number?.toString() || '');
       setSelectedAvatar(normalizeAvatarPath(student.avatar));
       setGender(student.gender || '');
       setIsLoadingData(false);
     } else if (!isOpen) {
-      // Reset form when modal closes
       setFirstName('');
       setLastName('');
       setStudentNumber('');
@@ -73,30 +77,23 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
       return;
     }
 
+    const studentNumberValue = studentNumber.trim() ? parseInt(studentNumber.trim(), 10) : null;
+
+    if (studentNumber.trim() && studentNumberValue !== null && isNaN(studentNumberValue)) {
+      alert('Please enter a valid student number.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Convert student_number string to number or null
-      const studentNumberValue = studentNumber.trim() 
-        ? parseInt(studentNumber.trim(), 10) 
-        : null;
-      
-      // Validate that if provided, it's a valid number
-      if (studentNumber.trim() && isNaN(studentNumberValue as number)) {
-        alert('Please enter a valid student number.');
-        setIsLoading(false);
-        return;
-      }
-
-      await updateStudentById(student.id, {
+      await onSubmit({
+        studentId: student.id,
         first_name: firstName.trim(),
         last_name: lastName.trim() || null,
         student_number: studentNumberValue,
         gender: gender.trim() || null,
         avatar: selectedAvatar,
       });
-
-      onRefresh();
-      onClose();
     } catch (err) {
       console.error('Unexpected error updating student:', err);
       alert('An unexpected error occurred. Please try again.');
@@ -108,7 +105,6 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <div className="bg-[#F5F5F5] rounded-[28px] p-8">
-        {/* Header */}
         <div className="mb-6">
           <h2 className="text-3xl font-extrabold text-brand-purple mb-2">Edit Student</h2>
         </div>
@@ -122,10 +118,8 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Avatar Picker */}
             <div className="flex justify-center mb-6">
               <div className="relative" ref={dropdownRef}>
-                {/* Selected Avatar Display (Clickable) */}
                 <button
                   type="button"
                   onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
@@ -139,45 +133,21 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
                     className="w-full h-full object-cover rounded-full"
                     decoding="async"
                     onError={(e) => {
-                      // Fallback to default avatar if image doesn't exist
                       e.currentTarget.src = '/images/dashboard/student-avatars/avatar-01.png';
                     }}
                   />
-                  {/* Down Arrow Indicator */}
                   <div className="absolute bottom-0 right-0 bg-brand-pink rounded-full p-1 border-2 border-white">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </button>
 
-
-                {/* Avatar Dropdown */}
                 {isAvatarDropdownOpen && (
                   <>
-                    {/* Backdrop to close dropdown */}
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setIsAvatarDropdownOpen(false)}
-                    />
-                    
-                    {/* Dropdown Menu */}
+                    <div className="fixed inset-0 z-10" onClick={() => setIsAvatarDropdownOpen(false)} />
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 z-20 w-80 max-h-96 overflow-y-auto">
-                      <div className="text-sm font-semibold text-gray-700 mb-3 text-center">
-                        Choose Student Avatar
-                      </div>
-                      
-                      {/* Avatars Grid */}
+                      <div className="text-sm font-semibold text-gray-700 mb-3 text-center">Choose Student Avatar</div>
                       <div className="grid grid-cols-5 gap-3">
                         {availableAvatars.map((avatar, index) => (
                           <button
@@ -201,7 +171,6 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
                               className="w-full h-full object-cover rounded-full"
                               decoding="async"
                               onError={(e) => {
-                                // Hide broken images
                                 e.currentTarget.style.display = 'none';
                               }}
                             />
@@ -214,11 +183,8 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
               </div>
             </div>
 
-            {/* Student Number */}
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
-                Student Number
-              </label>
+              <label className="block text-sm font-semibold text-black mb-2">Student Number</label>
               <input
                 type="text"
                 value={studentNumber}
@@ -228,11 +194,8 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
               />
             </div>
 
-            {/* First Name */}
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
-                First Name
-              </label>
+              <label className="block text-sm font-semibold text-black mb-2">First Name</label>
               <input
                 type="text"
                 value={firstName}
@@ -242,7 +205,6 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
               />
             </div>
 
-            {/* Last Name */}
             <div>
               <label className="block text-sm font-semibold text-black mb-2">
                 Last Name <span className="text-gray-500 font-normal">(Optional)</span>
@@ -256,11 +218,8 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
               />
             </div>
 
-            {/* Gender Dropdown */}
             <div>
-              <label className="block text-sm font-semibold text-black mb-2">
-                Gender
-              </label>
+              <label className="block text-sm font-semibold text-black mb-2">Gender</label>
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
@@ -272,9 +231,9 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
               </select>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4">
               <button
+                type="button"
                 onClick={onClose}
                 disabled={isLoading}
                 className="px-6 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
@@ -282,7 +241,8 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
                 Cancel
               </button>
               <button
-                onClick={handleSave}
+                type="button"
+                onClick={() => void handleSave()}
                 disabled={isLoading}
                 className="px-6 py-2 bg-brand-pink text-white rounded-lg font-bold hover:brightness-95 transition disabled:opacity-50"
               >
@@ -295,4 +255,3 @@ export default function EditStudentModal({ isOpen, onClose, student, onRefresh }
     </Modal>
   );
 }
-

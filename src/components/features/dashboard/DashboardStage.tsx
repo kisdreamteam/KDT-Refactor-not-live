@@ -8,14 +8,15 @@ import IconDocumentClock from '@/components/iconsCustom/iconDocumentClock';
 import TopNav from '@/components/features/navbars/TopNav';
 import BottomNavStudents from '@/components/features/navbars/BottomNavStudents';
 import BottomNavMulti from '@/components/features/navbars/BottomNavMulti';
-import BottomNavSeatingEdit from '@/components/features/navbars/BottomNavSeatingEdit';
+import SeatingEditBottomNavBridge from '@/components/features/navbars/SeatingEditBottomNavBridge';
+import type { SortOption } from '@/context/StudentSortContext';
 import Timer from '@/components/features/dashboard/tools/Timer';
 import Random from '@/components/features/dashboard/tools/Random';
 import CanvasToolbar from '@/components/ui/CanvasToolbar';
 import { StageToolbarProvider } from '@/components/features/dashboard/StageToolbarContext';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 
-interface DashboardStageProps {
+export interface DashboardStageProps {
   children: React.ReactNode;
   isSeatingView: boolean;
   showCanvasToolbar?: boolean;
@@ -36,6 +37,10 @@ interface DashboardStageProps {
   onEditClass: () => void;
   onTimerClick: () => void;
   onRandomClick: () => void;
+  studentSortBy: SortOption;
+  onStudentSortChange: (next: SortOption) => void;
+  onLogoutStudentsNav: () => void;
+  onToggleMultiSelect: () => void;
 }
 
 export default function DashboardStage({
@@ -56,6 +61,10 @@ export default function DashboardStage({
   onEditClass,
   onTimerClick,
   onRandomClick,
+  studentSortBy,
+  onStudentSortChange,
+  onLogoutStudentsNav,
+  onToggleMultiSelect,
 }: DashboardStageProps) {
   const noopSetToolbar = useCallback(() => {}, []);
   const showTopNav = !isSeatingView;
@@ -205,7 +214,7 @@ export default function DashboardStage({
       {showBottomNav && (
         <div className="col-start-1 col-span-2 row-start-3 overflow-visible relative z-20 w-full">
           {isSeatingView && isEditMode ? (
-            <BottomNavSeatingEdit
+            <SeatingEditBottomNavBridge
               currentClassName={currentClassName}
               classId={classId}
               onEditClass={onEditClass}
@@ -220,6 +229,10 @@ export default function DashboardStage({
               sortingDisabled={isSeatingView}
               classId={classId}
               onEditClass={onEditClass}
+              sortBy={studentSortBy}
+              onSortChange={onStudentSortChange}
+              onLogout={onLogoutStudentsNav}
+              onToggleMultiSelect={onToggleMultiSelect}
             />
           )}
         </div>
