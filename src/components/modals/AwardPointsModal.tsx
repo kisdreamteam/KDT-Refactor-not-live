@@ -59,6 +59,8 @@ interface AwardPointsModalProps {
   selectedClassIds?: string[]; // For multi-class selection
   selectedStudentIds?: string[]; // For multi-student selection
   onAwardComplete?: (selectedIds: string[], type: 'classes' | 'students') => void; // Callback to store selected IDs
+  /** When true, roster is updated optimistically in the store; skip post-award refresh. */
+  skipRefreshAfterAward?: boolean;
 }
 
 export default function AwardPointsModal({
@@ -73,6 +75,7 @@ export default function AwardPointsModal({
   selectedClassIds,
   selectedStudentIds,
   onAwardComplete,
+  skipRefreshAfterAward = false,
 }: AwardPointsModalProps) {
   const isMultiClassMode = selectedClassIds && selectedClassIds.length > 0;
   const isMultiStudentMode = selectedStudentIds && selectedStudentIds.length > 0;
@@ -100,6 +103,7 @@ export default function AwardPointsModal({
     onPointsAwarded,
     onAwardComplete,
     onClose,
+    skipRefreshAfterAward,
   });
 
   // Fetch categories function

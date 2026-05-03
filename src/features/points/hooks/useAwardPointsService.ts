@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { PointCategory, Student } from '@/lib/types';
 import {
-  executeCategoryAward,
-  executeCustomAward,
   getAwardMode,
+  resolveAwardTargetStudentIds,
   type AwardTargetContext,
   type AwardMode,
 } from '@/features/points/services/awardPointsService';
+import { awardCustomPointsToStudents, awardPointsToStudents, getAuthenticatedUserId } from '@/api/points';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
 interface UseAwardPointsServiceParams {
   context: AwardTargetContext;
@@ -23,6 +24,8 @@ interface UseAwardPointsServiceParams {
   }) => void;
   onAwardComplete?: (selectedIds: string[], type: 'classes' | 'students') => void;
   onClose: () => void;
+  /** When true, do not call `onRefresh` after a successful award (dashboard roster already updated optimistically). */
+  skipRefreshAfterAward?: boolean;
 }
 
 export function useAwardPointsService({
@@ -34,6 +37,7 @@ export function useAwardPointsService({
   onPointsAwarded,
   onAwardComplete,
   onClose,
+  skipRefreshAfterAward = false,
 }: UseAwardPointsServiceParams) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +53,7 @@ export function useAwardPointsService({
         onAwardComplete(context.selectedStudentIds, 'students');
       }
 
-      if (onRefresh) {
+      if (onRefresh && !skipRefreshAfterAward) {
         onRefresh();
       }
 
@@ -85,25 +89,46 @@ export function useAwardPointsService({
 
       onClose();
     },
-    [mode, context.selectedClassIds, context.selectedStudentIds, onAwardComplete, onRefresh, onPointsAwarded, classIcon, className, student, onClose]
+    [
+      mode,
+      context.selectedClassIds,
+      context.selectedStudentIds,
+      onAwardComplete,
+      onRefresh,
+      onPointsAwarded,
+      classIcon,
+      className,
+      student,
+      onClose,
+      skipRefreshAfterAward,
+    ]
   );
 
   const awardSkill = useCallback(
     async (category: PointCategory) => {
       setIsSubmitting(true);
       setError(null);
+      const points = category.points ?? category.default_points ?? 0;
       try {
-        const points = category.points ?? category.default_points ?? 0;
-        const studentIds = await executeCategoryAward({
-          context,
-          categoryId: category.id,
-          points,
-          memo: '',
-        });
-
+        const studentIds = await resolveAwardTargetStudentIds(context);
         if (studentIds.length === 0) {
           alert('No students found for the current selection.');
           return false;
+        }
+
+        const { applyPointsDelta } = useDashboardStore.getState();
+        applyPointsDelta(studentIds, points);
+
+        try {
+          await awardPointsToStudents({
+            studentIds,
+            categoryId: category.id,
+            points,
+            memo: '',
+          });
+        } catch (apiErr) {
+          applyPointsDelta(studentIds, -points);
+          throw apiErr;
         }
 
         afterAwardSuccess(points, category.name, category.icon);
@@ -130,20 +155,31 @@ export function useAwardPointsService({
       setIsSubmitting(true);
       setError(null);
       try {
-        const result = await executeCustomAward({
-          context,
-          points: customPoints,
-          memo: customMemo,
-        });
-
-        if (!result.teacherId) {
+        const teacherId = await getAuthenticatedUserId();
+        if (!teacherId) {
           alert('You must be logged in to award custom points.');
           return false;
         }
 
-        if (result.studentIds.length === 0) {
+        const studentIds = await resolveAwardTargetStudentIds(context);
+        if (studentIds.length === 0) {
           alert('No students found for the current selection.');
           return false;
+        }
+
+        const { applyPointsDelta } = useDashboardStore.getState();
+        applyPointsDelta(studentIds, customPoints);
+
+        try {
+          await awardCustomPointsToStudents({
+            studentIds,
+            teacherId,
+            points: customPoints,
+            memo: customMemo,
+          });
+        } catch (apiErr) {
+          applyPointsDelta(studentIds, -customPoints);
+          throw apiErr;
         }
 
         afterAwardSuccess(customPoints, customMemo || 'Custom Points');

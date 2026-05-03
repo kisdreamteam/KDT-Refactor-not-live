@@ -22,7 +22,6 @@ export default function DashboardClassModalsHost() {
   const pathname = usePathname();
   const currentClassId = pathname?.match(/\/dashboard\/classes\/([^/]+)/)?.[1] ?? null;
   const students = useDashboardStore((s) => s.students);
-  const setStudents = useDashboardStore((s) => s.setStudents);
   const classes = useDashboardStore((s) => s.classes);
 
   const modalType = useModalStore((s) => s.modalType);
@@ -72,19 +71,14 @@ export default function DashboardClassModalsHost() {
       } else if (mt === 'award_points_multi' && targetIds?.length) {
         ids = targetIds;
       } else if (mt === 'award_points_whole_class') {
-        ids = students.map((s) => s.id);
+        ids = useDashboardStore.getState().students.map((s) => s.id);
       }
       if (currentClassId && ids.length > 0 && Number.isFinite(delta)) {
-        setStudents((prev) =>
-          prev.map((s) =>
-            ids.includes(s.id) ? { ...s, points: (s.points ?? 0) + delta } : s
-          )
-        );
         emitSeatingStudentPointsDelta({ classId: currentClassId, studentIds: ids, delta });
       }
       openAwardConfirmation(info);
     },
-    [currentClassId, students, setStudents, openAwardConfirmation]
+    [currentClassId, openAwardConfirmation]
   );
 
   const onAwardComplete = useCallback((selectedIds: string[], type: 'classes' | 'students') => {
@@ -129,7 +123,7 @@ export default function DashboardClassModalsHost() {
           classId={currentClassId}
           className={modalType === 'award_points_whole_class' ? className : undefined}
           classIcon={modalType === 'award_points_whole_class' ? classIcon : undefined}
-          onRefresh={() => void handleStudentAdded()}
+          skipRefreshAfterAward
           onPointsAwarded={handlePointsAwarded}
           selectedStudentIds={
             modalType === 'award_points_multi' && awardTargetStudentIds?.length

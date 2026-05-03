@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Student } from '@/lib/types';
 import {
   STUDENT_EVENTS,
   emitMultiSelectStateChanged,
@@ -7,12 +6,9 @@ import {
   emitSelectionCountChanged,
 } from '@/lib/events/students';
 import { useModalStore } from '@/stores/useModalStore';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
-interface UseStudentsSelectionParams {
-  students: Student[];
-}
-
-export function useStudentsSelection({ students }: UseStudentsSelectionParams) {
+export function useStudentsSelection() {
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
@@ -32,11 +28,11 @@ export function useStudentsSelection({ students }: UseStudentsSelectionParams) {
 
   const selectAll = useCallback(() => {
     if (isMultiSelectMode) {
-      const allIds = students.map((s) => s.id);
+      const allIds = useDashboardStore.getState().students.map((s) => s.id);
       setSelectedStudentIds(allIds);
       emitSelectionCountChanged({ count: allIds.length });
     }
-  }, [isMultiSelectMode, students]);
+  }, [isMultiSelectMode]);
 
   const selectNone = useCallback(() => {
     if (isMultiSelectMode) {
@@ -72,12 +68,12 @@ export function useStudentsSelection({ students }: UseStudentsSelectionParams) {
 
   const inverseSelect = useCallback(() => {
     if (isMultiSelectMode) {
-      const allStudentIds = students.map((s) => s.id);
+      const allStudentIds = useDashboardStore.getState().students.map((s) => s.id);
       const newSelectedIds = allStudentIds.filter((id) => !selectedStudentIds.includes(id));
       setSelectedStudentIds(newSelectedIds);
       emitSelectionCountChanged({ count: newSelectedIds.length });
     }
-  }, [isMultiSelectMode, students, selectedStudentIds]);
+  }, [isMultiSelectMode, selectedStudentIds]);
 
   const handleSelectStudent = useCallback((studentId: string) => {
     setSelectedStudentIds((prev) => {

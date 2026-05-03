@@ -37,7 +37,7 @@
 
 - [x] **Typings:** Dashboard data state in [`/src/stores/useDashboardStore.ts`](../src/stores/useDashboardStore.ts): `activeClassId`, `classes`, `students`, loading flags, functional `setStudents`.
 - [x] **Create Store:** [`/src/stores/useDashboardStore.ts`](../src/stores/useDashboardStore.ts).
-- [x] **Reroute Writers (Layer 1):** [`/src/hooks/useDashboardStudentSync.ts`](../src/hooks/useDashboardStudentSync.ts) syncs URL → `activeClassId`, fetches roster via Layer 3 API (`fetchStudentsByClassId`), updates the store, and exports `refreshDashboardStudents(force?)`. `useClassPointLog` still receives `(classId, students)` from parents that read `students` via store selectors (e.g. [`StudentsView.tsx`](../src/components/features/dashboard/StudentsView.tsx)).
+- [x] **Reroute Writers (Layer 1):** [`/src/hooks/useDashboardStudentSync.ts`](../src/hooks/useDashboardStudentSync.ts) syncs URL → `activeClassId`, fetches roster via Layer 3 API (`fetchStudentsByClassId`), updates the store, and exports `refreshDashboardStudents(force?)`. [`useClassPointLog`](../src/hooks/useClassPointLog.ts) reads the roster from the store when the log panel opens (`classId` only).
 - [x] **Reroute Readers:** [`TopNav.tsx`](../src/components/features/navbars/TopNav.tsx) remains title + logo only. Class switching is via URL, [`LeftNav.tsx`](../src/components/features/navbars/LeftNav.tsx) (`setActiveClassId` on class link click before navigation), and [`useDashboardStudentSync.ts`](../src/hooks/useDashboardStudentSync.ts) keeping the store aligned with the route.
 - [x] **Verification:** `npm run build` passed. Manually confirm: LeftNav class links, deep link to `/dashboard/classes/[id]`, grid ↔ seating then back to grid (triggers `refreshDashboardStudents` via [`useStudentsUrlState.ts`](../src/components/features/dashboard/hooks/useStudentsUrlState.ts)).
 
@@ -46,10 +46,17 @@
 ## Phase 4: Point Awarding (The Selector Magic)
 **Target:** Prevent the entire grid from flashing when a single student receives a point.
 
-- [ ] **Reroute Writers (Layer 1):** Update `useAwardPointsService.ts` to push the new calculated point total to the specific student object in the Zustand store.
-- [ ] **Reroute Readers (Tier 3):** Refactor `StudentCard` components to use a strict selector: subscribe *only* to their specific student object's points.
-- [ ] **Verification:** Award a point to "Alice". Confirm ONLY Alice's card flashes the update, while the rest of the grid remains un-rendered.
+- [x] **Store writers:** [`useDashboardStore.ts`](../src/stores/useDashboardStore.ts) adds `updateStudent(id, patch)` and `applyPointsDelta(studentIds, delta)` (immutable map; unchanged rows keep the same object references).
+- [x] **Reroute Writers (Layer 1):** [`useAwardPointsService.ts`](../src/features/points/hooks/useAwardPointsService.ts) resolves target ids, calls `applyPointsDelta` **before** Layer 3 (`awardPointsToStudents` / `awardCustomPointsToStudents` from [`api/points`](../src/api/points.ts)), rolls back on API failure, and supports `skipRefreshAfterAward` so [`DashboardClassModalsHost`](../src/components/features/dashboard/DashboardClassModalsHost.tsx) does not refetch the whole roster after an award (seating delta + confirmation unchanged).
+- [x] **Reroute Readers (Tier 2/3):** [`dashboardStudentSelectors.ts`](../src/stores/dashboardStudentSelectors.ts) + `useShallow` in [`StudentsView.tsx`](../src/components/features/dashboard/StudentsView.tsx) for ordered ids when sort is not by points; [`StudentCard.tsx`](../src/components/features/dashboard/cards/StudentCard.tsx) / [`StudentCardMulti.tsx`](../src/components/features/dashboard/cards/StudentCardMulti.tsx) subscribe with `useShallow` to the row for `studentId`. [`StudentCardsGrid.tsx`](../src/components/features/dashboard/maincontent/viewStudentsGrid/StudentCardsGrid.tsx) maps `orderedStudentIds`.
+- [x] **Verification:** `npm run build` passed. Manually award (single / multi / whole class) from the dashboard modal; with sort by name or number, only affected cards should update; sort by points still reorders the id list as expected. Random tool still uses `onRefresh` after awards (`skipRefreshAfterAward` default false).
 
+## Phase 4.5: The Seating Chart (The Teleportation)
+*Target: Prevent the Seating Chart background from flickering when switching classes.*
+
+- [ ] **Create Store:** Create `/src/stores/useSeatingStore.ts` to hold `activeChart`, `groups`, and `objects/decorations`.
+- [ ] **Reroute Writers (Layer 1):** Update the seating fetcher hook to listen to `activeClassId` from `useDashboardStore`. When it changes, fetch the new class's seating layout and push it to `useSeatingStore`.
+- [ ] **Reroute Readers (Tier 2 & 3):** Refactor `SeatingChartView.tsx` to remove Context. The outer "cream container" should be static. Sub-components (Groups, Teacher Desk) should use strict selectors to get their specific `x, y` coordinates.
 ---
 
 ## Phase 5: The Cleanup

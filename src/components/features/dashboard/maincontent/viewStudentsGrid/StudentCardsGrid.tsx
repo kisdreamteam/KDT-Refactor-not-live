@@ -1,4 +1,3 @@
-import type { Student } from '@/lib/types';
 import CardsGrid from '@/components/ui/CardsGrid';
 import ScaledGridFrame from '@/components/ui/ScaledGridFrame';
 import WholeClassCard from '@/components/features/dashboard/cards/WholeClassCard';
@@ -7,7 +6,7 @@ import StudentCardMulti from '@/components/features/dashboard/cards/StudentCardM
 import AddStudentCard from '@/components/features/dashboard/cards/AddStudentCard';
 
 interface StudentCardsGridProps {
-  sortedStudents: Student[];
+  orderedStudentIds: string[];
   isMultiSelectMode: boolean;
   selectedStudentIds: string[];
   classIcon: string | null;
@@ -18,12 +17,12 @@ interface StudentCardsGridProps {
   onToggleDropdown: (studentId: string, event: React.MouseEvent) => void;
   onEditStudent: (studentId: string) => void;
   onDeleteStudent: (studentId: string, studentName: string) => void;
-  onStudentClick: (student: Student) => void;
+  onStudentClick: (studentId: string) => void;
   onAddStudent: () => void;
 }
 
 export default function StudentCardsGrid({
-  sortedStudents,
+  orderedStudentIds,
   isMultiSelectMode,
   selectedStudentIds,
   classIcon,
@@ -38,30 +37,30 @@ export default function StudentCardsGrid({
   onAddStudent,
 }: StudentCardsGridProps) {
   return (
-    <ScaledGridFrame remeasureKey={`${sortedStudents.length}-${isMultiSelectMode ? 1 : 0}`}>
+    <ScaledGridFrame remeasureKey={`${orderedStudentIds.length}-${isMultiSelectMode ? 1 : 0}`}>
       <CardsGrid>
         <WholeClassCard
           classIcon={classIcon}
           totalPoints={totalClassPoints}
           onClick={onWholeClassClick}
         />
-        {sortedStudents.map((student) =>
+        {orderedStudentIds.map((studentId) =>
           isMultiSelectMode ? (
             <StudentCardMulti
-              key={student.id}
-              student={student}
-              isSelected={selectedStudentIds.includes(student.id)}
+              key={studentId}
+              studentId={studentId}
+              isSelected={selectedStudentIds.includes(studentId)}
               onSelect={onSelectStudent}
             />
           ) : (
             <StudentCard
-              key={student.id}
-              student={student}
+              key={studentId}
+              studentId={studentId}
               openDropdownId={openDropdownId}
               onToggleDropdown={onToggleDropdown}
               onEdit={onEditStudent}
               onDelete={onDeleteStudent}
-              onClick={onStudentClick}
+              onStudentClick={onStudentClick}
             />
           )
         )}
@@ -70,4 +69,3 @@ export default function StudentCardsGrid({
     </ScaledGridFrame>
   );
 }
-

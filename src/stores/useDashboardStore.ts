@@ -15,6 +15,8 @@ interface DashboardStore {
   setStudents: (next: DashboardSetStudents) => void;
   setLoadingStudents: (v: boolean) => void;
   setLoadingClasses: (v: boolean) => void;
+  updateStudent: (studentId: string, patch: Partial<Student>) => void;
+  applyPointsDelta: (studentIds: string[], delta: number) => void;
 }
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
@@ -31,4 +33,19 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
     })),
   setLoadingStudents: (v) => set({ isLoadingStudents: v }),
   setLoadingClasses: (v) => set({ isLoadingClasses: v }),
+  updateStudent: (studentId, patch) =>
+    set((state) => ({
+      students: state.students.map((s) => (s.id === studentId ? { ...s, ...patch } : s)),
+    })),
+  applyPointsDelta: (studentIds, delta) =>
+    set((state) => {
+      const idSet = new Set(studentIds);
+      let touched = false;
+      const students = state.students.map((s) => {
+        if (!idSet.has(s.id)) return s;
+        touched = true;
+        return { ...s, points: (s.points ?? 0) + delta };
+      });
+      return touched ? { students } : {};
+    }),
 }));

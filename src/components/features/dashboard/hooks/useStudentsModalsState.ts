@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
-import type { Student } from '@/lib/types';
 import { useModalStore } from '@/stores/useModalStore';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
-export function useStudentsModalsState(students: Student[]) {
+export function useStudentsModalsState() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const toggleDropdown = useCallback((studentId: string, event: React.MouseEvent) => {
@@ -13,23 +13,20 @@ export function useStudentsModalsState(students: Student[]) {
 
   const closeDropdown = useCallback(() => setOpenDropdownId(null), []);
 
-  const handleEditStudent = useCallback(
-    (studentId: string) => {
-      const studentToEdit = students.find((s) => s.id === studentId);
-      if (studentToEdit) {
-        useModalStore.getState().openModal('edit_student', { studentId });
-      }
-      setOpenDropdownId(null);
-    },
-    [students]
-  );
+  const handleEditStudent = useCallback((studentId: string) => {
+    const studentToEdit = useDashboardStore.getState().students.find((s) => s.id === studentId);
+    if (studentToEdit) {
+      useModalStore.getState().openModal('edit_student', { studentId });
+    }
+    setOpenDropdownId(null);
+  }, []);
 
   const handleDeleteStudent = useCallback(async (_studentId: string, _studentName: string) => {
     setOpenDropdownId(null);
   }, []);
 
-  const handleStudentClick = useCallback((student: Student) => {
-    useModalStore.getState().openModal('award_points_single', { studentId: student.id });
+  const handleStudentClick = useCallback((studentId: string) => {
+    useModalStore.getState().openModal('award_points_single', { studentId });
   }, []);
 
   const handleWholeClassClick = useCallback(() => {

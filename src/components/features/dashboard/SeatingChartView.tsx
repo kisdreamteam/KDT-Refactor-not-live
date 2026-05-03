@@ -99,7 +99,7 @@ export default function SeatingChartView({
     totalPages,
     safeLogPage,
     pagedPointLogRows,
-  } = useClassPointLog(classId, students);
+  } = useClassPointLog(classId);
 
 
   const applyLayoutViewSettings = useCallback((data: {

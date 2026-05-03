@@ -1,25 +1,36 @@
-import { Student } from "@/lib/types";
-import { normalizeAvatarPath } from "@/lib/iconUtils";
-import IconSettingsWheel from "@/components/iconsCustom/iconSettingsWheel";
-import BaseCard from "@/components/ui/BaseCard";
+'use client';
+
+import { useShallow } from 'zustand/react/shallow';
+import { normalizeAvatarPath } from '@/lib/iconUtils';
+import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
+import BaseCard from '@/components/ui/BaseCard';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
 interface StudentCardProps {
-  student: Student;
+  studentId: string;
   openDropdownId: string | null;
   onToggleDropdown: (studentId: string, event: React.MouseEvent) => void;
   onEdit: (studentId: string) => void;
   onDelete: (studentId: string, studentName: string) => void;
-  onClick: (student: Student) => void;
+  onStudentClick: (studentId: string) => void;
 }
 
 export default function StudentCard({
-  student,
+  studentId,
   openDropdownId,
   onToggleDropdown,
   onEdit,
   onDelete,
-  onClick,
+  onStudentClick,
 }: StudentCardProps) {
+  const student = useDashboardStore(
+    useShallow((s) => s.students.find((x) => x.id === studentId) ?? null)
+  );
+
+  if (!student) {
+    return null;
+  }
+
   return (
     <BaseCard
       data-student-card={student.id}
@@ -29,7 +40,7 @@ export default function StudentCard({
       title={student.first_name}
       titleClassName="pointer-events-none text-gray-900"
       iconWrapperClassName="pointer-events-none"
-      onClick={() => onClick(student)}
+      onClick={() => onStudentClick(student.id)}
       topRightSlot={
         <div
           className="relative"

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Student } from '@/lib/types';
 import { fetchPointLogRowsForStudents } from '@/api/points';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
 export type PointLogRow = {
   id: string;
@@ -21,7 +21,7 @@ export function formatPointLogDateDDMMYYYY(isoDate: string): string {
   return `${day}/${month}/${year}`;
 }
 
-export function useClassPointLog(classId: string | undefined, students: Student[]) {
+export function useClassPointLog(classId: string | undefined) {
   const [isPointLogOpen, setIsPointLogOpen] = useState(false);
   const [isPointLogLoading, setIsPointLogLoading] = useState(false);
   const [pointLogError, setPointLogError] = useState<string | null>(null);
@@ -36,6 +36,7 @@ export function useClassPointLog(classId: string | undefined, students: Student[
       setIsPointLogLoading(true);
       setPointLogError(null);
 
+      const students = useDashboardStore.getState().students;
       const studentNameMap = new Map<string, string>();
       const studentIds = students.map((s) => {
         const first = s.first_name ?? '';
@@ -64,7 +65,7 @@ export function useClassPointLog(classId: string | undefined, students: Student[
     } finally {
       setIsPointLogLoading(false);
     }
-  }, [classId, students]);
+  }, [classId]);
 
   useEffect(() => {
     if (isPointLogOpen) {

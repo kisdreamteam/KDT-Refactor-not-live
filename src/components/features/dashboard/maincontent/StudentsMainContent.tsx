@@ -1,20 +1,22 @@
-import type { Student } from '@/lib/types';
+'use client';
+
 import type { Dispatch, SetStateAction } from 'react';
+import type { Student } from '@/lib/types';
 import type { PointLogRow } from '@/hooks/useClassPointLog';
 import EmptyState from '@/components/ui/EmptyState';
 import ClassPointLogSlidePanel from '@/components/ui/ClassPointLogSlidePanel';
 import SeatingChartView from '@/components/features/dashboard/SeatingChartView';
 import SeatingChartEditorView from '@/components/features/dashboard/SeatingChartEditorView';
 import StudentCardsGrid from '@/components/features/dashboard/maincontent/viewStudentsGrid/StudentCardsGrid';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
 interface StudentsMainContentProps {
   classId: string;
   currentView: string;
   isSeatingEditMode: boolean;
   isEditModeFromURL: boolean;
-  students: Student[];
   setStudents: Dispatch<SetStateAction<Student[]>>;
-  sortedStudents: Student[];
+  orderedStudentIds: string[];
   isMultiSelectMode: boolean;
   selectedStudentIds: string[];
   classIcon: string | null;
@@ -36,9 +38,42 @@ interface StudentsMainContentProps {
   onToggleDropdown: (studentId: string, event: React.MouseEvent) => void;
   onEditStudent: (studentId: string) => void;
   onDeleteStudent: (studentId: string, studentName: string) => void;
-  onStudentClick: (student: Student) => void;
+  onStudentClick: (studentId: string) => void;
   onWholeClassClick: () => void;
   onAddStudent: () => void;
+}
+
+function SeatingStudentsBranch({
+  classId,
+  isSeatingEditMode,
+  isEditModeFromURL,
+  setStudents,
+  isMultiSelectMode,
+  selectedStudentIds,
+  onSelectStudent,
+}: {
+  classId: string;
+  isSeatingEditMode: boolean;
+  isEditModeFromURL: boolean;
+  setStudents: Dispatch<SetStateAction<Student[]>>;
+  isMultiSelectMode: boolean;
+  selectedStudentIds: string[];
+  onSelectStudent: (studentId: string) => void;
+}) {
+  const students = useDashboardStore((s) => s.students);
+  if (isSeatingEditMode || isEditModeFromURL) {
+    return <SeatingChartEditorView classId={classId} students={students} />;
+  }
+  return (
+    <SeatingChartView
+      classId={classId}
+      students={students}
+      setStudents={setStudents}
+      isMultiSelectMode={isMultiSelectMode}
+      selectedStudentIds={selectedStudentIds}
+      onSelectStudent={onSelectStudent}
+    />
+  );
 }
 
 export default function StudentsMainContent({
@@ -46,9 +81,8 @@ export default function StudentsMainContent({
   currentView,
   isSeatingEditMode,
   isEditModeFromURL,
-  students,
   setStudents,
-  sortedStudents,
+  orderedStudentIds,
   isMultiSelectMode,
   selectedStudentIds,
   classIcon,
@@ -84,18 +118,15 @@ export default function StudentsMainContent({
         }
       >
         {currentView === 'seating' ? (
-          (isSeatingEditMode || isEditModeFromURL) ? (
-            <SeatingChartEditorView classId={classId} students={students} />
-          ) : (
-            <SeatingChartView
-              classId={classId}
-              students={students}
-              setStudents={setStudents}
-              isMultiSelectMode={isMultiSelectMode}
-              selectedStudentIds={selectedStudentIds}
-              onSelectStudent={onSelectStudent}
-            />
-          )
+          <SeatingStudentsBranch
+            classId={classId}
+            isSeatingEditMode={isSeatingEditMode}
+            isEditModeFromURL={isEditModeFromURL}
+            setStudents={setStudents}
+            isMultiSelectMode={isMultiSelectMode}
+            selectedStudentIds={selectedStudentIds}
+            onSelectStudent={onSelectStudent}
+          />
         ) : (
           <>
             <ClassPointLogSlidePanel
@@ -116,7 +147,7 @@ export default function StudentsMainContent({
               setRowsPerPage={setRowsPerPage}
             />
 
-            {students.length === 0 ? (
+            {orderedStudentIds.length === 0 ? (
               <EmptyState
                 title="No students yet"
                 message="Students will appear here once they are added to this class."
@@ -125,7 +156,7 @@ export default function StudentsMainContent({
               />
             ) : (
               <StudentCardsGrid
-                sortedStudents={sortedStudents}
+                orderedStudentIds={orderedStudentIds}
                 isMultiSelectMode={isMultiSelectMode}
                 selectedStudentIds={selectedStudentIds}
                 classIcon={classIcon}
@@ -146,4 +177,3 @@ export default function StudentsMainContent({
     </div>
   );
 }
-

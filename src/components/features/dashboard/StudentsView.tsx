@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
+import { useShallow } from 'zustand/react/shallow';
 import { useStudentSort } from '@/context/StudentSortContext';
 import { refreshDashboardStudents } from '@/hooks/useDashboardStudentSync';
 import { useDashboardStore } from '@/stores/useDashboardStore';
+import { selectOrderedStudentIds, selectTotalClassPoints } from '@/stores/dashboardStudentSelectors';
 import LoadingState from '@/components/ui/LoadingState';
 import ErrorState from '@/components/ui/ErrorState';
 import StudentsMainContent from './maincontent/StudentsMainContent';
 import { useClassPointLog } from '@/hooks/useClassPointLog';
 import { useDashboardToolbarInset } from '@/hooks/useDashboardToolbarInset';
-import { useSortedStudents } from './hooks/useSortedStudents';
 import { useStudentsModalsState } from './hooks/useStudentsModalsState';
 import { useStudentsSelection } from './hooks/useStudentsSelection';
 import { useStudentsToolbarEvents } from './hooks/useStudentsToolbarEvents';
@@ -21,9 +22,12 @@ export default function StudentsView() {
   const classId = (params?.classId as string | undefined) ?? '';
   const { sortBy } = useStudentSort();
   const classes = useDashboardStore((s) => s.classes);
-  const students = useDashboardStore((s) => s.students);
   const setStudents = useDashboardStore((s) => s.setStudents);
   const isLoadingStudents = useDashboardStore((s) => s.isLoadingStudents);
+
+  const orderedStudentIdsSelector = useMemo(() => selectOrderedStudentIds(sortBy), [sortBy]);
+  const orderedStudentIds = useDashboardStore(useShallow(orderedStudentIdsSelector));
+  const totalClassPoints = useDashboardStore(selectTotalClassPoints);
 
   const { currentView, isEditModeFromURL, isSeatingEditMode } = useStudentsUrlState({ classId });
   const error: string | null = null;
@@ -36,7 +40,7 @@ export default function StudentsView() {
     handleStudentClick,
     handleWholeClassClick,
     openAddStudentsModal,
-  } = useStudentsModalsState(students);
+  } = useStudentsModalsState();
   const {
     isMultiSelectMode,
     selectedStudentIds,
@@ -47,7 +51,8 @@ export default function StudentsView() {
     awardPoints,
     inverseSelect,
     handleSelectStudent,
-  } = useStudentsSelection({ students });
+  } = useStudentsSelection();
+
   const currentClass = useMemo(() => classes.find((c) => c.id === classId) ?? null, [classes, classId]);
   const classIcon = currentClass?.icon || null;
 
@@ -71,8 +76,6 @@ export default function StudentsView() {
     return () => document.removeEventListener('click', handleClickOutside, true);
   }, [openDropdownId, closeDropdown]);
 
-  const { sortedStudents, totalClassPoints } = useSortedStudents(students, sortBy);
-
   const toolbarInset = useDashboardToolbarInset();
   const {
     isPointLogOpen,
@@ -86,7 +89,7 @@ export default function StudentsView() {
     totalPages,
     safeLogPage,
     pagedPointLogRows,
-  } = useClassPointLog(classId, students);
+  } = useClassPointLog(classId);
 
   useStudentsToolbarEvents({
     classId,
@@ -114,9 +117,8 @@ export default function StudentsView() {
       currentView={currentView}
       isSeatingEditMode={isSeatingEditMode}
       isEditModeFromURL={isEditModeFromURL}
-      students={students}
       setStudents={setStudents}
-      sortedStudents={sortedStudents}
+      orderedStudentIds={orderedStudentIds}
       isMultiSelectMode={isMultiSelectMode}
       selectedStudentIds={selectedStudentIds}
       classIcon={classIcon}
