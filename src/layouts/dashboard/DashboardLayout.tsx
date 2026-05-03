@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, Suspense } from 'react';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
 import { StudentSortProvider, useStudentSort } from '@/context/StudentSortContext';
@@ -12,6 +12,8 @@ import DashboardStage, { type DashboardStageProps } from '@/components/features/
 import EditClassModal from '@/components/modals/EditClassModal';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 import { signOutCurrentUser } from '@/api/auth';
+import { useLayoutStore } from '@/stores/useLayoutStore';
+import type { ViewState } from '@/stores/useLayoutStore';
 
 type DashboardStageSlotProps = Omit<
   DashboardStageProps,
@@ -72,11 +74,23 @@ function DashboardLayoutShell({
   const searchParams = useSearchParams();
   const router = useRouter();
   const viewPreferenceRef = useRef<'seating' | 'students'>(viewPreference);
+  const isSidebarOpen = useLayoutStore((s) => s.isSidebarOpen);
+  const isSeatingChartView = useLayoutStore((s) => s.activeView === 'seating_chart');
 
   const currentClassId = pathname ? (pathname.match(/\/dashboard\/classes\/([^/]+)/)?.[1] ?? null) : null;
   const isEditMode = searchParams?.get('mode') === 'edit';
-  const currentView = (searchParams?.get('view') || 'grid') as 'grid' | 'seating';
-  const isSeatingView = currentView === 'seating';
+
+  const searchParamsKey = searchParams?.toString() ?? '';
+
+  useLayoutEffect(() => {
+    const onClassRoute = !!pathname?.includes('/dashboard/classes/');
+    let next: ViewState = 'classes';
+    if (onClassRoute) {
+      const view = searchParams?.get('view') || 'grid';
+      next = view === 'seating' ? 'seating_chart' : 'students';
+    }
+    useLayoutStore.getState().setActiveView(next);
+  }, [pathname, searchParamsKey]);
 
   useEffect(() => {
     viewPreferenceRef.current = viewPreference;
@@ -139,9 +153,14 @@ function DashboardLayoutShell({
       <StudentSortProvider>
         <SeatingLayoutNavProvider setSeatingLayoutData={setSeatingLayoutData}>
           <div className="h-screen w-screen overflow-hidden flex flex-row bg-brand-purple" >
-            <div className="w-76 h-full pl-2 flex-shrink-0">
-              <div className="h-full overflow-hidden bg-white">
-                {isSeatingView && isEditMode ? (
+            <div
+              className={[
+                'h-full flex-shrink-0 overflow-hidden transition-[width,padding] duration-200 ease-out',
+                isSidebarOpen ? 'w-76 pl-2' : 'w-0 pl-0',
+              ].join(' ')}
+            >
+              <div className="h-full overflow-hidden bg-white w-76 max-w-[19rem]">
+                {isSeatingChartView && isEditMode ? (
                   <LeftNavSeatingChartEdit />
                 ) : (
                   <LeftNav
@@ -149,14 +168,13 @@ function DashboardLayoutShell({
                     isLoadingClasses={isLoadingClasses}
                     viewMode={viewMode}
                     setViewMode={setViewMode}
-                    seatingLayoutData={isSeatingView && !isEditMode ? seatingLayoutData : null}
+                    seatingLayoutData={isSeatingChartView && !isEditMode ? seatingLayoutData : null}
                   />
                 )}
               </div>
             </div>
             <div className="flex-1 h-full overflow-hidden pl-2 pr-2 pt-2">
               <DashboardStageSlot
-                isSeatingView={isSeatingView}
                 showCanvasToolbar={!isClassesRootView}
                 isEditMode={isEditMode}
                 isLoadingProfile={isLoadingProfile}

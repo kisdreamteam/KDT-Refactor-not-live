@@ -15,10 +15,10 @@ import Random from '@/components/features/dashboard/tools/Random';
 import CanvasToolbar from '@/components/ui/CanvasToolbar';
 import { StageToolbarProvider } from '@/components/features/dashboard/StageToolbarContext';
 import { STUDENT_EVENTS } from '@/lib/events/students';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 
 export interface DashboardStageProps {
   children: React.ReactNode;
-  isSeatingView: boolean;
   showCanvasToolbar?: boolean;
   isEditMode: boolean;
   isLoadingProfile: boolean;
@@ -45,7 +45,6 @@ export interface DashboardStageProps {
 
 export default function DashboardStage({
   children,
-  isSeatingView,
   showCanvasToolbar = true,
   isEditMode,
   isLoadingProfile,
@@ -67,6 +66,7 @@ export default function DashboardStage({
   onToggleMultiSelect,
 }: DashboardStageProps) {
   const noopSetToolbar = useCallback(() => {}, []);
+  const isSeatingView = useLayoutStore((s) => s.activeView === 'seating_chart');
   const showTopNav = !isSeatingView;
   const stageContentPadding = isSeatingView ? '' : 'pl-2 pt-2';
   const showBottomNav = currentClassName && !isTimerOpen && !isRandomOpen;

@@ -54,6 +54,9 @@
       "@/features/*": [
         "./src/features/*"
       ],
+      "@/stores/*": [
+        "./src/stores/*"
+      ],
       "@/*": [
         "./*"
       ]

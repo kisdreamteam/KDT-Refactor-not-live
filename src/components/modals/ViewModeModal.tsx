@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useDashboard } from '@/context/DashboardContext';
 import { emitSeatingEditMode } from '@/lib/events/students';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 
 interface ViewModeModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export default function ViewModeModal({ isOpen, onClose }: ViewModeModalProps) {
       onClose();
       return;
     }
+    useLayoutStore.getState().setActiveView(view === 'seating' ? 'seating_chart' : 'students');
     router.replace(newUrl, { scroll: false });
     void updateViewPreference(view === 'seating' ? 'seating' : 'students');
     onClose();

@@ -1,15 +1,10 @@
 import DashboardLayout from '@/layouts/dashboard/DashboardLayout';
-import ClassesView from '@/components/features/dashboard/ClassesView';
-import StudentsView from '@/components/features/dashboard/StudentsView';
+import DashboardMainStage from '@/components/features/dashboard/DashboardMainStage';
 
-interface DashboardModuleProps {
-  view: 'classes' | 'students';
-}
-
-export default function DashboardModule({ view }: DashboardModuleProps) {
+export default function DashboardModule() {
   return (
     <DashboardLayout>
-      {view === 'classes' ? <ClassesView /> : <StudentsView />}
+      <DashboardMainStage />
     </DashboardLayout>
   );
 }

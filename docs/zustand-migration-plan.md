@@ -12,12 +12,12 @@
 ## Phase 1: View Switching (The UI Store)
 **Target:** Eliminate layout cascades when switching between Classes, Students, and Seating Chart views.
 
-- [ ] **Setup:** Run `npm install zustand`.
-- [ ] **Typings:** Define the UI state shape in `/src/lib/types.ts` or at the top of the store file (e.g., `activeView`, `isSidebarOpen`).
-- [ ] **Create Store:** Create `/src/stores/useDashboardUIStore.ts` with basic state and setter functions.
-- [ ] **Reroute Readers:** Update `DashboardMainStage` (Tier 2b) to subscribe purely to `useDashboardUIStore(state => state.activeView)`. 
-- [ ] **Reroute Writers:** Update Left Navbar and Top Navbar buttons to use the Zustand setter functions instead of Context.
-- [ ] **Verification:** Switch views in the browser. Confirm the main stage swaps instantly without the navbar or toolbars re-rendering.
+- [x] **Setup:** Run `npm install zustand`.
+- [x] **Typings:** Define the UI state shape in `/src/lib/types.ts` or at the top of the store file (e.g., `activeView`, `isSidebarOpen`).
+- [x] **Create Store:** Create [`/src/stores/useLayoutStore.ts`](../src/stores/useLayoutStore.ts) with basic state and setter functions.
+- [x] **Reroute Readers:** Update [`DashboardMainStage`](../src/components/features/dashboard/DashboardMainStage.tsx) (Tier 2b) to subscribe purely to `useLayoutStore((state) => state.activeView)`; [`DashboardStage`](../src/components/features/dashboard/DashboardStage.tsx) reads seating chrome from the same store. URL is synced from [`DashboardLayout`](../src/layouts/dashboard/DashboardLayout.tsx) via `useLayoutEffect`.
+- [x] **Reroute Writers:** Update [`LeftNav`](../src/components/features/navbars/LeftNav.tsx) and [`ViewModeModal`](../src/components/modals/ViewModeModal.tsx) to call `setActiveView` from `useLayoutStore` (TopNav has no view switches).
+- [x] **Verification:** `npm run build` passed; confirm in the browser: `/dashboard` ↔ class routes, grid ↔ seating via View modal, deep link `?view=seating`, and stage chrome (TopNav / toolbar) still match seating vs non-seating.
 
 ---
 

@@ -7,6 +7,7 @@ import { normalizeClassIconPath } from '@/lib/iconUtils';
 import IconTimerClock from '@/components/iconsCustom/iconTimerClock';
 import IconEditPencil from '@/components/iconsCustom/iconEditPencil';
 import type { SeatingLayoutNavData } from '@/context/SeatingLayoutNavContext';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 
 interface Class {
   id: string;
@@ -28,10 +29,11 @@ export default function LeftNav({ classes, isLoadingClasses, viewMode, setViewMo
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const currentView = searchParams?.get('view') || 'grid';
-  const classLinkSuffix = currentView === 'seating' ? '?view=seating' : '';
+  const classLinkSuffix = currentView === 'seating' ? '?view=seating' : '?view=grid';
   const activeClassId = pathname?.match(/\/dashboard\/classes\/([^/]+)/)?.[1] ?? null;
 
   const handleAllClassesClick = () => {
+    useLayoutStore.getState().setActiveView('classes');
     if (setViewMode) {
       setViewMode('active');
     }
@@ -43,6 +45,7 @@ export default function LeftNav({ classes, isLoadingClasses, viewMode, setViewMo
   const hasArchivedClasses = classes.some(cls => cls.is_archived);
 
   const handleArchivedClassesClick = () => {
+    useLayoutStore.getState().setActiveView('classes');
     if (setViewMode) {
       setViewMode('archived');
     }
@@ -99,6 +102,11 @@ export default function LeftNav({ classes, isLoadingClasses, viewMode, setViewMo
                   key={cls.id}
                   href={`/dashboard/classes/${cls.id}${classLinkSuffix}`}
                   className="block"
+                  onClick={() =>
+                    useLayoutStore
+                      .getState()
+                      .setActiveView(currentView === 'seating' ? 'seating_chart' : 'students')
+                  }
                 >
                   <div
                     className={`flex items-center space-x-3 p-2 rounded cursor-pointer transition-colors ${
