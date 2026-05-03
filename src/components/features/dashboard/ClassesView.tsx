@@ -5,6 +5,7 @@ import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import CreateClassModal from '@/components/modals/CreateClassModal';
 import EditClassModal from '@/components/modals/EditClassModal';
 import { useDashboard } from '@/context/DashboardContext';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 import LoadingState from '@/components/ui/LoadingState';
 import EmptyState from '@/components/ui/EmptyState';
 import ClassCardsGrid from './maincontent/viewClassesGrid/ClassCardsGrid';
@@ -15,7 +16,9 @@ import {
 } from '@/api/classes';
 
 export default function ClassesView() {
-  const { classes, isLoadingClasses, refreshClasses, viewMode } = useDashboard();
+  const classes = useDashboardStore((s) => s.classes);
+  const isLoadingClasses = useDashboardStore((s) => s.isLoadingClasses);
+  const { refreshClasses, viewMode } = useDashboard();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);

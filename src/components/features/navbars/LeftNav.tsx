@@ -8,6 +8,7 @@ import IconTimerClock from '@/components/iconsCustom/iconTimerClock';
 import IconEditPencil from '@/components/iconsCustom/iconEditPencil';
 import type { SeatingLayoutNavData } from '@/context/SeatingLayoutNavContext';
 import { useLayoutStore } from '@/stores/useLayoutStore';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 
 interface Class {
   id: string;
@@ -102,11 +103,12 @@ export default function LeftNav({ classes, isLoadingClasses, viewMode, setViewMo
                   key={cls.id}
                   href={`/dashboard/classes/${cls.id}${classLinkSuffix}`}
                   className="block"
-                  onClick={() =>
+                  onClick={() => {
+                    useDashboardStore.getState().setActiveClassId(cls.id);
                     useLayoutStore
                       .getState()
-                      .setActiveView(currentView === 'seating' ? 'seating_chart' : 'students')
-                  }
+                      .setActiveView(currentView === 'seating' ? 'seating_chart' : 'students');
+                  }}
                 >
                   <div
                     className={`flex items-center space-x-3 p-2 rounded cursor-pointer transition-colors ${

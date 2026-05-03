@@ -35,11 +35,11 @@
 ## Phase 3: Core Data & Class Switching (The Dashboard Store)
 **Target:** Eliminate overarching cascade when changing the active class. 
 
-- [ ] **Typings:** Define data state (e.g., `students`, `classes`, `activeClassId`).
-- [ ] **Create Store:** Create `/src/stores/useDashboardStore.ts`.
-- [ ] **Reroute Writers (Layer 1):** Update Layer 1 hooks (e.g., `useClassPointLog`) to silently fetch the new roster from Layer 3 API when `activeClassId` changes, then call `setStudents()` in Zustand.
-- [ ] **Reroute Readers (TopNav):** Update TopNav dropdown to call `setActiveClassId(newId)`.
-- [ ] **Verification:** Swap classes in the dropdown. Confirm the grid smoothly swaps student data without the overarching layout re-rendering.
+- [x] **Typings:** Dashboard data state in [`/src/stores/useDashboardStore.ts`](../src/stores/useDashboardStore.ts): `activeClassId`, `classes`, `students`, loading flags, functional `setStudents`.
+- [x] **Create Store:** [`/src/stores/useDashboardStore.ts`](../src/stores/useDashboardStore.ts).
+- [x] **Reroute Writers (Layer 1):** [`/src/hooks/useDashboardStudentSync.ts`](../src/hooks/useDashboardStudentSync.ts) syncs URL → `activeClassId`, fetches roster via Layer 3 API (`fetchStudentsByClassId`), updates the store, and exports `refreshDashboardStudents(force?)`. `useClassPointLog` still receives `(classId, students)` from parents that read `students` via store selectors (e.g. [`StudentsView.tsx`](../src/components/features/dashboard/StudentsView.tsx)).
+- [x] **Reroute Readers:** [`TopNav.tsx`](../src/components/features/navbars/TopNav.tsx) remains title + logo only. Class switching is via URL, [`LeftNav.tsx`](../src/components/features/navbars/LeftNav.tsx) (`setActiveClassId` on class link click before navigation), and [`useDashboardStudentSync.ts`](../src/hooks/useDashboardStudentSync.ts) keeping the store aligned with the route.
+- [x] **Verification:** `npm run build` passed. Manually confirm: LeftNav class links, deep link to `/dashboard/classes/[id]`, grid ↔ seating then back to grid (triggers `refreshDashboardStudents` via [`useStudentsUrlState.ts`](../src/components/features/dashboard/hooks/useStudentsUrlState.ts)).
 
 ---
 

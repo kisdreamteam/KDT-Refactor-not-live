@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
+import { DashboardStudentSync } from '@/hooks/useDashboardStudentSync';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 import { StudentSortProvider, useStudentSort } from '@/context/StudentSortContext';
 import { SeatingChartProvider } from '@/context/SeatingChartContext';
 import { SeatingLayoutNavProvider, SeatingLayoutNavData } from '@/context/SeatingLayoutNavContext';
@@ -55,17 +57,10 @@ function DashboardLayoutShell({
 }: {
   children: React.ReactNode;
 }) {
-  const {
-    classes,
-    currentClass,
-    isLoadingClasses,
-    teacherProfile,
-    isLoadingProfile,
-    refreshClasses,
-    viewMode,
-    setViewMode,
-    viewPreference,
-  } = useDashboard();
+  const { teacherProfile, isLoadingProfile, refreshClasses, viewMode, setViewMode, viewPreference } =
+    useDashboard();
+  const classes = useDashboardStore((s) => s.classes);
+  const isLoadingClasses = useDashboardStore((s) => s.isLoadingClasses);
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [isRandomOpen, setIsRandomOpen] = useState(false);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -80,6 +75,11 @@ function DashboardLayoutShell({
 
   const currentClassId = pathname ? (pathname.match(/\/dashboard\/classes\/([^/]+)/)?.[1] ?? null) : null;
   const isEditMode = searchParams?.get('mode') === 'edit';
+
+  const currentClass = useMemo(
+    () => (currentClassId ? classes.find((c) => c.id === currentClassId) ?? null : null),
+    [classes, currentClassId]
+  );
 
   const searchParamsKey = searchParams?.toString() ?? '';
 
@@ -219,6 +219,7 @@ export default function DashboardLayout({
   return (
     <Suspense fallback={<DashboardLayoutFallback />}>
       <DashboardProvider>
+        <DashboardStudentSync />
         <DashboardLayoutShell>{children}</DashboardLayoutShell>
       </DashboardProvider>
     </Suspense>

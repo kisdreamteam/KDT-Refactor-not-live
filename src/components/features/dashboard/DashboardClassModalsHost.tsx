@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { useDashboard } from '@/context/DashboardContext';
+import { refreshDashboardStudents } from '@/hooks/useDashboardStudentSync';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useAwardPointsFlow, type AwardPointsInfo } from '@/hooks/useAwardPointsFlow';
 import { useModalStore } from '@/stores/useModalStore';
 import {
@@ -20,7 +21,9 @@ import { updateStudentById } from '@/api/students';
 export default function DashboardClassModalsHost() {
   const pathname = usePathname();
   const currentClassId = pathname?.match(/\/dashboard\/classes\/([^/]+)/)?.[1] ?? null;
-  const { students, setStudents, classes, refreshStudents } = useDashboard();
+  const students = useDashboardStore((s) => s.students);
+  const setStudents = useDashboardStore((s) => s.setStudents);
+  const classes = useDashboardStore((s) => s.classes);
 
   const modalType = useModalStore((s) => s.modalType);
   const isModalOpen = useModalStore((s) => s.isOpen);
@@ -55,8 +58,8 @@ export default function DashboardClassModalsHost() {
       modalType === 'award_points_multi');
 
   const handleStudentAdded = useCallback(async () => {
-    await refreshStudents(true);
-  }, [refreshStudents]);
+    await refreshDashboardStudents(true);
+  }, []);
 
   const handlePointsAwarded = useCallback(
     (info: AwardPointsInfo) => {
@@ -93,10 +96,10 @@ export default function DashboardClassModalsHost() {
   const handleSubmitEditStudent = useCallback(
     async ({ studentId, ...patch }: EditStudentModalSubmitValues) => {
       await updateStudentById(studentId, patch);
-      await refreshStudents(true);
+      await refreshDashboardStudents(true);
       closeModal();
     },
-    [refreshStudents, closeModal]
+    [closeModal]
   );
 
   if (!currentClassId) {

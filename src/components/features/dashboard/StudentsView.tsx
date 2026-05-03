@@ -3,7 +3,8 @@
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useStudentSort } from '@/context/StudentSortContext';
-import { useDashboard } from '@/context/DashboardContext';
+import { refreshDashboardStudents } from '@/hooks/useDashboardStudentSync';
+import { useDashboardStore } from '@/stores/useDashboardStore';
 import LoadingState from '@/components/ui/LoadingState';
 import ErrorState from '@/components/ui/ErrorState';
 import StudentsMainContent from './maincontent/StudentsMainContent';
@@ -19,12 +20,12 @@ export default function StudentsView() {
   const params = useParams();
   const classId = (params?.classId as string | undefined) ?? '';
   const { sortBy } = useStudentSort();
-  const { classes, students, setStudents, isLoadingStudents, refreshStudents } = useDashboard();
+  const classes = useDashboardStore((s) => s.classes);
+  const students = useDashboardStore((s) => s.students);
+  const setStudents = useDashboardStore((s) => s.setStudents);
+  const isLoadingStudents = useDashboardStore((s) => s.isLoadingStudents);
 
-  const { currentView, isEditModeFromURL, isSeatingEditMode } = useStudentsUrlState({
-    classId,
-    refreshStudents,
-  });
+  const { currentView, isEditModeFromURL, isSeatingEditMode } = useStudentsUrlState({ classId });
   const error: string | null = null;
   const {
     openDropdownId,
@@ -104,7 +105,7 @@ export default function StudentsView() {
   }
 
   if (error) {
-    return <ErrorState error={error} onRetry={() => void refreshStudents()} />;
+    return <ErrorState error={error} onRetry={() => void refreshDashboardStudents()} />;
   }
 
   return (

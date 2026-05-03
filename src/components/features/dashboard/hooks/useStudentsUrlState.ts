@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { STUDENT_EVENTS } from '@/lib/events/students';
+import { refreshDashboardStudents } from '@/hooks/useDashboardStudentSync';
 
 interface UseStudentsUrlStateParams {
   classId: string;
-  refreshStudents: (showLoading?: boolean) => Promise<void>;
 }
 
-export function useStudentsUrlState({ classId, refreshStudents }: UseStudentsUrlStateParams) {
+export function useStudentsUrlState({ classId }: UseStudentsUrlStateParams) {
   const searchParams = useSearchParams();
   const currentView = searchParams?.get('view') || 'grid';
   const currentMode = searchParams?.get('mode') || '';
@@ -17,10 +17,10 @@ export function useStudentsUrlState({ classId, refreshStudents }: UseStudentsUrl
 
   useEffect(() => {
     if (prevViewRef.current === 'seating' && currentView === 'grid' && classId) {
-      void refreshStudents();
+      void refreshDashboardStudents();
     }
     prevViewRef.current = currentView;
-  }, [currentView, classId, refreshStudents]);
+  }, [currentView, classId]);
 
   useEffect(() => {
     setIsSeatingEditMode(isEditModeFromURL);

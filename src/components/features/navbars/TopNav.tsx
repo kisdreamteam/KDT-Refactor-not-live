@@ -15,9 +15,9 @@ interface TopNavProps {
   suppressTeacherFallback?: boolean;
 }
 
-export default function TopNav({ 
-  isLoadingProfile, 
-  currentClassName, 
+export default function TopNav({
+  isLoadingProfile,
+  currentClassName,
   teacherProfile,
   suppressTeacherFallback = false,
 }: TopNavProps) {
@@ -42,19 +42,19 @@ export default function TopNav({
       const container = titleContainerRef.current;
       const textElement = titleRef.current;
       const containerWidth = container.offsetWidth;
-      
+
       // Start with a large font size and reduce until it fits
       let size = 72; // Start at 4.5rem
       textElement.style.fontSize = `${size}px`;
-      
+
       // Binary search for the optimal font size
       let minSize = 14; // Minimum 0.875rem
       let maxSize = 72; // Maximum 4.5rem
-      
+
       while (minSize <= maxSize) {
         const testSize = Math.floor((minSize + maxSize) / 2);
         textElement.style.fontSize = `${testSize}px`;
-        
+
         if (textElement.scrollWidth <= containerWidth) {
           size = testSize;
           minSize = testSize + 1;
@@ -62,7 +62,7 @@ export default function TopNav({
           maxSize = testSize - 1;
         }
       }
-      
+
       setFontSize(size);
     };
 
@@ -70,7 +70,7 @@ export default function TopNav({
     const timeoutId = setTimeout(() => {
       adjustFontSize();
     }, 0);
-    
+
     // Adjust on window resize with debouncing
     let resizeTimeout: NodeJS.Timeout;
     const handleResize = () => {
@@ -79,9 +79,9 @@ export default function TopNav({
         adjustFontSize();
       }, 100);
     };
-    
+
     window.addEventListener('resize', handleResize);
-    
+
     // Use ResizeObserver for more accurate container size tracking
     let resizeObserver: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined' && titleContainerRef.current) {
@@ -90,7 +90,7 @@ export default function TopNav({
       });
       resizeObserver.observe(titleContainerRef.current);
     }
-    
+
     return () => {
       clearTimeout(timeoutId);
       clearTimeout(resizeTimeout);
@@ -106,33 +106,33 @@ export default function TopNav({
     <div className="bg-white h-30 py-6 flex flex-row items-center justify-between w-full pl-7 pt-8" data-top-nav>
       {/* <div className="bg-white flex flex-col items-start justify-start"> */}
       <div className="bg-white flex flex-row items-start justify-start flex-1 min-w-0">
-          {/* Main Title Container */}
-          <div ref={titleContainerRef} className="flex-1 min-w-0 overflow-hidden pt-0">
-            <h1 
-              ref={titleRef}
-              className="font-bold text-gray-900 text-left font-spartan whitespace-nowrap"
-              style={{
-                fontSize: `${fontSize}px`,
-                lineHeight: '1.2',
-              }}
-            >
-              {isLoadingProfile ? (
-                <span className="flex items-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mr-2"></div>
-                  Loading...
-                </span>
-              ) : currentClassName ? (
-                currentClassName
-              ) : suppressTeacherFallback ? (
-                ""
-              ) : teacherProfile ? (
-                `${teacherProfile.title} ${teacherProfile.name.split(' ')[0]}'s Classes`
-              ) : (
-                "Classes"
-              )}
-            </h1>
-          </div>
+        {/* Main Title Container */}
+        <div ref={titleContainerRef} className="flex-1 min-w-0 overflow-hidden pt-0">
+          <h1
+            ref={titleRef}
+            className="font-bold text-gray-900 text-left font-spartan whitespace-nowrap"
+            style={{
+              fontSize: `${fontSize}px`,
+              lineHeight: '1.2',
+            }}
+          >
+            {isLoadingProfile ? (
+              <span className="flex items-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mr-2"></div>
+                Loading...
+              </span>
+            ) : currentClassName ? (
+              currentClassName
+            ) : suppressTeacherFallback ? (
+              ''
+            ) : teacherProfile ? (
+              `${teacherProfile.title} ${teacherProfile.name.split(' ')[0]}'s Classes`
+            ) : (
+              'Classes'
+            )}
+          </h1>
         </div>
+      </div>
       {/* KIS Points Logo */}
       <div className="flex items-center w-40 justify-end">
         <Image
@@ -147,4 +147,3 @@ export default function TopNav({
     </div>
   );
 }
-
