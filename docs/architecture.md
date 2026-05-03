@@ -44,44 +44,99 @@ This system governs how data is validated, calculated, and securely saved.
 
 ```text
 /kis-points
-├── /docs                              # Architect Blueprints
-│   ├── architecture.md                # (This file)
-│   └── refactor-plan.md               # Step-by-step checklist
+├── /docs                                      # Blueprints & domain reference
+│   ├── architecture.md                        # (This file)
+│   ├── refactor-plan.md                       # Refactor checklist
+│   ├── tech-stack.md
+│   └── seat-index-logic.md                    # Seating seat-index rules
 │
 ├── /src
-│   ├── /app                           # TIER 1: ROUTING
-│   │   ├── layout.tsx                 
-│   │   └── /dashboard/page.tsx        # Thin shell returning <DashboardModule />
+│   ├── /app                                   # TIER 1: ROUTING
+│   │   ├── layout.tsx
+│   │   ├── /dashboard/...                     # Thin pages → modules + layouts
+│   │   └── /login, /signup, /forgot-password, /reset-password
 │   │
-│   ├── /providers                     # GLOBAL PROVIDERS (Auth, Theme)
-│   │   └── AuthProvider.tsx           
+│   ├── /layouts                               # TIER 2a: SKELETONS (shell layout, auth pages)
+│   │   ├── /dashboard
+│   │   │   └── DashboardLayout.tsx            # Dashboard “GOD box”; stage + nav bridges + modals
+│   │   └── /auth
+│   │       └── AuthPageLayout.tsx
 │   │
-│   ├── /store                         # GLOBAL VISUAL STATE (Zustand)
-│   │   └── useUIStore.ts              # activeModal, sidebarOpen
+│   ├── /modules                               # TIER 2b: STAGE MANAGERS (route-level composition)
+│   │   ├── /dashboard
+│   │   │   └── DashboardModule.tsx
+│   │   ├── /auth                              # LoginModule, SignupModule
+│   │   └── /landing
+│   │       └── LandingModule.tsx
 │   │
-│   ├── /layouts                       # TIER 2a: SKELETONS
-│   │   └── DashboardLayout.tsx        # The 'GOD Box'
+│   ├── /context                               # TIER 2: SHARED “DESK” STATE (React Context)
+│   │   ├── DashboardContext.tsx               # Classes, students, seating layout id, …
+│   │   ├── SeatingChartContext.tsx            # Unseated students, pick-for-group (namespaced hook)
+│   │   ├── SeatingLayoutNavContext.tsx        # Left-nav layout list for seating view
+│   │   └── StudentSortContext.tsx             # Student grid sort preference
 │   │
-│   ├── /modules                       # TIER 2b: STAGE MANAGERS
-│   │   └── /dashboard
-│   │       ├── DashboardModule.tsx    # Sets CSS Grid, slots in features
-│   │       └── DashboardContext.tsx   # Local specific state (The Desk)
+│   ├── /hooks                                 # LAYER 1: CROSS-FEATURE INTEGRATION
+│   │   ├── useAwardPointsFlow.ts              # Award confirmation / modal flow glue
+│   │   ├── useClassPointLog.ts
+│   │   └── useDashboardToolbarInset.ts
 │   │
-│   ├── /components                    # TIER 3: VISUAL COMPONENTS
-│   │   ├── /ui                        # ATOMS (Agnostic buttons, inputs, cards)
-│   │   └── /features                  # DOMAIN UI
-│   │       ├── /navbars
-│   │       └── /seating               
+│   ├── /components                            # TIER 3: VISUAL COMPONENTS
+│   │   ├── /ui                                # Atoms (BaseCard, CanvasToolbar, …)
+│   │   ├── /forms                             # Forms; persistence via parent `onSubmit` where refactored
+│   │   ├── /modals                            # Modal shells; some re-export feature implementations
+│   │   │   └── EditClassModal.tsx             # Façade → `@/features/classes/components/EditClassModalRoot`
+│   │   └── /features
+│   │       ├── /auth                          # Login, signup, password forms
+│   │       ├── /landing
+│   │       ├── /dashboard                     # Students / classes / seating views, stage, tools
+│   │       │   ├── /hooks                     # useStudentsSelection, useStudentsModalsState, …
+│   │       │   ├── /maincontent               # Grids, StudentsModals, …
+│   │       │   ├── /seating                   # SeatingCanvasDecor, …
+│   │       │   └── /tools                     # Timer, Random
+│   │       └── /navbars                       # TopNav, LeftNav*, BottomNav*; seating edit bridge
+│   │           └── SeatingEditBottomNavBridge.tsx   # Mount-only → useSeatingEditBottomNav
 │   │
-│   ├── /features                      # DATA LAYER 1 & 2: LOGIC & DOMAIN
-│   │   └── /points
-│   │       ├── useAwardPoints.ts      # Integration Hook
-│   │       └── pointService.ts        # Pure Math/Rules
+│   ├── /features                              # LAYER 1 & 2: FEATURE DOMAINS
+│   │   ├── /points
+│   │   │   ├── /hooks
+│   │   │   │   └── useAwardPointsService.ts   # Award RPC + UI-oriented helpers
+│   │   │   └── /services
+│   │   │       └── awardPointsService.ts      # Pure point math / payload shaping
+│   │   ├── /seating
+│   │   │   ├── /hooks
+│   │   │   │   ├── useSeatingChart.ts         # Editor “desk” (named export: useSeatingChartEditor)
+│   │   │   │   └── useSeatingEditBottomNav.ts # Seating edit bottom bar view settings + events
+│   │   │   └── /services
+│   │   │       └── seatingLogic.ts            # Pure seat/slot/coordinate helpers
+│   │   └── /classes
+│   │       └── /components
+│   │           └── EditClassModalRoot.tsx     # Class edit UI + persistence (not under /modals)
 │   │
-│   ├── /api                           # DATA LAYER 3: SERVICE LAYER
-│   │   ├── auth.ts                    # Supabase logic
-│   │   └── points.ts                  
+│   ├── /api                                   # LAYER 3: SERVICE LAYER (Supabase / RPC)
+│   │   ├── /_shared                           # Shared helpers for API modules
+│   │   │   ├── auth.ts
+│   │   │   ├── errors.ts
+│   │   │   └── README.md
+│   │   ├── auth.ts
+│   │   ├── classes.ts
+│   │   ├── points.ts
+│   │   ├── seating.ts
+│   │   ├── skills.ts
+│   │   └── students.ts
 │   │
-│   └── /lib                           # TOOLBOX
-│       ├── client.ts                  # Supabase initializer
-│       └── types.ts                   # Global TS definitions
+│   ├── /lib                                   # TOOLBOX (no direct DB from UI helpers)
+│   │   ├── client.ts                          # Supabase browser client (used from /api)
+│   │   ├── types.ts
+│   │   ├── iconUtils.ts
+│   │   ├── /hooks                             # e.g. useAvailableIcons
+│   │   └── /events
+│   │       └── students.ts                    # Cross-widget CustomEvent names + emit helpers
+│   │
+│   └── /styles
+│       └── globals.css
+```
+
+**Notes**
+
+- **`useSeatingChartEditor`** is exported from [`src/features/seating/hooks/useSeatingChart.ts`](../src/features/seating/hooks/useSeatingChart.ts). Do not confuse it with **`useSeatingChart`** in [`src/context/SeatingChartContext.tsx`](../src/context/SeatingChartContext.tsx) (see file header on the hook).
+- **Tier 3 modals:** Several modals are thin shells; persistence is wired in parents (e.g. `StudentsView`, `AwardPointsModal`) or implemented under **`/features/classes`** for class edit.
