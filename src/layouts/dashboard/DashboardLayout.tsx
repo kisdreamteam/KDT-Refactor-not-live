@@ -10,6 +10,7 @@ import LeftNav from '@/components/features/navbars/LeftNav';
 import LeftNavSeatingChartEdit from '@/components/features/navbars/LeftNavSeatingChartEdit';
 import DashboardStage, { type DashboardStageProps } from '@/components/features/dashboard/DashboardStage';
 import EditClassModal from '@/components/modals/EditClassModal';
+import DashboardClassModalsHost from '@/components/features/dashboard/DashboardClassModalsHost';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 import { signOutCurrentUser } from '@/api/auth';
 import { useLayoutStore } from '@/stores/useLayoutStore';
@@ -205,6 +206,7 @@ function DashboardLayoutShell({
           onRefresh={refreshClasses}
         />
       )}
+      <DashboardClassModalsHost />
     </SeatingChartProvider>
   );
 }

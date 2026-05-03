@@ -9,11 +9,8 @@ import { useSeatingLayoutNav } from '@/context/SeatingLayoutNavContext';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import CreateLayoutModal from '@/components/modals/CreateLayoutModal';
 import EditLayoutModal from '@/components/modals/EditLayoutModal';
-import AwardPointsModal from '@/components/modals/AwardPointsModal';
-import PointsAwardedConfirmationModal from '@/components/modals/PointsAwardedConfirmationModal';
 import ClassPointLogSlidePanel from '@/components/ui/ClassPointLogSlidePanel';
 import { useClassPointLog } from '@/hooks/useClassPointLog';
-import { useAwardPointsFlow } from '@/hooks/useAwardPointsFlow';
 import {
   createSeatingLayout,
   deleteSeatingLayoutCascade,
@@ -31,7 +28,9 @@ import {
   STUDENT_EVENTS,
   emitSeatingEditMode,
   emitSeatingLayoutSelected,
+  type SeatingStudentPointsDeltaDetail,
 } from '@/lib/events/students';
+import { useModalStore } from '@/stores/useModalStore';
 
 interface SeatingChart {
   id: string;
@@ -80,16 +79,6 @@ export default function SeatingChartView({
   const [layoutToEdit, setLayoutToEdit] = useState<{ id: string; name: string } | null>(null);
   const [isEditLayoutModalOpen, setIsEditLayoutModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isAwardPointsModalOpen, setIsAwardPointsModalOpen] = useState(false);
-  const [selectedGroupStudentIds, setSelectedGroupStudentIds] = useState<string[]>([]);
-  /** Set in onAwardComplete before IDs are cleared; read in handlePointsAwarded for optimistic points. */
-  const pendingAwardStudentIdsRef = useRef<string[] | null>(null);
-  const {
-    awardInfo,
-    isConfirmationModalOpen,
-    openAwardConfirmation,
-    closeAwardConfirmation,
-  } = useAwardPointsFlow();
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
   // View settings from database
   const [showGrid, setShowGrid] = useState<boolean>(true);
@@ -199,27 +188,32 @@ export default function SeatingChartView({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers are stable enough; avoid running on every render
   }, [activeSeatingLayoutId, isLoading, layouts, setActiveSeatingLayoutId, setSeatingLayoutData]);
 
-  const applyOptimisticPointsDelta = useCallback((studentIds: string[], delta: number) => {
-    if (studentIds.length === 0 || delta === 0 || !Number.isFinite(delta)) return;
-    const idSet = new Set(studentIds);
-    setStudents((prev) =>
-      prev.map((s) => (idSet.has(s.id) ? { ...s, points: (s.points ?? 0) + delta } : s))
-    );
-    setGroupAssignments((prev) => {
-      const next = new Map<string, GroupAssignment[]>();
-      prev.forEach((assignments, groupId) => {
-        next.set(
-          groupId,
-          assignments.map((ga) =>
-            idSet.has(ga.student.id)
-              ? { ...ga, student: { ...ga.student, points: (ga.student.points ?? 0) + delta } }
-              : ga
-          )
-        );
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const d = (e as CustomEvent<SeatingStudentPointsDeltaDetail>).detail;
+      if (!d || d.classId !== classId) return;
+      const { studentIds, delta } = d;
+      if (studentIds.length === 0 || delta === 0 || !Number.isFinite(delta)) return;
+      const idSet = new Set(studentIds);
+      setGroupAssignments((prev) => {
+        const next = new Map<string, GroupAssignment[]>();
+        prev.forEach((assignments, groupId) => {
+          next.set(
+            groupId,
+            assignments.map((ga) =>
+              idSet.has(ga.student.id)
+                ? { ...ga, student: { ...ga.student, points: (ga.student.points ?? 0) + delta } }
+                : ga
+            )
+          );
+        });
+        return next;
       });
-      return next;
-    });
-  }, [setStudents]);
+    };
+    window.addEventListener(STUDENT_EVENTS.SEATING_STUDENT_POINTS_DELTA, handler as EventListener);
+    return () =>
+      window.removeEventListener(STUDENT_EVENTS.SEATING_STUDENT_POINTS_DELTA, handler as EventListener);
+  }, [classId]);
 
   const fetchGroups = useCallback(async () => {
     if (!activeSeatingLayoutId) return;
@@ -462,33 +456,12 @@ export default function SeatingChartView({
       alert('This group has no students to award points to.');
       return;
     }
-    const studentIds = studentsInGroup.map(student => student.id);
-    setSelectedGroupStudentIds(studentIds);
-    setIsAwardPointsModalOpen(true);
+    const studentIds = studentsInGroup.map((student) => student.id);
+    useModalStore.getState().openModal('award_points_multi', { studentIds });
   };
 
-  // Handle single student click to open award points modal for that student only
   const handleStudentClick = (student: Student) => {
-    setSelectedGroupStudentIds([student.id]);
-    setIsAwardPointsModalOpen(true);
-  };
-
-  // Handle points awarded callback
-  const handlePointsAwarded = (info: {
-    studentAvatar: string;
-    studentFirstName: string;
-    points: number;
-    categoryName: string;
-    categoryIcon?: string;
-  }) => {
-    const fromRef = pendingAwardStudentIdsRef.current;
-    pendingAwardStudentIdsRef.current = null;
-    const targetIds =
-      fromRef && fromRef.length > 0 ? fromRef : [...selectedGroupStudentIds];
-    if (targetIds.length > 0 && typeof info.points === 'number') {
-      applyOptimisticPointsDelta(targetIds, info.points);
-    }
-    openAwardConfirmation(info);
+    useModalStore.getState().openModal('award_points_multi', { studentIds: [student.id] });
   };
 
   // Handle create layout
@@ -865,38 +838,6 @@ export default function SeatingChartView({
         onSave={handleEditLayoutSave}
       />
 
-      {/* Award Points Modal for Group or Single Student */}
-      {selectedGroupStudentIds.length > 0 && (
-        <AwardPointsModal
-          isOpen={isAwardPointsModalOpen}
-          onClose={() => {
-            setIsAwardPointsModalOpen(false);
-            setSelectedGroupStudentIds([]);
-          }}
-          student={selectedGroupStudentIds.length === 1 ? (students.find(s => s.id === selectedGroupStudentIds[0]) ?? null) : null}
-          classId={classId}
-          selectedStudentIds={selectedGroupStudentIds}
-          onAwardComplete={(selectedIds) => {
-            pendingAwardStudentIdsRef.current = selectedIds;
-            setIsAwardPointsModalOpen(false);
-            setSelectedGroupStudentIds([]);
-          }}
-          onPointsAwarded={handlePointsAwarded}
-        />
-      )}
-
-      {/* Points Awarded Confirmation Modal */}
-      {awardInfo && (
-        <PointsAwardedConfirmationModal
-          isOpen={isConfirmationModalOpen}
-          onClose={closeAwardConfirmation}
-          studentAvatar={awardInfo.studentAvatar}
-          studentFirstName={awardInfo.studentFirstName}
-          points={awardInfo.points}
-          categoryName={awardInfo.categoryName}
-          categoryIcon={awardInfo.categoryIcon}
-        />
-      )}
     </div>
   );
 }

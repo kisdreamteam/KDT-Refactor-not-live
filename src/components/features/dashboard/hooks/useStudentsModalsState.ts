@@ -1,78 +1,53 @@
 import { useCallback, useState } from 'react';
 import type { Student } from '@/lib/types';
+import { useModalStore } from '@/stores/useModalStore';
 
 export function useStudentsModalsState(students: Student[]) {
-  const [isAddStudentModalOpen, setAddStudentModalOpen] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [isPointsModalOpen, setPointsModalOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [isWholeClassModalOpen, setIsWholeClassModalOpen] = useState(false);
-  const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [isMultiStudentAwardModalOpen, setIsMultiStudentAwardModalOpen] = useState(false);
 
   const toggleDropdown = useCallback((studentId: string, event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    setOpenDropdownId(openDropdownId === studentId ? null : studentId);
-  }, [openDropdownId]);
+    setOpenDropdownId((prev) => (prev === studentId ? null : studentId));
+  }, []);
 
   const closeDropdown = useCallback(() => setOpenDropdownId(null), []);
 
-  const handleEditStudent = useCallback((studentId: string) => {
-    const studentToEdit = students.find((s) => s.id === studentId);
-    if (studentToEdit) {
-      setEditingStudent(studentToEdit);
-      setIsEditStudentModalOpen(true);
-    }
-    setOpenDropdownId(null);
-  }, [students]);
+  const handleEditStudent = useCallback(
+    (studentId: string) => {
+      const studentToEdit = students.find((s) => s.id === studentId);
+      if (studentToEdit) {
+        useModalStore.getState().openModal('edit_student', { studentId });
+      }
+      setOpenDropdownId(null);
+    },
+    [students]
+  );
 
   const handleDeleteStudent = useCallback(async (_studentId: string, _studentName: string) => {
     setOpenDropdownId(null);
   }, []);
 
   const handleStudentClick = useCallback((student: Student) => {
-    setSelectedStudent(student);
-    setPointsModalOpen(true);
+    useModalStore.getState().openModal('award_points_single', { studentId: student.id });
   }, []);
 
   const handleWholeClassClick = useCallback(() => {
-    setIsWholeClassModalOpen(true);
+    useModalStore.getState().openModal('award_points_whole_class', {});
   }, []);
 
-  const closePointsModal = useCallback(() => {
-    setPointsModalOpen(false);
-    setSelectedStudent(null);
-  }, []);
-
-  const closeEditStudentModal = useCallback(() => {
-    setIsEditStudentModalOpen(false);
-    setEditingStudent(null);
+  const openAddStudentsModal = useCallback(() => {
+    useModalStore.getState().openModal('add_students', {});
   }, []);
 
   return {
-    isAddStudentModalOpen,
-    setAddStudentModalOpen,
     openDropdownId,
-    setOpenDropdownId,
-    isPointsModalOpen,
-    selectedStudent,
-    isWholeClassModalOpen,
-    isEditStudentModalOpen,
-    editingStudent,
-    isMultiStudentAwardModalOpen,
-    setIsMultiStudentAwardModalOpen,
     toggleDropdown,
     closeDropdown,
     handleEditStudent,
     handleDeleteStudent,
     handleStudentClick,
     handleWholeClassClick,
-    closePointsModal,
-    closeEditStudentModal,
-    closeAddStudentsModal: () => setAddStudentModalOpen(false),
-    closeWholeClassModal: () => setIsWholeClassModalOpen(false),
-    closeMultiStudentAwardModal: () => setIsMultiStudentAwardModalOpen(false),
+    openAddStudentsModal,
   };
 }

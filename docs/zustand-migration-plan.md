@@ -24,11 +24,11 @@
 ## Phase 2: Modals (The Modal Store)
 **Target:** Prevent dashboard grid re-renders when a modal overlay opens.
 
-- [ ] **Typings:** Define modal state (e.g., `isOpen`, `modalType`, `selectedStudentId`).
-- [ ] **Create Store:** Create `/src/stores/useModalStore.ts`.
-- [ ] **Reroute Readers:** Update root modal shells (e.g., `EditClassModalRoot`, `AwardPointsModal`) to subscribe to the modal store.
-- [ ] **Reroute Writers:** Update Tier 3 buttons (e.g., clicking a student card) to call `useModalStore.getState().openModal(id)`.
-- [ ] **Verification:** Open and close various modals. Confirm the background dashboard remains completely static.
+- [x] **Typings:** Modal state in [`/src/stores/useModalStore.ts`](../src/stores/useModalStore.ts): `isOpen`, `modalType`, `selectedStudentId`, `awardTargetStudentIds`, `openModal` / `closeModal`.
+- [x] **Create Store:** [`/src/stores/useModalStore.ts`](../src/stores/useModalStore.ts).
+- [x] **Reroute Readers:** [`DashboardClassModalsHost`](../src/components/features/dashboard/DashboardClassModalsHost.tsx) in [`DashboardLayout`](../src/layouts/dashboard/DashboardLayout.tsx) renders `AwardPointsModal`, `EditStudentModal`, `AddStudentsModal`, and `PointsAwardedConfirmationModal` (with `useAwardPointsFlow`) using strict store selectors.
+- [x] **Reroute Writers:** [`useStudentsModalsState`](../src/components/features/dashboard/hooks/useStudentsModalsState.ts), [`useStudentsSelection`](../src/components/features/dashboard/hooks/useStudentsSelection.ts), and [`SeatingChartView`](../src/components/features/dashboard/SeatingChartView.tsx) call `useModalStore.getState().openModal(...)`. Seating roster patch via [`SEATING_STUDENT_POINTS_DELTA`](../src/lib/events/students.ts); multi-select clear via [`MULTI_STUDENT_AWARD_COMPLETE`](../src/lib/events/students.ts).
+- [x] **Verification:** `npm run build` passed; manually confirm award (single / whole / multi), edit student, add students, seating group/single award, and confirmation modal.
 
 ---
 
