@@ -70,28 +70,63 @@ export async function getStudentCountByClassId(classId: string): Promise<number>
   return count || 0;
 }
 
+/** Next display number: MAX(student_number) + 1 for the class (all rows, including archived). Empty / all null → 1. */
+export async function getNextStartingStudentNumber(classId: string): Promise<number> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('students')
+    .select('student_number')
+    .eq('class_id', classId)
+    .not('student_number', 'is', null)
+    .order('student_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throwApiError(error, 'getNextStartingStudentNumber');
+
+  const max = data?.student_number;
+  if (max === null || max === undefined || typeof max !== 'number') {
+    return 1;
+  }
+  return max + 1;
+}
+
 export async function createStudent(studentData: {
   first_name: string;
   last_name: string;
   class_id: string;
   avatar: string;
   gender?: string | null;
-  student_number: number;
 }): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase.from('students').insert(studentData);
+  const student_number = await getNextStartingStudentNumber(studentData.class_id);
+  const { error } = await supabase.from('students').insert({ ...studentData, student_number });
   if (error) throwApiError(error, 'createStudent');
 }
 
-export async function createStudentsBulk(studentsData: Array<{
-  first_name: string;
-  last_name: string;
-  class_id: string;
-  avatar: string;
-  student_number: number;
-}>): Promise<void> {
+export async function createStudentsBulk(
+  studentsData: Array<{
+    first_name: string;
+    last_name: string;
+    class_id: string;
+    avatar: string;
+  }>
+): Promise<void> {
+  if (studentsData.length === 0) return;
+
+  const classId = studentsData[0].class_id;
+  if (!studentsData.every((r) => r.class_id === classId)) {
+    throw new Error('createStudentsBulk: all rows must share the same class_id');
+  }
+
+  let n = await getNextStartingStudentNumber(classId);
+  const rows = studentsData.map((row) => ({
+    ...row,
+    student_number: n++,
+  }));
+
   const supabase = createClient();
-  const { error } = await supabase.from('students').insert(studentsData);
+  const { error } = await supabase.from('students').insert(rows);
   if (error) throwApiError(error, 'createStudentsBulk');
 }
 

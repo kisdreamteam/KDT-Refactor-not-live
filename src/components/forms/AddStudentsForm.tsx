@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  countStudentsByClassId,
+  getNextStartingStudentNumber,
   insertStudent,
   insertStudentsBulk,
 } from '@/api/students';
@@ -36,14 +36,18 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
   useEffect(() => {
     if (isOpen && classId) {
       const fetchNumber = async () => {
-        const number = await getNextStudentNumber();
-        setNextStudentNumber(number);
+        try {
+          const number = await getNextStartingStudentNumber(classId);
+          setNextStudentNumber(number);
+        } catch (err) {
+          console.error('Unexpected error getting next student number:', err);
+          setNextStudentNumber(1);
+        }
       };
       fetchNumber();
     } else {
       setNextStudentNumber(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, classId]);
 
   const getRandomAvatar = () => {
@@ -52,57 +56,22 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
     return `/images/dashboard/student-avatars/${avatarName}`;
   };
 
-  // Get the next student number for the class
-  // Logic: Count total students in class, next number = count + 1
-  // This ensures: empty class (0 students) -> first student gets 1
-  //               class with 5 students -> next student gets 6
-  const getNextStudentNumber = async (): Promise<number> => {
-    try {
-      const count = await countStudentsByClassId(classId);
-      return count + 1;
-    } catch (err) {
-      console.error('Unexpected error getting next student number:', err);
-      return 1; // Ultimate fallback
-    }
-  };
-
   const handleSaveStudent = async () => {
     const name = studentName.trim();
     if (!name) return;
 
     try {
-      // Parse the name
       const parts = name.split(' ');
       const first_name = parts[0];
       const last_name = parts.slice(1).join(' ');
 
-      // Get the next student number
-      const studentNumber = await getNextStudentNumber();
-      console.log('Next student number calculated:', studentNumber);
-      console.log('Student number type:', typeof studentNumber);
-
-      // Validate student number
-      if (!studentNumber || isNaN(studentNumber) || studentNumber < 1) {
-        console.error('Invalid student number:', studentNumber);
-        alert('Error: Invalid student number. Please try again.');
-        return;
-      }
-
-      // Prepare data for insertion
       const studentData = {
         first_name,
         last_name,
         class_id: classId,
-        avatar: getRandomAvatar(), // Assign random avatar
-        gender: gender.trim() || null, // Set gender or null if empty
-        student_number: studentNumber, // Assign student number as integer
-        // 'points' will use the default 0
+        avatar: getRandomAvatar(),
+        gender: gender.trim() || null,
       };
-
-      console.log('Data to insert:', JSON.stringify(studentData, null, 2));
-      console.log('student_number value:', studentData.student_number);
-      console.log('student_number type:', typeof studentData.student_number);
-      console.log('classId:', classId);
 
       await insertStudent(studentData);
 
@@ -119,59 +88,29 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
     if (!text) return;
 
     try {
-      // Parse the list
       const lines = text.split('\n').filter((line) => line.trim() !== '');
 
-      // Get the starting student number
-      const startingNumber = await getNextStudentNumber();
-      console.log('Starting student number for bulk import:', startingNumber);
-      console.log('Starting number type:', typeof startingNumber);
-
-      // Validate starting number
-      if (!startingNumber || isNaN(startingNumber) || startingNumber < 1) {
-        console.error('Invalid starting student number:', startingNumber);
-        alert('Error: Invalid starting student number. Please try again.');
-        return;
-      }
-
-      // Create students array with sequential student numbers
-      const newStudents = lines.map((line, index) => {
-        let first_name, last_name;
+      const newStudents = lines.map((line) => {
+        let first_name: string;
+        let last_name: string;
 
         if (line.includes(',')) {
-          // Assumes "Last, First" format
           const parts = line.split(',');
           last_name = parts[0].trim();
           first_name = parts[1].trim();
         } else {
-          // Assumes "First Last" format
           const parts = line.split(' ');
           first_name = parts[0].trim();
           last_name = parts.slice(1).join(' ').trim();
-        }
-
-        // Assign sequential student number (1st student = startingNumber, 2nd = startingNumber + 1, etc.)
-        const studentNumber = startingNumber + index;
-
-        // Validate each student number
-        if (!studentNumber || isNaN(studentNumber) || studentNumber < 1) {
-          console.error(`Invalid student number for student ${index + 1}:`, studentNumber);
         }
 
         return {
           first_name,
           last_name,
           class_id: classId,
-          avatar: getRandomAvatar(), // Assign random avatar
-          student_number: studentNumber, // Assign sequential student number as integer
+          avatar: getRandomAvatar(),
         };
       });
-
-      console.log('Students to insert:', JSON.stringify(newStudents, null, 2));
-      console.log('Number of students:', newStudents.length);
-      console.log('First student number:', newStudents[0]?.student_number);
-      console.log('Last student number:', newStudents[newStudents.length - 1]?.student_number);
-      console.log('classId:', classId);
 
       await insertStudentsBulk(newStudents);
 
