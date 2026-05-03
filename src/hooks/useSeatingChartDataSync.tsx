@@ -1,21 +1,14 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useDashboard } from '@/context/DashboardContext';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useSeatingStore } from '@/stores/useSeatingStore';
-import {
-  fetchSeatingGroupsWithAssignments,
-  fetchSeatingLayoutsByClassId,
-} from '@/api/seating';
+import { fetchSeatingGroupsWithAssignments, fetchSeatingLayoutsByClassId } from '@/api/seating';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 
-export async function refreshSeatingLayoutsForClass(
-  classId: string,
-  activeSeatingLayoutId: string | null,
-  setActiveSeatingLayoutId: (id: string | null) => void
-): Promise<void> {
+export async function refreshSeatingLayoutsForClass(classId: string): Promise<void> {
   const st = useSeatingStore.getState();
+  const selectedLayoutId = st.selectedLayoutId;
   st.setLayoutLoading(true);
   st.setLayoutsError(null);
   try {
@@ -24,24 +17,24 @@ export async function refreshSeatingLayoutsForClass(
       st.setLayouts(data);
       if (data.length > 0) {
         const hasActive =
-          activeSeatingLayoutId !== null && data.some((layout) => layout.id === activeSeatingLayoutId);
+          selectedLayoutId !== null && data.some((layout) => layout.id === selectedLayoutId);
         if (!hasActive) {
-          setActiveSeatingLayoutId(data[0].id);
+          st.setSelectedLayoutId(data[0].id);
         }
-      } else if (activeSeatingLayoutId !== null) {
-        setActiveSeatingLayoutId(null);
+      } else if (selectedLayoutId !== null) {
+        st.setSelectedLayoutId(null);
       }
     } else {
       st.setLayouts([]);
-      if (activeSeatingLayoutId !== null) {
-        setActiveSeatingLayoutId(null);
+      if (selectedLayoutId !== null) {
+        st.setSelectedLayoutId(null);
       }
     }
   } catch (err) {
     console.error('Unexpected error fetching seating charts:', err);
     st.setLayoutsError('An unexpected error occurred.');
   } finally {
-    st.setLayoutLoading(false);
+    useSeatingStore.getState().setLayoutLoading(false);
   }
 }
 
@@ -65,16 +58,12 @@ export async function refreshSeatingGroupsForLayout(layoutId: string | null): Pr
   }
 }
 
-/** Runs under `DashboardProvider`: keeps seating layout/group data in `useSeatingStore` aligned with class + layout selection. */
+/** Keeps seating layout/group data in `useSeatingStore` aligned with class + layout selection. */
 export function SeatingChartDataSync() {
   const activeClassId = useDashboardStore((s) => s.activeClassId);
   const rosterLen = useDashboardStore((s) => s.students.length);
-  const { activeSeatingLayoutId, setActiveSeatingLayoutId } = useDashboard();
+  const selectedLayoutId = useSeatingStore((s) => s.selectedLayoutId);
   const prevClassRef = useRef<string | null>(null);
-  const layoutSelRef = useRef(activeSeatingLayoutId);
-  const setLayoutSelRef = useRef(setActiveSeatingLayoutId);
-  layoutSelRef.current = activeSeatingLayoutId;
-  setLayoutSelRef.current = setActiveSeatingLayoutId;
 
   useEffect(() => {
     if (!activeClassId) {
@@ -89,30 +78,30 @@ export function SeatingChartDataSync() {
       useSeatingStore.getState().resetForClassSwitch();
       prevClassRef.current = activeClassId;
     }
-    void refreshSeatingLayoutsForClass(activeClassId, layoutSelRef.current, setLayoutSelRef.current);
+    void refreshSeatingLayoutsForClass(activeClassId);
   }, [activeClassId]);
 
   useEffect(() => {
-    if (!activeSeatingLayoutId) {
+    if (!selectedLayoutId) {
       useSeatingStore.getState().setGroups([]);
       useSeatingStore.getState().setGroupAssignmentsById({});
       useSeatingStore.getState().setGroupPositionsById({});
       return;
     }
     if (rosterLen === 0) return;
-    void refreshSeatingGroupsForLayout(activeSeatingLayoutId);
-  }, [activeSeatingLayoutId, rosterLen]);
+    void refreshSeatingGroupsForLayout(selectedLayoutId);
+  }, [selectedLayoutId, rosterLen]);
 
   useEffect(() => {
     const handleSeatingEditMode = (event: Event) => {
       const detail = (event as CustomEvent<{ isEditMode?: boolean }>).detail;
-      if (detail?.isEditMode === false && activeSeatingLayoutId) {
-        void refreshSeatingGroupsForLayout(activeSeatingLayoutId);
+      if (detail?.isEditMode === false && selectedLayoutId) {
+        void refreshSeatingGroupsForLayout(selectedLayoutId);
       }
     };
     window.addEventListener(STUDENT_EVENTS.SEATING_EDIT_MODE, handleSeatingEditMode as EventListener);
     return () => window.removeEventListener(STUDENT_EVENTS.SEATING_EDIT_MODE, handleSeatingEditMode as EventListener);
-  }, [activeSeatingLayoutId]);
+  }, [selectedLayoutId]);
 
   return null;
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { normalizeClassIconPath } from "@/lib/iconUtils";
 import IconSettingsWheel from "@/components/iconsCustom/iconSettingsWheel";
 import BaseCard from "@/components/ui/BaseCard";
-import { useDashboard } from "@/context/DashboardContext";
+import { usePreferenceStore } from "@/stores/usePreferenceStore";
 
 interface Class {
   id: string;
@@ -35,7 +35,7 @@ export default function ClassCard({
   showDelete = false,
 }: ClassCardProps) {
   const isOwner = classItem.is_owner !== false;
-  const { viewPreference } = useDashboard();
+  const viewPreference = usePreferenceStore((s) => s.viewPreference);
   const classHref =
     viewPreference === "seating"
       ? `/dashboard/classes/${classItem.id}?view=seating`

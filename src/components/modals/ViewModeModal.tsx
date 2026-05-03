@@ -1,9 +1,12 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useDashboard } from '@/context/DashboardContext';
+import { getSessionUserId, updateTeacherPreferredView, type ViewPreference } from '@/api/auth';
 import { emitSeatingEditMode } from '@/lib/events/students';
 import { useLayoutStore } from '@/stores/useLayoutStore';
+import { usePreferenceStore } from '@/stores/usePreferenceStore';
+import { useUserStore } from '@/stores/useUserStore';
+import { syncProfileCacheViewPreference } from '@/hooks/useDashboardProfileSync';
 
 interface ViewModeModalProps {
   isOpen: boolean;
@@ -14,13 +17,24 @@ export default function ViewModeModal({ isOpen, onClose }: ViewModeModalProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { updateViewPreference } = useDashboard();
   const currentView = (searchParams?.get('view') || 'grid') as 'grid' | 'seating';
+
+  const persistViewPreference = async (newView: ViewPreference) => {
+    usePreferenceStore.getState().setViewPreference(newView);
+    syncProfileCacheViewPreference(newView);
+    try {
+      const sessionUserId = await getSessionUserId();
+      const userId = sessionUserId ?? useUserStore.getState().teacherProfile?.id;
+      if (!userId) return;
+      await updateTeacherPreferredView(userId, newView);
+    } catch (err) {
+      console.error('Unexpected error updating preferred view:', err);
+    }
+  };
 
   const handleViewChange = (view: 'grid' | 'seating') => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
     if (view === 'grid') {
-      // Keep an explicit view token to prevent layout preference effect from re-applying stale seating defaults.
       params.set('view', 'grid');
       params.delete('mode');
       emitSeatingEditMode({ isEditMode: false });
@@ -37,7 +51,7 @@ export default function ViewModeModal({ isOpen, onClose }: ViewModeModalProps) {
     }
     useLayoutStore.getState().setActiveView(view === 'seating' ? 'seating_chart' : 'students');
     router.replace(newUrl, { scroll: false });
-    void updateViewPreference(view === 'seating' ? 'seating' : 'students');
+    void persistViewPreference(view === 'seating' ? 'seating' : 'students');
     onClose();
   };
 
@@ -45,9 +59,7 @@ export default function ViewModeModal({ isOpen, onClose }: ViewModeModalProps) {
 
   return (
     <div className="absolute bottom-full left-0 mb-2 bg-blue-100 rounded-lg shadow-lg border-4 border-brand-purple py-2 z-[100] min-w-[200px]">
-      <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-200">
-        View mode:
-      </div>
+      <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-200">View mode:</div>
       <button
         onClick={() => handleViewChange('grid')}
         className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
@@ -67,4 +79,3 @@ export default function ViewModeModal({ isOpen, onClose }: ViewModeModalProps) {
     </div>
   );
 }
-

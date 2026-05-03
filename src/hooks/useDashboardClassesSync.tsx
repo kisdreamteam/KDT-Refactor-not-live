@@ -50,7 +50,7 @@ export async function refreshDashboardClassesForUserAction(): Promise<void> {
 
 /**
  * Mount once under `app/dashboard/layout.tsx` so class list loading is not tied to
- * `DashboardProvider` remounts when switching between `/dashboard` and class routes.
+ * page-level remounts when switching between `/dashboard` and class routes.
  */
 export function DashboardClassesSync() {
   const router = useRouter();

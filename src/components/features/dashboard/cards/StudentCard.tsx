@@ -5,6 +5,7 @@ import { normalizeAvatarPath } from '@/lib/iconUtils';
 import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
 import BaseCard from '@/components/ui/BaseCard';
 import { useDashboardStore } from '@/stores/useDashboardStore';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 
 interface StudentCardProps {
   studentId: string;
@@ -13,6 +14,8 @@ interface StudentCardProps {
   onEdit: (studentId: string) => void;
   onDelete: (studentId: string, studentName: string) => void;
   onStudentClick: (studentId: string) => void;
+  isSelected?: boolean;
+  onSelectStudent?: (studentId: string) => void;
 }
 
 export default function StudentCard({
@@ -22,7 +25,10 @@ export default function StudentCard({
   onEdit,
   onDelete,
   onStudentClick,
+  isSelected = false,
+  onSelectStudent,
 }: StudentCardProps) {
+  const isMultiSelectMode = useLayoutStore((s) => s.isMultiSelectMode);
   const student = useDashboardStore(
     useShallow((s) => s.students.find((x) => x.id === studentId) ?? null)
   );
@@ -31,29 +37,53 @@ export default function StudentCard({
     return null;
   }
 
+  const handleCardClick = () => {
+    if (isMultiSelectMode && onSelectStudent) {
+      onSelectStudent(student.id);
+      return;
+    }
+    onStudentClick(student.id);
+  };
+
+  const cardClassName =
+    isMultiSelectMode && isSelected
+      ? 'z-[1] overflow-hidden hover:shadow-md'
+      : 'z-[1] overflow-hidden hover:shadow-md hover:!bg-blue-100';
+
   return (
     <BaseCard
       data-student-card={student.id}
-      className="z-[1] overflow-hidden hover:shadow-md hover:!bg-blue-100"
+      className={cardClassName}
       variant="default"
       contentLayout="space-between"
+      isSelected={isMultiSelectMode ? isSelected : false}
+      aria-pressed={isMultiSelectMode ? isSelected : undefined}
       title={student.first_name}
       titleClassName="pointer-events-none text-gray-900"
       iconWrapperClassName="pointer-events-none"
-      onClick={() => onStudentClick(student.id)}
+      onClick={handleCardClick}
       topRightSlot={
         <div
-          className="relative"
+          className="relative flex items-center gap-0.5"
           data-dropdown-container
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
         >
+          {isMultiSelectMode && !isSelected ? (
+            <div
+              className="pointer-events-none flex h-8 w-8 flex-shrink-0 items-center justify-center"
+              title="Select"
+              aria-hidden
+            >
+              <span className="inline-block h-5 w-5 rounded-full border-[3px] border-gray-400 bg-white shadow-sm ring-1 ring-gray-200/80" />
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={(e) => onToggleDropdown(student.id, e)}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
             data-dropdown-button
           >
             <IconSettingsWheel className="h-10 w-10" />

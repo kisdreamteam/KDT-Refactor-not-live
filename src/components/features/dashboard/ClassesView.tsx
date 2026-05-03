@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import CreateClassModal from '@/components/modals/CreateClassModal';
 import EditClassModal from '@/components/modals/EditClassModal';
-import { useDashboard } from '@/context/DashboardContext';
+import { refreshDashboardClassesForUserAction } from '@/hooks/useDashboardClassesSync';
 import { useDashboardStore } from '@/stores/useDashboardStore';
+import { usePreferenceStore } from '@/stores/usePreferenceStore';
 import LoadingState from '@/components/ui/LoadingState';
 import EmptyState from '@/components/ui/EmptyState';
 import ClassCardsGrid from './maincontent/viewClassesGrid/ClassCardsGrid';
@@ -19,7 +20,7 @@ export default function ClassesView() {
   const classes = useDashboardStore((s) => s.classes);
   const isLoadingClasses = useDashboardStore((s) => s.isLoadingClasses);
   const hasAccessibleClasses = useDashboardStore((s) => s.allAccessibleClasses.length > 0);
-  const { refreshClasses, viewMode } = useDashboard();
+  const viewMode = usePreferenceStore((s) => s.viewMode);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
@@ -75,7 +76,7 @@ export default function ClassesView() {
   const handleModalClose = () => {
     console.log('Modal closing, refreshing classes...');
     setIsModalOpen(false);
-    refreshClasses(); // Refresh classes after modal closes
+    void refreshDashboardClassesForUserAction();
   };
 
   // Handle dropdown toggle
@@ -105,7 +106,7 @@ export default function ClassesView() {
       await archiveClass(archiveClassId, !isArchivedView);
 
       console.log(`Class ${isArchivedView ? 'unarchived' : 'archived'} successfully`);
-      refreshClasses(); // Refresh the list
+      void refreshDashboardClassesForUserAction();
       // Dispatch event to refresh sidebar classes
       window.dispatchEvent(new CustomEvent('classUpdated'));
     } catch (err) {
@@ -130,7 +131,7 @@ export default function ClassesView() {
   const handleEditModalClose = () => {
     setIsEditModalOpen(false);
     setSelectedClassId(null);
-    refreshClasses(); // Refresh classes after modal closes
+    void refreshDashboardClassesForUserAction();
   };
 
   // Handle delete class (archived only)
@@ -152,7 +153,7 @@ export default function ClassesView() {
     try {
       await deleteClassPermanently(deleteClassId);
       console.log('Class deleted successfully');
-      refreshClasses(); // Refresh the archived classes list
+      void refreshDashboardClassesForUserAction();
     } catch (err) {
       console.error('Error deleting class:', err);
       alert('Failed to delete class. Please try again.');
@@ -214,7 +215,7 @@ export default function ClassesView() {
           isOpen={isEditModalOpen}
           onClose={handleEditModalClose}
           classId={selectedClassId}
-          onRefresh={refreshClasses}
+          onRefresh={refreshDashboardClassesForUserAction}
         />
       )}
 

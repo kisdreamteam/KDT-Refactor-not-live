@@ -2,7 +2,6 @@ import CardsGrid from '@/components/ui/CardsGrid';
 import ScaledGridFrame from '@/components/ui/ScaledGridFrame';
 import WholeClassCard from '@/components/features/dashboard/cards/WholeClassCard';
 import StudentCard from '@/components/features/dashboard/cards/StudentCard';
-import StudentCardMulti from '@/components/features/dashboard/cards/StudentCardMulti';
 import AddStudentCard from '@/components/features/dashboard/cards/AddStudentCard';
 
 interface StudentCardsGridProps {
@@ -44,26 +43,19 @@ export default function StudentCardsGrid({
           totalPoints={totalClassPoints}
           onClick={onWholeClassClick}
         />
-        {orderedStudentIds.map((studentId) =>
-          isMultiSelectMode ? (
-            <StudentCardMulti
-              key={studentId}
-              studentId={studentId}
-              isSelected={selectedStudentIds.includes(studentId)}
-              onSelect={onSelectStudent}
-            />
-          ) : (
-            <StudentCard
-              key={studentId}
-              studentId={studentId}
-              openDropdownId={openDropdownId}
-              onToggleDropdown={onToggleDropdown}
-              onEdit={onEditStudent}
-              onDelete={onDeleteStudent}
-              onStudentClick={onStudentClick}
-            />
-          )
-        )}
+        {orderedStudentIds.map((studentId) => (
+          <StudentCard
+            key={studentId}
+            studentId={studentId}
+            openDropdownId={openDropdownId}
+            onToggleDropdown={onToggleDropdown}
+            onEdit={onEditStudent}
+            onDelete={onDeleteStudent}
+            onStudentClick={onStudentClick}
+            isSelected={selectedStudentIds.includes(studentId)}
+            onSelectStudent={onSelectStudent}
+          />
+        ))}
         {!isMultiSelectMode && <AddStudentCard onClick={onAddStudent} />}
       </CardsGrid>
     </ScaledGridFrame>

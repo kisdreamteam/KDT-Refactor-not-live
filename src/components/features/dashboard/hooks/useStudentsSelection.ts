@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 import {
   STUDENT_EVENTS,
   emitMultiSelectStateChanged,
@@ -9,21 +10,20 @@ import { useModalStore } from '@/stores/useModalStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 
 export function useStudentsSelection() {
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const isMultiSelectMode = useLayoutStore((s) => s.isMultiSelectMode);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
   const toggleMultiSelect = useCallback(() => {
-    setIsMultiSelectMode((prev) => {
-      const newState = !prev;
-      emitMultiSelectStateChanged({ isMultiSelect: newState });
-      if (newState === false) {
-        setSelectedStudentIds([]);
-        emitSelectionCountChanged({ count: 0 });
-      } else {
-        emitSelectionCountChanged({ count: 0 });
-      }
-      return newState;
-    });
+    const prev = useLayoutStore.getState().isMultiSelectMode;
+    const newState = !prev;
+    useLayoutStore.getState().setMultiSelectMode(newState);
+    emitMultiSelectStateChanged({ isMultiSelect: newState });
+    if (newState === false) {
+      setSelectedStudentIds([]);
+      emitSelectionCountChanged({ count: 0 });
+    } else {
+      emitSelectionCountChanged({ count: 0 });
+    }
   }, []);
 
   const selectAll = useCallback(() => {

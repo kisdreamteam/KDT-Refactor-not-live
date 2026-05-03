@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { create } from 'zustand';
 import type { Student } from '@/lib/types';
 import type { GroupAssignment, SeatingChartRecord, SeatingGroupRecord } from '@/api/seating';
@@ -14,10 +15,19 @@ function mapAssignmentsToRecord(map: Map<string, GroupAssignment[]>): Record<str
   return out;
 }
 
+export type SeatingLayoutNavHandlers = {
+  onSelectLayout: (layoutId: string) => void;
+  onAddLayout: () => void;
+  onEditLayout: (layoutId: string, layoutName: string, e: MouseEvent) => void;
+  onDeleteLayout: (layoutId: string, layoutName: string, e: MouseEvent) => void;
+};
+
 interface SeatingStore {
   layouts: SeatingChartRecord[];
   isLoadingLayouts: boolean;
   layoutsError: string | null;
+  selectedLayoutId: string | null;
+  layoutNavHandlers: SeatingLayoutNavHandlers | null;
   groups: SeatingGroupRecord[];
   isLoadingGroups: boolean;
   groupAssignmentsById: Record<string, GroupAssignment[]>;
@@ -30,6 +40,8 @@ interface SeatingStore {
   setLayouts: (layouts: SeatingChartRecord[]) => void;
   setLayoutLoading: (v: boolean) => void;
   setLayoutsError: (e: string | null) => void;
+  setSelectedLayoutId: (id: string | null) => void;
+  setLayoutNavHandlers: (handlers: SeatingLayoutNavHandlers | null) => void;
   setGroupsLoading: (v: boolean) => void;
   setGroups: (groups: SeatingGroupRecord[]) => void;
   setGroupAssignmentsById: (next: Record<string, GroupAssignment[]>) => void;
@@ -63,6 +75,8 @@ export const useSeatingStore = create<SeatingStore>((set, get) => ({
   layouts: [],
   isLoadingLayouts: false,
   layoutsError: null,
+  selectedLayoutId: null,
+  layoutNavHandlers: null,
   groups: [],
   isLoadingGroups: false,
   groupAssignmentsById: {},
@@ -74,6 +88,8 @@ export const useSeatingStore = create<SeatingStore>((set, get) => ({
   setLayouts: (layouts) => set({ layouts }),
   setLayoutLoading: (isLoadingLayouts) => set({ isLoadingLayouts }),
   setLayoutsError: (layoutsError) => set({ layoutsError }),
+  setSelectedLayoutId: (selectedLayoutId) => set({ selectedLayoutId }),
+  setLayoutNavHandlers: (layoutNavHandlers) => set({ layoutNavHandlers }),
   setGroupsLoading: (isLoadingGroups) => set({ isLoadingGroups }),
   setGroups: (groups) => set({ groups }),
   setGroupAssignmentsById: (groupAssignmentsById) => set({ groupAssignmentsById }),
@@ -114,6 +130,8 @@ export const useSeatingStore = create<SeatingStore>((set, get) => ({
       groupPositionsById: {},
       layoutsError: null,
       isLoadingGroups: false,
+      selectedLayoutId: null,
+      layoutNavHandlers: null,
       unseatedStudents: [],
       selectedStudentForGroup: null,
       ...initialViewSettings,

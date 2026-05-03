@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { SortOption } from '@/context/StudentSortContext';
+import type { SortOption } from '@/stores/usePreferenceStore';
 import ViewModeModal from '@/components/modals/ViewModeModal';
 import IconViewDots from '@/components/iconsCustom/iconViewDots';
 import IconRandomArrows from '@/components/iconsCustom/iconRandomArrows';

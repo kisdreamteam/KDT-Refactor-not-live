@@ -1,4 +1,4 @@
-import type { SortOption } from '@/context/StudentSortContext';
+import type { SortOption } from '@/stores/usePreferenceStore';
 import type { Student } from '@/lib/types';
 
 function sortStudentsCopy(students: Student[], sortBy: SortOption): Student[] {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useShallow } from 'zustand/react/shallow';
-import { useStudentSort } from '@/context/StudentSortContext';
+import { usePreferenceStore } from '@/stores/usePreferenceStore';
 import { refreshDashboardStudents } from '@/hooks/useDashboardStudentSync';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { selectOrderedStudentIds, selectTotalClassPoints } from '@/stores/dashboardStudentSelectors';
@@ -20,7 +20,7 @@ import { useStudentsUrlState } from './hooks/useStudentsUrlState';
 export default function StudentsView() {
   const params = useParams();
   const classId = (params?.classId as string | undefined) ?? '';
-  const { sortBy } = useStudentSort();
+  const sortBy = usePreferenceStore((s) => s.sortBy);
   const classes = useDashboardStore((s) => s.classes);
   const setStudents = useDashboardStore((s) => s.setStudents);
   const isLoadingStudents = useDashboardStore((s) => s.isLoadingStudents);

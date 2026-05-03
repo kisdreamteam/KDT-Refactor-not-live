@@ -8,6 +8,14 @@ import { useDashboardStore } from '@/stores/useDashboardStore';
 
 const studentsByClassCache = new Map<string, Student[]>();
 
+/** Copies the current in-memory roster into the module cache so `refreshDashboardStudents(false)` cannot restore stale points. */
+export function syncStudentsByClassCacheFromStore(): void {
+  const { activeClassId, students } = useDashboardStore.getState();
+  if (!activeClassId || students.length === 0) return;
+  if (!students.every((s) => s.class_id === activeClassId)) return;
+  studentsByClassCache.set(activeClassId, students.map((s) => ({ ...s })));
+}
+
 export async function refreshDashboardStudents(force = false): Promise<void> {
   const { activeClassId, setStudents, setLoadingStudents } = useDashboardStore.getState();
   if (!activeClassId) {
@@ -36,7 +44,12 @@ export async function refreshDashboardStudents(force = false): Promise<void> {
   }
 }
 
-/** Mount once under `DashboardProvider` to sync URL → `activeClassId` and load roster into the store. */
+function rosterInStoreMatchesClass(activeClassId: string): boolean {
+  const { students } = useDashboardStore.getState();
+  return students.length > 0 && students.every((s) => s.class_id === activeClassId);
+}
+
+/** Mount once under the dashboard layout to sync URL → `activeClassId` and load roster into the store. */
 export function DashboardStudentSync() {
   const pathname = usePathname();
 
@@ -48,6 +61,13 @@ export function DashboardStudentSync() {
   const activeClassId = useDashboardStore((s) => s.activeClassId);
 
   useEffect(() => {
+    if (!activeClassId) {
+      void refreshDashboardStudents(false);
+      return;
+    }
+    if (rosterInStoreMatchesClass(activeClassId)) {
+      return;
+    }
     void refreshDashboardStudents(false);
   }, [activeClassId]);
 

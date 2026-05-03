@@ -5,6 +5,7 @@ import {
   emitRecentlySelectedCleared,
   STUDENT_EVENTS,
 } from '@/lib/events/students';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 
 interface UseStudentsToolbarEventsParams {
   classId: string;
@@ -30,6 +31,7 @@ export function useStudentsToolbarEvents({
   setIsPointLogOpen,
 }: UseStudentsToolbarEventsParams) {
   useEffect(() => {
+    useLayoutStore.getState().setMultiSelectMode(false);
     emitMultiSelectStateChanged({ isMultiSelect: false });
   }, []);
 

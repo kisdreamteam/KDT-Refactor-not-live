@@ -2,30 +2,20 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-
-interface TeacherProfile {
-  title: string;
-  name: string;
-}
+import { useUserStore } from '@/stores/useUserStore';
 
 interface TopNavProps {
-  isLoadingProfile: boolean;
   currentClassName: string | null;
-  teacherProfile: TeacherProfile | null;
   suppressTeacherFallback?: boolean;
 }
 
-export default function TopNav({
-  isLoadingProfile,
-  currentClassName,
-  teacherProfile,
-  suppressTeacherFallback = false,
-}: TopNavProps) {
+export default function TopNav({ currentClassName, suppressTeacherFallback = false }: TopNavProps) {
+  const isLoadingProfile = useUserStore((s) => s.isLoadingProfile);
+  const teacherProfile = useUserStore((s) => s.teacherProfile);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const titleContainerRef = useRef<HTMLDivElement>(null);
-  const [fontSize, setFontSize] = useState(72); // Default 4.5rem (72px)
+  const [fontSize, setFontSize] = useState(72);
 
-  // Get the text content
   const getTitleText = useCallback(() => {
     if (isLoadingProfile) return 'Loading...';
     if (currentClassName) return currentClassName;
@@ -34,7 +24,6 @@ export default function TopNav({
     return 'Classes';
   }, [isLoadingProfile, currentClassName, teacherProfile, suppressTeacherFallback]);
 
-  // Calculate and adjust font size based on container width
   useEffect(() => {
     const adjustFontSize = () => {
       if (!titleRef.current || !titleContainerRef.current) return;
@@ -43,13 +32,11 @@ export default function TopNav({
       const textElement = titleRef.current;
       const containerWidth = container.offsetWidth;
 
-      // Start with a large font size and reduce until it fits
-      let size = 72; // Start at 4.5rem
+      let size = 72;
       textElement.style.fontSize = `${size}px`;
 
-      // Binary search for the optimal font size
-      let minSize = 14; // Minimum 0.875rem
-      let maxSize = 72; // Maximum 4.5rem
+      let minSize = 14;
+      let maxSize = 72;
 
       while (minSize <= maxSize) {
         const testSize = Math.floor((minSize + maxSize) / 2);
@@ -66,12 +53,10 @@ export default function TopNav({
       setFontSize(size);
     };
 
-    // Use requestAnimationFrame to ensure DOM is ready
     const timeoutId = setTimeout(() => {
       adjustFontSize();
     }, 0);
 
-    // Adjust on window resize with debouncing
     let resizeTimeout: NodeJS.Timeout;
     const handleResize = () => {
       clearTimeout(resizeTimeout);
@@ -82,7 +67,6 @@ export default function TopNav({
 
     window.addEventListener('resize', handleResize);
 
-    // Use ResizeObserver for more accurate container size tracking
     let resizeObserver: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined' && titleContainerRef.current) {
       resizeObserver = new ResizeObserver(() => {
@@ -102,11 +86,8 @@ export default function TopNav({
   }, [isLoadingProfile, currentClassName, teacherProfile, suppressTeacherFallback, getTitleText]);
 
   return (
-    // Top Nav Container
     <div className="bg-white h-30 py-6 flex flex-row items-center justify-between w-full pl-7 pt-8" data-top-nav>
-      {/* <div className="bg-white flex flex-col items-start justify-start"> */}
       <div className="bg-white flex flex-row items-start justify-start flex-1 min-w-0">
-        {/* Main Title Container */}
         <div ref={titleContainerRef} className="flex-1 min-w-0 overflow-hidden pt-0">
           <h1
             ref={titleRef}
@@ -133,7 +114,6 @@ export default function TopNav({
           </h1>
         </div>
       </div>
-      {/* KIS Points Logo */}
       <div className="flex items-center w-40 justify-end">
         <Image
           src="/images/shared/profile-avatar-dashboard.png"

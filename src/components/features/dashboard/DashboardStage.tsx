@@ -1,6 +1,5 @@
 'use client';
 
-import { useCallback } from 'react';
 import IconAddPlus from '@/components/iconsCustom/iconAddPlus';
 import IconEditPencil from '@/components/iconsCustom/iconEditPencil';
 import IconPresentationBoard from '@/components/iconsCustom/iconPresentationBoard';
@@ -9,11 +8,10 @@ import TopNav from '@/components/features/navbars/TopNav';
 import BottomNavStudents from '@/components/features/navbars/BottomNavStudents';
 import BottomNavMulti from '@/components/features/navbars/BottomNavMulti';
 import SeatingEditBottomNavBridge from '@/components/features/navbars/SeatingEditBottomNavBridge';
-import type { SortOption } from '@/context/StudentSortContext';
+import type { SortOption } from '@/stores/usePreferenceStore';
 import Timer from '@/components/features/dashboard/tools/Timer';
 import Random from '@/components/features/dashboard/tools/Random';
 import CanvasToolbar from '@/components/ui/CanvasToolbar';
-import { StageToolbarProvider } from '@/components/features/dashboard/StageToolbarContext';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 
@@ -21,12 +19,7 @@ export interface DashboardStageProps {
   children: React.ReactNode;
   showCanvasToolbar?: boolean;
   isEditMode: boolean;
-  isLoadingProfile: boolean;
   currentClassName: string | null;
-  teacherProfile: {
-    title: string;
-    name: string;
-  } | null;
   suppressTeacherFallback?: boolean;
   isTimerOpen: boolean;
   isRandomOpen: boolean;
@@ -47,9 +40,7 @@ export default function DashboardStage({
   children,
   showCanvasToolbar = true,
   isEditMode,
-  isLoadingProfile,
   currentClassName,
-  teacherProfile,
   suppressTeacherFallback = false,
   isTimerOpen,
   isRandomOpen,
@@ -65,7 +56,6 @@ export default function DashboardStage({
   onLogoutStudentsNav,
   onToggleMultiSelect,
 }: DashboardStageProps) {
-  const noopSetToolbar = useCallback(() => {}, []);
   const isSeatingView = useLayoutStore((s) => s.activeView === 'seating_chart');
   const showTopNav = !isSeatingView;
   const stageContentPadding = isSeatingView ? '' : 'pl-2 pt-2';
@@ -161,12 +151,7 @@ export default function DashboardStage({
       {/* Top nav */}
       {showTopNav && (
         <div className="col-start-1 col-span-2 row-start-1 overflow-hidden">
-          <TopNav
-            isLoadingProfile={isLoadingProfile}
-            currentClassName={currentClassName}
-            teacherProfile={teacherProfile}
-            suppressTeacherFallback={suppressTeacherFallback}
-          />
+          <TopNav currentClassName={currentClassName} suppressTeacherFallback={suppressTeacherFallback} />
         </div>
       )}
 
@@ -179,17 +164,15 @@ export default function DashboardStage({
         ].join(' ')}
       >
         <div className="h-full w-full overflow-hidden">
-          <StageToolbarProvider value={{ setToolbar: noopSetToolbar }}>
-            {isTimerOpen ? (
-              <Timer onClose={onCloseTimer} />
-            ) : isRandomOpen ? (
-              <Random onClose={onCloseRandom} />
-            ) : (
-              <div className="h-full w-full overflow-hidden">
-                {children}
-              </div>
-            )}
-          </StageToolbarProvider>
+          {isTimerOpen ? (
+            <Timer onClose={onCloseTimer} />
+          ) : isRandomOpen ? (
+            <Random onClose={onCloseRandom} />
+          ) : (
+            <div className="h-full w-full overflow-hidden">
+              {children}
+            </div>
+          )}
         </div>
       </div>
 

@@ -166,8 +166,8 @@ function getDefaultStaggerPosition(index: number): { x: number; y: number } {
 export interface UseSeatingChartEditorParams {
   classId: string;
   students: Student[];
-  activeSeatingLayoutId: string | null;
-  setActiveSeatingLayoutId: (id: string | null) => void;
+  selectedLayoutId: string | null;
+  setSelectedLayoutId: (id: string | null) => void;
   selectedStudentForGroup: Student | null;
   setSelectedStudentForGroup: Dispatch<SetStateAction<Student | null>>;
   setUnseatedStudents: Dispatch<SetStateAction<Student[]>>;
@@ -181,8 +181,8 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
   const {
     classId,
     students,
-    activeSeatingLayoutId,
-    setActiveSeatingLayoutId,
+    selectedLayoutId,
+    setSelectedLayoutId,
     selectedStudentForGroup,
     setSelectedStudentForGroup,
     setUnseatedStudents,
@@ -333,26 +333,26 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
           if (data.length > 0) {
             // Priority: URL parameter > current context value > localStorage > first layout
             if (layoutIdFromURL && data.some((layout) => layout.id === layoutIdFromURL)) {
-              if (activeSeatingLayoutId !== layoutIdFromURL) {
-                setActiveSeatingLayoutId(layoutIdFromURL);
+              if (selectedLayoutId !== layoutIdFromURL) {
+                setSelectedLayoutId(layoutIdFromURL);
               }
             } else if (
-              activeSeatingLayoutId !== null &&
-              data.some((layout) => layout.id === activeSeatingLayoutId)
+              selectedLayoutId !== null &&
+              data.some((layout) => layout.id === selectedLayoutId)
             ) {
               // Keep current context selection when it is still valid.
             } else if (layoutIdFromStorage && data.some((layout) => layout.id === layoutIdFromStorage)) {
-              setActiveSeatingLayoutId(layoutIdFromStorage);
+              setSelectedLayoutId(layoutIdFromStorage);
             } else {
-              setActiveSeatingLayoutId(data[0].id);
+              setSelectedLayoutId(data[0].id);
             }
-          } else if (activeSeatingLayoutId !== null) {
-            setActiveSeatingLayoutId(null);
+          } else if (selectedLayoutId !== null) {
+            setSelectedLayoutId(null);
           }
         } else {
           setLayouts([]);
-          if (activeSeatingLayoutId !== null) {
-            setActiveSeatingLayoutId(null);
+          if (selectedLayoutId !== null) {
+            setSelectedLayoutId(null);
           }
         }
       } catch (err) {
@@ -361,7 +361,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
       } finally {
         setIsLoading(false);
       }
-    }, [activeSeatingLayoutId, classId, searchParams, setActiveSeatingLayoutId]);
+    }, [selectedLayoutId, classId, searchParams, setSelectedLayoutId]);
 
     // Fetch layouts from Supabase
     useEffect(() => {
@@ -375,27 +375,27 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
       const layoutIdFromURL = searchParams?.get('layout');
       if (layoutIdFromURL && layouts.length > 0) {
         const layoutExists = layouts.find(l => l.id === layoutIdFromURL);
-        if (layoutExists && activeSeatingLayoutId !== layoutIdFromURL) {
-          setActiveSeatingLayoutId(layoutIdFromURL);
+        if (layoutExists && selectedLayoutId !== layoutIdFromURL) {
+          setSelectedLayoutId(layoutIdFromURL);
         }
       }
-    }, [activeSeatingLayoutId, layouts, searchParams, setActiveSeatingLayoutId]);
+    }, [selectedLayoutId, layouts, searchParams, setSelectedLayoutId]);
 
     // Store selected layout ID in localStorage when it changes
     useEffect(() => {
-      if (activeSeatingLayoutId && classId) {
+      if (selectedLayoutId && classId) {
         const storageKey = `seatingChart_selectedLayout_${classId}`;
-        localStorage.setItem(storageKey, activeSeatingLayoutId);
+        localStorage.setItem(storageKey, selectedLayoutId);
       }
-    }, [activeSeatingLayoutId, classId]);
+    }, [selectedLayoutId, classId]);
 
     // Fetch layout settings (show_grid, show_objects, layout_orientation) when layout changes
     useEffect(() => {
       const fetchLayoutSettings = async () => {
-        if (!activeSeatingLayoutId) return;
+        if (!selectedLayoutId) return;
         
         try {
-          const data = await fetchLayoutViewSettings(activeSeatingLayoutId);
+          const data = await fetchLayoutViewSettings(selectedLayoutId);
 
           if (data) {
             // Set values from database (default to true/Left if null)
@@ -407,17 +407,17 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
       };
 
       fetchLayoutSettings();
-    }, [activeSeatingLayoutId, applyLayoutViewSettings]);
+    }, [selectedLayoutId, applyLayoutViewSettings]);
 
     // Keep view settings in sync without aggressive polling:
     // 1) local custom events, 2) realtime row updates, 3) low-frequency visible-tab fallback.
     useEffect(() => {
-      if (!activeSeatingLayoutId) return;
+      if (!selectedLayoutId) return;
 
       const handleViewSettingsUpdate = async () => {
         if (document.visibilityState !== 'visible') return;
         try {
-          const data = await fetchLayoutViewSettings(activeSeatingLayoutId);
+          const data = await fetchLayoutViewSettings(selectedLayoutId);
           if (!data) return;
           applyLayoutViewSettings(data);
         } catch {
@@ -433,7 +433,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
           layout_orientation?: string | null;
         }>;
         const detail = customEvent.detail;
-        if (!detail || detail.layoutId !== activeSeatingLayoutId) return;
+        if (!detail || detail.layoutId !== selectedLayoutId) return;
         applyLayoutViewSettings(detail);
       };
 
@@ -447,7 +447,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
       document.addEventListener('visibilitychange', handleVisibilityChange);
 
       const { unsubscribe } = subscribeToSeatingChartRowUpdates(
-        activeSeatingLayoutId,
+        selectedLayoutId,
         (nextRow) => {
           applyLayoutViewSettings(nextRow);
         },
@@ -463,15 +463,15 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
         window.removeEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
         unsubscribe();
       };
-    }, [activeSeatingLayoutId, applyLayoutViewSettings]);
+    }, [selectedLayoutId, applyLayoutViewSettings]);
 
     const fetchGroups = useCallback(async () => {
-      if (!activeSeatingLayoutId) return;
+      if (!selectedLayoutId) return;
 
       try {
         setIsLoadingGroups(true);
         const { groups: groupsData, groupAssignments: nextGroupAssignments } =
-          await fetchSeatingGroupsWithAssignments(activeSeatingLayoutId);
+          await fetchSeatingGroupsWithAssignments(selectedLayoutId);
 
         if (groupsData) {
           setGroups(groupsData);
@@ -515,17 +515,17 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
       } finally {
         setIsLoadingGroups(false);
       }
-    }, [activeSeatingLayoutId, students, setUnseatedStudents]);
+    }, [selectedLayoutId, students, setUnseatedStudents]);
 
     // Fetch groups when layout is selected or when shared roster changes
     useEffect(() => {
-      if (activeSeatingLayoutId && students.length > 0) {
+      if (selectedLayoutId && students.length > 0) {
         fetchGroups();
-      } else if (!activeSeatingLayoutId) {
+      } else if (!selectedLayoutId) {
         setGroups([]);
         setGroupAssignments(new Map());
       }
-    }, [activeSeatingLayoutId, fetchGroups, students.length]);
+    }, [selectedLayoutId, fetchGroups, students.length]);
 
     // Listen for student selection from sidebar
     useEffect(() => {
@@ -557,7 +557,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
      * Batch persist: group positions/sizes + full replace of seat assignments for the current layout.
      */
     const saveAllChangesToDatabase = useCallback(async (onSaveComplete?: () => void) => {
-      if (!activeSeatingLayoutId) {
+      if (!selectedLayoutId) {
         showSuccessNotification('No layout', 'Select a seating layout before saving.');
         return;
       }
@@ -665,7 +665,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
         saveAllChangesInFlightRef.current = false;
         setIsSavingAllChanges(false);
       }
-    }, [activeSeatingLayoutId, groups, groupAssignments, groupPositions, computeGroupRowsFromAssignments]);
+    }, [selectedLayoutId, groups, groupAssignments, groupPositions, computeGroupRowsFromAssignments]);
 
     // Handle randomize seating - animated swap of all seated students
     const handleRandomizeSeating = useCallback(async () => {
@@ -938,7 +938,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
     };
 
     const handleCreateGroup = async (groupName: string, columns: number) => {
-      if (!activeSeatingLayoutId) return;
+      if (!selectedLayoutId) return;
 
       try {
         const maxSortOrder = groups.length > 0 
@@ -954,7 +954,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
         try {
           data = await insertSeatingGroup({
             name: groupName,
-            seating_chart_id: activeSeatingLayoutId,
+            seating_chart_id: selectedLayoutId,
             sort_order: maxSortOrder + 1,
             group_columns: columns,
             group_rows: defaultGroupRows,
@@ -965,7 +965,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
           console.error('Error creating seating group:', insertError);
           console.error('Insert data:', {
             name: groupName,
-            seating_chart_id: activeSeatingLayoutId,
+            seating_chart_id: selectedLayoutId,
             sort_order: maxSortOrder + 1,
             group_columns: columns,
             position_x: initialX,
@@ -995,7 +995,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
     };
 
     const handleAddMultipleGroups = useCallback(async (numGroups: number) => {
-      if (!activeSeatingLayoutId) return;
+      if (!selectedLayoutId) return;
 
       try {
         const maxSortOrder = groups.length > 0 
@@ -1023,7 +1023,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
           
           groupsToCreate.push({
             name: `Group ${nextGroupNumber + i}`,
-            seating_chart_id: activeSeatingLayoutId,
+            seating_chart_id: selectedLayoutId,
             sort_order: maxSortOrder + 1 + i,
             group_columns: defaultColumns,
             group_rows: defaultGroupRows,
@@ -1062,7 +1062,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
         console.error('Unexpected error creating multiple groups:', err);
         alert('An unexpected error occurred. Please try again.');
       }
-    }, [activeSeatingLayoutId, groups, fetchGroups]);
+    }, [selectedLayoutId, groups, fetchGroups]);
 
     const handleCreateLayout = async (layoutName: string) => {
       try {
@@ -1077,7 +1077,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
 
         if (data) {
           await fetchLayouts();
-          setActiveSeatingLayoutId(data.id);
+          setSelectedLayoutId(data.id);
           setIsCreateModalOpen(false);
         }
       } catch (err) {
@@ -1699,7 +1699,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
     };
 
     const handleClearAllConfirmed = async () => {
-      if (!activeSeatingLayoutId) {
+      if (!selectedLayoutId) {
         showSuccessNotification(
           'No Layout Selected',
           'Please select a layout before clearing groups.'
@@ -1768,7 +1768,7 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
     };
 
     const handleDeleteAllConfirmed = async () => {
-      if (!activeSeatingLayoutId) {
+      if (!selectedLayoutId) {
         showSuccessNotification(
           'No Layout Selected',
           'Please select a layout before deleting groups.'
@@ -1844,8 +1844,8 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
   return {
     GROUP_EXPAND_ROW_HEIGHT,
     classId,
-    activeSeatingLayoutId,
-    setActiveSeatingLayoutId,
+    selectedLayoutId,
+    setSelectedLayoutId,
     selectedStudentForGroup,
     setSelectedStudentForGroup,
     setUnseatedStudents,

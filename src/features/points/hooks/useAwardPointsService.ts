@@ -7,6 +7,7 @@ import {
   type AwardMode,
 } from '@/features/points/services/awardPointsService';
 import { awardCustomPointsToStudents, awardPointsToStudents, getAuthenticatedUserId } from '@/api/points';
+import { syncStudentsByClassCacheFromStore } from '@/hooks/useDashboardStudentSync';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 
 interface UseAwardPointsServiceParams {
@@ -118,6 +119,7 @@ export function useAwardPointsService({
 
         const { applyPointsDelta } = useDashboardStore.getState();
         applyPointsDelta(studentIds, points);
+        syncStudentsByClassCacheFromStore();
 
         try {
           await awardPointsToStudents({
@@ -128,6 +130,7 @@ export function useAwardPointsService({
           });
         } catch (apiErr) {
           applyPointsDelta(studentIds, -points);
+          syncStudentsByClassCacheFromStore();
           throw apiErr;
         }
 
@@ -169,6 +172,7 @@ export function useAwardPointsService({
 
         const { applyPointsDelta } = useDashboardStore.getState();
         applyPointsDelta(studentIds, customPoints);
+        syncStudentsByClassCacheFromStore();
 
         try {
           await awardCustomPointsToStudents({
@@ -179,6 +183,7 @@ export function useAwardPointsService({
           });
         } catch (apiErr) {
           applyPointsDelta(studentIds, -customPoints);
+          syncStudentsByClassCacheFromStore();
           throw apiErr;
         }
 

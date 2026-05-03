@@ -5,8 +5,6 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useShallow } from 'zustand/react/shallow';
 import { Student } from '@/lib/types';
-import { useDashboard } from '@/context/DashboardContext';
-import { useSeatingLayoutNav } from '@/context/SeatingLayoutNavContext';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import CreateLayoutModal from '@/components/modals/CreateLayoutModal';
 import EditLayoutModal from '@/components/modals/EditLayoutModal';
@@ -26,7 +24,11 @@ import {
 import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
 import SeatingGroupsCanvas from './seating/SeatingGroupsCanvas';
 import { STUDENT_EVENTS, emitSeatingEditMode, emitSeatingLayoutSelected } from '@/lib/events/students';
-import { useSeatingStore, subscribeSeatingPointsDeltaForClass } from '@/stores/useSeatingStore';
+import {
+  useSeatingStore,
+  subscribeSeatingPointsDeltaForClass,
+  type SeatingLayoutNavHandlers,
+} from '@/stores/useSeatingStore';
 
 interface SeatingChartViewProps {
   classId: string;
@@ -51,7 +53,8 @@ export default function SeatingChartView({
   const searchParams = useSearchParams();
   const searchQuery = searchParams?.toString() ?? '';
   const currentView = searchParams?.get('view') || 'grid';
-  const { activeSeatingLayoutId, setActiveSeatingLayoutId } = useDashboard();
+  const selectedLayoutId = useSeatingStore((s) => s.selectedLayoutId);
+  const setSelectedLayoutId = useSeatingStore((s) => s.setSelectedLayoutId);
   const { layouts, isLoadingLayouts, layoutsError } = useSeatingStore(
     useShallow((s) => ({
       layouts: s.layouts,
@@ -68,7 +71,6 @@ export default function SeatingChartView({
   );
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const setSeatingLayoutData = useSeatingLayoutNav();
   const [layoutToDelete, setLayoutToDelete] = useState<{ id: string; name: string } | null>(null);
   const [layoutToEdit, setLayoutToEdit] = useState<{ id: string; name: string } | null>(null);
   const [isEditLayoutModalOpen, setIsEditLayoutModalOpen] = useState(false);
@@ -112,53 +114,43 @@ export default function SeatingChartView({
   }, [classId]);
 
   useEffect(() => {
-    if (activeSeatingLayoutId && classId) {
+    if (selectedLayoutId && classId) {
       const storageKey = `seatingChart_selectedLayout_${classId}`;
-      localStorage.setItem(storageKey, activeSeatingLayoutId);
-      emitSeatingLayoutSelected({ layoutId: activeSeatingLayoutId, classId });
+      localStorage.setItem(storageKey, selectedLayoutId);
+      emitSeatingLayoutSelected({ layoutId: selectedLayoutId, classId });
     }
-  }, [activeSeatingLayoutId, classId]);
+  }, [selectedLayoutId, classId]);
 
   useEffect(() => {
-    setSeatingLayoutData({
-      layouts,
-      selectedLayoutId: activeSeatingLayoutId,
-      onSelectLayout: setActiveSeatingLayoutId,
+    const handlers: SeatingLayoutNavHandlers = {
+      onSelectLayout: setSelectedLayoutId,
       onAddLayout: () => setIsCreateModalOpen(true),
       onEditLayout: handleEditLayout,
       onDeleteLayout: handleDeleteLayout,
-      isLoadingLayouts,
-    });
-    return () => setSeatingLayoutData(null);
-  }, [
-    activeSeatingLayoutId,
-    handleDeleteLayout,
-    handleEditLayout,
-    isLoadingLayouts,
-    layouts,
-    setActiveSeatingLayoutId,
-    setSeatingLayoutData,
-  ]);
+    };
+    useSeatingStore.getState().setLayoutNavHandlers(handlers);
+    return () => useSeatingStore.getState().setLayoutNavHandlers(null);
+  }, [handleDeleteLayout, handleEditLayout, setSelectedLayoutId]);
 
   useEffect(() => {
     return subscribeSeatingPointsDeltaForClass(classId);
   }, [classId]);
 
   useEffect(() => {
-    if (!activeSeatingLayoutId) return;
-    const currentLayout = layouts.find((l) => l.id === activeSeatingLayoutId);
+    if (!selectedLayoutId) return;
+    const currentLayout = layouts.find((l) => l.id === selectedLayoutId);
     if (currentLayout) {
       useSeatingStore.getState().applyLayoutViewSettings(currentLayout);
     }
-  }, [activeSeatingLayoutId, layouts]);
+  }, [selectedLayoutId, layouts]);
 
   useEffect(() => {
-    if (!activeSeatingLayoutId) return;
+    if (!selectedLayoutId) return;
 
     const handleViewSettingsUpdate = async () => {
       if (document.visibilityState !== 'visible') return;
       try {
-        const data = await fetchLayoutViewSettings(activeSeatingLayoutId);
+        const data = await fetchLayoutViewSettings(selectedLayoutId);
         if (!data) return;
         useSeatingStore.getState().applyLayoutViewSettings(data);
       } catch {
@@ -174,7 +166,7 @@ export default function SeatingChartView({
         layout_orientation?: string | null;
       }>;
       const detail = customEvent.detail;
-      if (!detail || detail.layoutId !== activeSeatingLayoutId) return;
+      if (!detail || detail.layoutId !== selectedLayoutId) return;
       useSeatingStore.getState().applyLayoutViewSettings(detail);
     };
 
@@ -188,14 +180,14 @@ export default function SeatingChartView({
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const { unsubscribe } = subscribeToSeatingChartRowUpdates(
-      activeSeatingLayoutId,
+      selectedLayoutId,
       (nextRow) => {
         useSeatingStore.getState().applyLayoutViewSettings(nextRow);
       },
       {
         onRefresh: (payload) => {
-          if (payload.layoutId !== activeSeatingLayoutId) return;
-          void refreshSeatingGroupsForLayout(activeSeatingLayoutId);
+          if (payload.layoutId !== selectedLayoutId) return;
+          void refreshSeatingGroupsForLayout(selectedLayoutId);
         },
       }
     );
@@ -208,7 +200,7 @@ export default function SeatingChartView({
       );
       unsubscribe();
     };
-  }, [activeSeatingLayoutId]);
+  }, [selectedLayoutId]);
 
   const handleEditLayoutSave = async (newName: string) => {
     if (!layoutToEdit) return;
@@ -218,7 +210,7 @@ export default function SeatingChartView({
       console.error('Error updating layout name:', error);
       throw new Error('Failed to update layout name.');
     }
-    await refreshSeatingLayoutsForClass(classId, activeSeatingLayoutId, setActiveSeatingLayoutId);
+    await refreshSeatingLayoutsForClass(classId);
     setLayoutToEdit(null);
     setIsEditLayoutModalOpen(false);
   };
@@ -228,9 +220,9 @@ export default function SeatingChartView({
     emitSeatingEditMode({ isEditMode: true });
     const params = new URLSearchParams(searchQuery);
     params.set('mode', 'edit');
-    if (activeSeatingLayoutId) params.set('layout', activeSeatingLayoutId);
+    if (selectedLayoutId) params.set('layout', selectedLayoutId);
     router.push(params.toString() ? `${base}?${params.toString()}` : `${base}?mode=edit`);
-  }, [activeSeatingLayoutId, pathname, router, searchQuery]);
+  }, [selectedLayoutId, pathname, router, searchQuery]);
 
   useEffect(() => {
     const handleCreateLayout = () => {
@@ -272,13 +264,13 @@ export default function SeatingChartView({
     try {
       await deleteSeatingLayoutCascade(layoutToDelete.id);
 
-      if (activeSeatingLayoutId === layoutToDelete.id) {
-        setActiveSeatingLayoutId(null);
+      if (selectedLayoutId === layoutToDelete.id) {
+        setSelectedLayoutId(null);
         const storageKey = `seatingChart_selectedLayout_${classId}`;
         localStorage.removeItem(storageKey);
       }
 
-      await refreshSeatingLayoutsForClass(classId, activeSeatingLayoutId, setActiveSeatingLayoutId);
+      await refreshSeatingLayoutsForClass(classId);
 
       setIsDeleteModalOpen(false);
       setLayoutToDelete(null);
@@ -298,8 +290,8 @@ export default function SeatingChartView({
         const storageKey = `seatingChart_selectedLayout_${classId}`;
         localStorage.setItem(storageKey, data.id);
 
-        await refreshSeatingLayoutsForClass(classId, activeSeatingLayoutId, setActiveSeatingLayoutId);
-        setActiveSeatingLayoutId(data.id);
+        await refreshSeatingLayoutsForClass(classId);
+        setSelectedLayoutId(data.id);
         setIsCreateModalOpen(false);
 
         emitSeatingEditMode({ isEditMode: true });
@@ -318,7 +310,7 @@ export default function SeatingChartView({
   };
 
   const retryLayouts = () => {
-    void refreshSeatingLayoutsForClass(classId, activeSeatingLayoutId, setActiveSeatingLayoutId);
+    void refreshSeatingLayoutsForClass(classId);
   };
 
   const hasLayouts = layouts.length > 0;

@@ -60,8 +60,8 @@ const hookOpen = `
 export interface UseSeatingChartEditorParams {
   classId: string;
   students: Student[];
-  activeSeatingLayoutId: string | null;
-  setActiveSeatingLayoutId: (id: string | null) => void;
+  selectedLayoutId: string | null;
+  setSelectedLayoutId: (id: string | null) => void;
   selectedStudentForGroup: Student | null;
   setSelectedStudentForGroup: Dispatch<SetStateAction<Student | null>>;
   setUnseatedStudents: Dispatch<SetStateAction<Student[]>>;
@@ -82,8 +82,8 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
   const {
     classId,
     students,
-    activeSeatingLayoutId,
-    setActiveSeatingLayoutId,
+    selectedLayoutId,
+    setSelectedLayoutId,
     selectedStudentForGroup,
     setSelectedStudentForGroup,
     setUnseatedStudents,

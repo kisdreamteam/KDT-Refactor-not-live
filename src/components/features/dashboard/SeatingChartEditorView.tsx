@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { useDashboard } from '@/context/DashboardContext';
 import { useShallow } from 'zustand/react/shallow';
 import { useSeatingStore } from '@/stores/useSeatingStore';
 import { Student } from '@/lib/types';
@@ -30,7 +29,8 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
         setSelectedStudentForGroup: s.setSelectedStudentForGroup,
       }))
     );
-  const { activeSeatingLayoutId, setActiveSeatingLayoutId } = useDashboard();
+  const selectedLayoutId = useSeatingStore((s) => s.selectedLayoutId);
+  const setSelectedLayoutId = useSeatingStore((s) => s.setSelectedLayoutId);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -38,8 +38,8 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
   const seating = useSeatingChartEditor({
     classId,
     students,
-    activeSeatingLayoutId,
-    setActiveSeatingLayoutId,
+    selectedLayoutId,
+    setSelectedLayoutId,
     selectedStudentForGroup,
     setSelectedStudentForGroup,
     setUnseatedStudents,

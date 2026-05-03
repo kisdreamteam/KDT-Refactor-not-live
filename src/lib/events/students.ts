@@ -24,7 +24,7 @@ export const STUDENT_EVENTS = {
   SEATING_ADD_MULTIPLE_GROUPS: 'seatingChartAddMultipleGroups',
   SEATING_AUTO_ASSIGN_SEATS: 'seatingChartAutoAssignSeats',
   SEATING_COLOR_CODE_BY: 'seatingChartColorCodeBy',
-  /** Layout-hosted award modal: patch seating `groupAssignments` only (roster already updated in DashboardContext). */
+  /** Layout-hosted award modal: patch seating `groupAssignments` only (roster already updated in the dashboard store). */
   SEATING_STUDENT_POINTS_DELTA: 'seatingStudentPointsDelta',
   /** After multi-student award completes: clear grid multi-select selection (listeners in StudentsView). */
   MULTI_STUDENT_AWARD_COMPLETE: 'multiStudentAwardComplete',

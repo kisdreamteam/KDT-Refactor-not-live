@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Student } from '@/lib/types';
-import type { SortOption } from '@/context/StudentSortContext';
+import type { SortOption } from '@/stores/usePreferenceStore';
 
 export function useSortedStudents(students: Student[], sortBy: SortOption) {
   const sortedStudents = useMemo(() => {
