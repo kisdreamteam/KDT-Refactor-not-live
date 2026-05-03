@@ -1,10 +1,11 @@
 'use client';
 
-import { useSeatingChart } from '@/context/SeatingChartContext';
+import { useSeatingStore } from '@/stores/useSeatingStore';
 import { Student } from '@/lib/types';
 
 export default function LeftNavSeatingChartEdit() {
-  const { unseatedStudents, setSelectedStudentForGroup } = useSeatingChart();
+  const unseatedStudents = useSeatingStore((s) => s.unseatedStudents);
+  const setSelectedStudentForGroup = useSeatingStore((s) => s.setSelectedStudentForGroup);
 
   const handleStudentClick = (student: Student) => {
     setSelectedStudentForGroup(student);

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useShallow } from 'zustand/react/shallow';
 import { Student } from '@/lib/types';
 import { useDashboard } from '@/context/DashboardContext';
 import { useSeatingLayoutNav } from '@/context/SeatingLayoutNavContext';
@@ -15,32 +16,17 @@ import {
   createSeatingLayout,
   deleteSeatingLayoutCascade,
   fetchLayoutViewSettings,
-  fetchSeatingGroupsWithAssignments,
-  fetchSeatingLayoutsByClassId,
   subscribeToSeatingChartRowUpdates,
-  type GroupAssignment,
-  type SeatingGroupRecord,
   updateSeatingLayoutName,
 } from '@/api/seating';
-import { getNextIndex, getSlotIndex } from '@/features/seating/services/seatingLogic';
-import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
 import {
-  STUDENT_EVENTS,
-  emitSeatingEditMode,
-  emitSeatingLayoutSelected,
-  type SeatingStudentPointsDeltaDetail,
-} from '@/lib/events/students';
-import { useModalStore } from '@/stores/useModalStore';
-
-interface SeatingChart {
-  id: string;
-  name: string;
-  class_id: string;
-  created_at: string;
-  show_grid?: boolean;
-  show_objects?: boolean;
-  layout_orientation?: string;
-}
+  refreshSeatingGroupsForLayout,
+  refreshSeatingLayoutsForClass,
+} from '@/hooks/useSeatingChartDataSync';
+import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
+import SeatingGroupsCanvas from './seating/SeatingGroupsCanvas';
+import { STUDENT_EVENTS, emitSeatingEditMode, emitSeatingLayoutSelected } from '@/lib/events/students';
+import { useSeatingStore, subscribeSeatingPointsDeltaForClass } from '@/stores/useSeatingStore';
 
 interface SeatingChartViewProps {
   classId: string;
@@ -54,8 +40,8 @@ interface SeatingChartViewProps {
 
 export default function SeatingChartView({
   classId,
-  students,
-  setStudents,
+  students: _students,
+  setStudents: _setStudents,
   isMultiSelectMode = false,
   selectedStudentIds = [],
   onSelectStudent,
@@ -66,24 +52,27 @@ export default function SeatingChartView({
   const searchQuery = searchParams?.toString() ?? '';
   const currentView = searchParams?.get('view') || 'grid';
   const { activeSeatingLayoutId, setActiveSeatingLayoutId } = useDashboard();
-  const [layouts, setLayouts] = useState<SeatingChart[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [groups, setGroups] = useState<SeatingGroupRecord[]>([]);
-  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
-  const [groupAssignments, setGroupAssignments] = useState<Map<string, GroupAssignment[]>>(new Map());
-  const [groupPositions, setGroupPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+  const { layouts, isLoadingLayouts, layoutsError } = useSeatingStore(
+    useShallow((s) => ({
+      layouts: s.layouts,
+      isLoadingLayouts: s.isLoadingLayouts,
+      layoutsError: s.layoutsError,
+    }))
+  );
+  const { showGrid, showObjects, layoutOrientation } = useSeatingStore(
+    useShallow((s) => ({
+      showGrid: s.showGrid,
+      showObjects: s.showObjects,
+      layoutOrientation: s.layoutOrientation,
+    }))
+  );
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const setSeatingLayoutData = useSeatingLayoutNav();
   const [layoutToDelete, setLayoutToDelete] = useState<{ id: string; name: string } | null>(null);
   const [layoutToEdit, setLayoutToEdit] = useState<{ id: string; name: string } | null>(null);
   const [isEditLayoutModalOpen, setIsEditLayoutModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const canvasContainerRef = useRef<HTMLDivElement | null>(null);
-  // View settings from database
-  const [showGrid, setShowGrid] = useState<boolean>(true);
-  const [showObjects, setShowObjects] = useState<boolean>(true);
-  const [layoutOrientation, setLayoutOrientation] = useState<string>('Left');
   const [isTeacherView, setIsTeacherView] = useState(false);
 
   const {
@@ -101,18 +90,18 @@ export default function SeatingChartView({
     pagedPointLogRows,
   } = useClassPointLog(classId);
 
-
-  const applyLayoutViewSettings = useCallback((data: {
-    show_grid?: boolean | null;
-    show_objects?: boolean | null;
-    layout_orientation?: string | null;
-  }) => {
-    setShowGrid(data.show_grid ?? true);
-    setShowObjects(data.show_objects ?? true);
-    setLayoutOrientation(data.layout_orientation ?? 'Left');
+  const handleDeleteLayout = useCallback((layoutId: string, layoutName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLayoutToDelete({ id: layoutId, name: layoutName });
+    setIsDeleteModalOpen(true);
   }, []);
 
-  // Persist teacher-view preference per class so it survives temporary remounts.
+  const handleEditLayout = useCallback((layoutId: string, layoutName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLayoutToEdit({ id: layoutId, name: layoutName });
+    setIsEditLayoutModalOpen(true);
+  }, []);
+
   useEffect(() => {
     if (!classId) return;
     const storageKey = `seatingChart_teacherView_${classId}`;
@@ -122,58 +111,14 @@ export default function SeatingChartView({
     }
   }, [classId]);
 
-  const fetchLayouts = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await fetchSeatingLayoutsByClassId(classId);
-
-      if (data) {
-        setLayouts(data);
-        // Keep global selection when valid; otherwise fallback to first layout.
-        if (data.length > 0) {
-          const hasActiveSelection =
-            activeSeatingLayoutId !== null && data.some((layout) => layout.id === activeSeatingLayoutId);
-          if (!hasActiveSelection) {
-            setActiveSeatingLayoutId(data[0].id);
-          }
-        } else if (activeSeatingLayoutId !== null) {
-          setActiveSeatingLayoutId(null);
-        }
-      } else {
-        setLayouts([]);
-        if (activeSeatingLayoutId !== null) {
-          setActiveSeatingLayoutId(null);
-        }
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching seating charts:', err);
-      setError('An unexpected error occurred.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeSeatingLayoutId, classId, setActiveSeatingLayoutId]);
-
-  // Fetch layouts from Supabase
-  useEffect(() => {
-    if (classId) {
-      fetchLayouts();
-    }
-  }, [classId, fetchLayouts]);
-
-  // Store selected layout ID in localStorage and dispatch event when it changes
   useEffect(() => {
     if (activeSeatingLayoutId && classId) {
-      // Store in localStorage with classId as key to avoid conflicts
       const storageKey = `seatingChart_selectedLayout_${classId}`;
       localStorage.setItem(storageKey, activeSeatingLayoutId);
-      
-      // Dispatch event with layout ID for BottomNav to pick up
       emitSeatingLayoutSelected({ layoutId: activeSeatingLayoutId, classId });
     }
   }, [activeSeatingLayoutId, classId]);
 
-  // Provide layout data to left nav (for seating view)
   useEffect(() => {
     setSeatingLayoutData({
       layouts,
@@ -182,121 +127,31 @@ export default function SeatingChartView({
       onAddLayout: () => setIsCreateModalOpen(true),
       onEditLayout: handleEditLayout,
       onDeleteLayout: handleDeleteLayout,
-      isLoadingLayouts: isLoading,
+      isLoadingLayouts,
     });
     return () => setSeatingLayoutData(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers are stable enough; avoid running on every render
-  }, [activeSeatingLayoutId, isLoading, layouts, setActiveSeatingLayoutId, setSeatingLayoutData]);
+  }, [
+    activeSeatingLayoutId,
+    handleDeleteLayout,
+    handleEditLayout,
+    isLoadingLayouts,
+    layouts,
+    setActiveSeatingLayoutId,
+    setSeatingLayoutData,
+  ]);
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const d = (e as CustomEvent<SeatingStudentPointsDeltaDetail>).detail;
-      if (!d || d.classId !== classId) return;
-      const { studentIds, delta } = d;
-      if (studentIds.length === 0 || delta === 0 || !Number.isFinite(delta)) return;
-      const idSet = new Set(studentIds);
-      setGroupAssignments((prev) => {
-        const next = new Map<string, GroupAssignment[]>();
-        prev.forEach((assignments, groupId) => {
-          next.set(
-            groupId,
-            assignments.map((ga) =>
-              idSet.has(ga.student.id)
-                ? { ...ga, student: { ...ga.student, points: (ga.student.points ?? 0) + delta } }
-                : ga
-            )
-          );
-        });
-        return next;
-      });
-    };
-    window.addEventListener(STUDENT_EVENTS.SEATING_STUDENT_POINTS_DELTA, handler as EventListener);
-    return () =>
-      window.removeEventListener(STUDENT_EVENTS.SEATING_STUDENT_POINTS_DELTA, handler as EventListener);
+    return subscribeSeatingPointsDeltaForClass(classId);
   }, [classId]);
 
-  const fetchGroups = useCallback(async () => {
-    if (!activeSeatingLayoutId) return;
-
-    try {
-      setIsLoadingGroups(true);
-      const { groups: groupsData, groupAssignments: nextGroupAssignments } =
-        await fetchSeatingGroupsWithAssignments(activeSeatingLayoutId);
-
-      if (groupsData) {
-        setGroups(groupsData);
-
-        // Initialize positions for groups from database or default
-        setGroupPositions(prev => {
-          const newPositions = new Map(prev);
-          groupsData.forEach((group, index) => {
-            // Use saved position from database if available, otherwise default
-            if (group.position_x !== undefined && group.position_y !== undefined) {
-              newPositions.set(group.id, { 
-                x: group.position_x, 
-                y: group.position_y 
-              });
-            } else if (!newPositions.has(group.id)) {
-              // Default position: staggered horizontally, spaced vertically
-              newPositions.set(group.id, { x: 20 + (index * 20), y: 20 + (index * 100) });
-            }
-          });
-          return newPositions;
-        });
-        setGroupAssignments(nextGroupAssignments);
-      } else {
-        setGroups([]);
-        setGroupAssignments(new Map());
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching seating groups:', err);
-    } finally {
-      setIsLoadingGroups(false);
-    }
-  }, [activeSeatingLayoutId]);
-
-  // Fetch groups when layout is selected or when shared roster becomes available
-  useEffect(() => {
-    if (activeSeatingLayoutId && students.length > 0) {
-      fetchGroups();
-    } else if (!activeSeatingLayoutId) {
-      setGroups([]);
-      setGroupAssignments(new Map());
-    }
-  }, [activeSeatingLayoutId, fetchGroups, students.length]);
-
-  // After leaving the editor, Supabase has the latest assignments — refetch so the view is not stale.
-  useEffect(() => {
-    const handleSeatingEditMode = (event: Event) => {
-      const detail = (event as CustomEvent<{ isEditMode?: boolean }>).detail;
-      if (detail?.isEditMode === false) {
-        void fetchGroups();
-      }
-    };
-
-    window.addEventListener(STUDENT_EVENTS.SEATING_EDIT_MODE, handleSeatingEditMode as EventListener);
-    return () => {
-      window.removeEventListener(STUDENT_EVENTS.SEATING_EDIT_MODE, handleSeatingEditMode as EventListener);
-    };
-  }, [fetchGroups]);
-
-  const studentAtSlot = useCallback((groupId: string, seatIndex: number): Student | null => {
-    const list = groupAssignments.get(groupId) ?? [];
-    const found = list.find(a => a.seat_index === seatIndex);
-    return found ? found.student : null;
-  }, [groupAssignments]);
-
-  // Apply current layout settings directly from layouts already in state.
   useEffect(() => {
     if (!activeSeatingLayoutId) return;
     const currentLayout = layouts.find((l) => l.id === activeSeatingLayoutId);
     if (currentLayout) {
-      applyLayoutViewSettings(currentLayout);
+      useSeatingStore.getState().applyLayoutViewSettings(currentLayout);
     }
-  }, [activeSeatingLayoutId, layouts, applyLayoutViewSettings]);
+  }, [activeSeatingLayoutId, layouts]);
 
-  // Keep view settings in sync without aggressive polling:
-  // 1) local custom events, 2) realtime row updates, 3) low-frequency visible-tab fallback.
   useEffect(() => {
     if (!activeSeatingLayoutId) return;
 
@@ -305,7 +160,7 @@ export default function SeatingChartView({
       try {
         const data = await fetchLayoutViewSettings(activeSeatingLayoutId);
         if (!data) return;
-        applyLayoutViewSettings(data);
+        useSeatingStore.getState().applyLayoutViewSettings(data);
       } catch {
         // Silently fail
       }
@@ -320,7 +175,7 @@ export default function SeatingChartView({
       }>;
       const detail = customEvent.detail;
       if (!detail || detail.layoutId !== activeSeatingLayoutId) return;
-      applyLayoutViewSettings(detail);
+      useSeatingStore.getState().applyLayoutViewSettings(detail);
     };
 
     const handleVisibilityChange = () => {
@@ -335,36 +190,25 @@ export default function SeatingChartView({
     const { unsubscribe } = subscribeToSeatingChartRowUpdates(
       activeSeatingLayoutId,
       (nextRow) => {
-        applyLayoutViewSettings(nextRow);
+        useSeatingStore.getState().applyLayoutViewSettings(nextRow);
       },
       {
         onRefresh: (payload) => {
           if (payload.layoutId !== activeSeatingLayoutId) return;
-          void fetchGroups();
+          void refreshSeatingGroupsForLayout(activeSeatingLayoutId);
         },
       }
     );
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
+      window.removeEventListener(
+        STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED,
+        handleLocalSettingsEvent as EventListener
+      );
       unsubscribe();
     };
-  }, [activeSeatingLayoutId, applyLayoutViewSettings, fetchGroups]);
-
-  // Handle delete layout
-  const handleDeleteLayout = (layoutId: string, layoutName: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent button click from selecting the layout
-    setLayoutToDelete({ id: layoutId, name: layoutName });
-    setIsDeleteModalOpen(true);
-  };
-
-  // Handle edit layout name
-  const handleEditLayout = (layoutId: string, layoutName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setLayoutToEdit({ id: layoutId, name: layoutName });
-    setIsEditLayoutModalOpen(true);
-  };
+  }, [activeSeatingLayoutId]);
 
   const handleEditLayoutSave = async (newName: string) => {
     if (!layoutToEdit) return;
@@ -374,7 +218,7 @@ export default function SeatingChartView({
       console.error('Error updating layout name:', error);
       throw new Error('Failed to update layout name.');
     }
-    await fetchLayouts();
+    await refreshSeatingLayoutsForClass(classId, activeSeatingLayoutId, setActiveSeatingLayoutId);
     setLayoutToEdit(null);
     setIsEditLayoutModalOpen(false);
   };
@@ -428,17 +272,14 @@ export default function SeatingChartView({
     try {
       await deleteSeatingLayoutCascade(layoutToDelete.id);
 
-      // If the deleted layout was selected, clear the selection
       if (activeSeatingLayoutId === layoutToDelete.id) {
         setActiveSeatingLayoutId(null);
-        // Clear from localStorage
         const storageKey = `seatingChart_selectedLayout_${classId}`;
         localStorage.removeItem(storageKey);
       }
 
-      // Refresh layouts
-      await fetchLayouts();
-      
+      await refreshSeatingLayoutsForClass(classId, activeSeatingLayoutId, setActiveSeatingLayoutId);
+
       setIsDeleteModalOpen(false);
       setLayoutToDelete(null);
     } catch (err) {
@@ -449,42 +290,23 @@ export default function SeatingChartView({
     }
   };
 
-  // Handle group click to open award points modal (header only)
-  const handleGroupClick = (groupId: string) => {
-    const studentsInGroup = (groupAssignments.get(groupId) ?? []).map(a => a.student);
-    if (studentsInGroup.length === 0) {
-      alert('This group has no students to award points to.');
-      return;
-    }
-    const studentIds = studentsInGroup.map((student) => student.id);
-    useModalStore.getState().openModal('award_points_multi', { studentIds });
-  };
-
-  const handleStudentClick = (student: Student) => {
-    useModalStore.getState().openModal('award_points_multi', { studentIds: [student.id] });
-  };
-
-  // Handle create layout
   const handleCreateLayout = async (layoutName: string) => {
     try {
       const data = await createSeatingLayout({ classId, name: layoutName });
 
       if (data) {
-        // Store the new layout ID in localStorage
         const storageKey = `seatingChart_selectedLayout_${classId}`;
         localStorage.setItem(storageKey, data.id);
-        
-        // Refresh layouts
-        await fetchLayouts();
+
+        await refreshSeatingLayoutsForClass(classId, activeSeatingLayoutId, setActiveSeatingLayoutId);
         setActiveSeatingLayoutId(data.id);
         setIsCreateModalOpen(false);
-        
-        // Navigate to edit mode with the new layout ID
+
         emitSeatingEditMode({ isEditMode: true });
         const params = new URLSearchParams();
-        params.set('view', 'seating'); // Required to show seating chart view
-        params.set('mode', 'edit'); // Required to show editor
-        params.set('layout', data.id); // Pass the new layout ID
+        params.set('view', 'seating');
+        params.set('mode', 'edit');
+        params.set('layout', data.id);
         const base = pathname ?? '/';
         const newUrl = `${base}?${params.toString()}`;
         router.push(newUrl);
@@ -495,77 +317,69 @@ export default function SeatingChartView({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-white text-xl">Loading seating charts...</p>
-      </div>
-    );
-  }
+  const retryLayouts = () => {
+    void refreshSeatingLayoutsForClass(classId, activeSeatingLayoutId, setActiveSeatingLayoutId);
+  };
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-white text-xl">{error}</p>
-        <button
-          onClick={fetchLayouts}
-          className="px-6 py-2 bg-purple-400 text-white rounded-lg font-medium hover:bg-purple-500 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (layouts.length === 0) {
-    return (
-      <div className="font-spartan w-full h-full min-h-0 bg-brand-purple relative">
-        <ClassPointLogSlidePanel
-          isOpen={isPointLogOpen}
-          position="absolute"
-          rightPx={72}
-          topPx={8}
-          bottomPx={8}
-          zIndex={40}
-          logTotalCount={logTotalCount}
-          pointLogError={pointLogError}
-          isPointLogLoading={isPointLogLoading}
-          pagedRows={pagedPointLogRows}
-          safeLogPage={safeLogPage}
-          totalPages={totalPages}
-          rowsPerPage={rowsPerPage}
-          setLogPage={setLogPage}
-          setRowsPerPage={setRowsPerPage}
-        />
-
-        <div className="p-6 sm:p-8 md:p-10">
-          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-            <div className="text-center">
-              <h2 className="text-white text-2xl font-semibold mb-2">No seating charts yet</h2>
-              <p className="text-white/80 text-lg">
-                Click the + button (top right) to create a new layout, or the pencil to open the Seating Editor after you have one.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <CreateLayoutModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onCreateLayout={handleCreateLayout}
-        />
-      </div>
-    );
-  }
+  const hasLayouts = layouts.length > 0;
+  const showGroupsLayer = hasLayouts && !isLoadingLayouts && !layoutsError;
 
   return (
     <div className="font-spartan w-full h-full min-h-0 bg-brand-purple relative">
-      {/* Canvas - anchored to the stage area (flex flow, no viewport-fixed offsets) */}
+      <ClassPointLogSlidePanel
+        isOpen={isPointLogOpen}
+        position="absolute"
+        rightPx={72}
+        topPx={8}
+        bottomPx={8}
+        zIndex={40}
+        logTotalCount={logTotalCount}
+        pointLogError={pointLogError}
+        isPointLogLoading={isPointLogLoading}
+        pagedRows={pagedPointLogRows}
+        safeLogPage={safeLogPage}
+        totalPages={totalPages}
+        rowsPerPage={rowsPerPage}
+        setLogPage={setLogPage}
+        setRowsPerPage={setRowsPerPage}
+      />
+
       <div
         className="bg-brand-cream border-2 border-black rounded-lg pt-2 overflow-hidden min-h-0 h-full w-full relative"
         style={{ zIndex: 1 }}
       >
-          {/* Rotatable canvas content: grid, objects, loading/groups (menu bar stays outside) */}
+        {isLoadingLayouts && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-brand-cream/80">
+            <p className="text-brand-purple text-xl font-medium">Loading seating charts...</p>
+          </div>
+        )}
+
+        {layoutsError && !isLoadingLayouts && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-brand-cream/90 p-4">
+            <p className="text-brand-purple text-xl text-center">{layoutsError}</p>
+            <button
+              type="button"
+              onClick={retryLayouts}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!isLoadingLayouts && !layoutsError && !hasLayouts && (
+          <div className="p-6 sm:p-8 md:p-10 h-full flex flex-col items-center justify-center min-h-[40vh] gap-6">
+            <div className="text-center">
+              <h2 className="text-brand-purple text-2xl font-semibold mb-2">No seating charts yet</h2>
+              <p className="text-brand-purple/80 text-lg">
+                Click the + button (top right) to create a new layout, or the pencil to open the Seating Editor after you
+                have one.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {showGroupsLayer && (
           <div
             className="absolute inset-0"
             style={{
@@ -580,215 +394,16 @@ export default function SeatingChartView({
               isTeacherView={isTeacherView}
               borderClassName="border-gray-800"
             />
-            {isLoadingGroups ? (
-              <div className="flex items-center justify-center p-8 relative" style={{ zIndex: 1 }}>
-                <p className="text-white/80" style={isTeacherView ? { display: 'inline-block', transform: 'rotate(-180deg)' } : undefined}>
-                  Loading groups...
-                </p>
-              </div>
-            ) : groups.length > 0 ? (
-              <div
-                ref={canvasContainerRef}
-                className="relative"
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '100%',
-                  zIndex: 1
-                }}
-              >
-                    {groups.map((group, index) => {
-                      const assignmentsInGroup = groupAssignments.get(group.id) ?? [];
-                      const validColumns = Math.max(1, Math.min(3, group.group_columns || 2));
-                      const position = groupPositions.get(group.id) || { x: 20 + (index * 20), y: 20 + (index * 100) };
-                      const groupX = position.x;
-                      const groupY = position.y;
-                      const maxIndex =
-                        assignmentsInGroup.length === 0
-                          ? 0
-                          : getNextIndex(assignmentsInGroup.map((a) => a.seat_index)) - 1;
-                      const numRows = Math.max(1, Math.ceil(maxIndex / validColumns));
-                      const headerHeight = 50;
-                      const studentRowHeight = 50;
-                      const padding = 8;
-                      const gap = 8;
-                      const baseWidthFor2Columns = 400;
-                      const cardMinWidth = 180;
-                      const cardWidthFor2Columns = Math.max(cardMinWidth, (baseWidthFor2Columns - (padding * 2) - (gap * (2 - 1))) / 2);
-                      const twoColumnGroupWidth = Math.max(300, (cardWidthFor2Columns * 2) + (gap * (2 - 1)) + (padding * 2));
-                      let groupWidth: number;
-                      if (validColumns === 1) {
-                        groupWidth = twoColumnGroupWidth * 0.5;
-                      } else if (validColumns === 2) {
-                        groupWidth = twoColumnGroupWidth;
-                      } else {
-                        const cardWidth = Math.max(cardMinWidth, (baseWidthFor2Columns - (padding * 2) - (gap * (validColumns - 1))) / validColumns);
-                        groupWidth = Math.max(300, (cardWidth * validColumns) + (gap * (validColumns - 1)) + (padding * 2));
-                      }
-                      const groupHeight = headerHeight + (numRows * studentRowHeight) + (padding * 2);
-
-                      const studentCardHeight = 32;
-                      const studentPointsWidth = 36;
-
-                      const renderStudentCard = (student: Student) => {
-                        // In multi-select mode: yellow when selected, otherwise gender-based
-                        const isSelected = isMultiSelectMode && selectedStudentIds.includes(student.id);
-                        let bgColor: string;
-                        if (isSelected) {
-                          bgColor = 'bg-yellow-200 border-yellow-400';
-                        } else if (student.gender === null || student.gender === undefined || student.gender === '') {
-                          bgColor = 'bg-white border-gray-200';
-                        } else if (student.gender === 'Boy') {
-                          bgColor = 'bg-blue-200 border-blue-300';
-                        } else if (student.gender === 'Girl') {
-                          bgColor = 'bg-pink-200 border-pink-300';
-                        } else {
-                          bgColor = 'bg-white border-gray-200';
-                        }
-                        
-                        return (
-                          <div
-                            key={student.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isMultiSelectMode && onSelectStudent) {
-                                onSelectStudent(student.id);
-                              } else {
-                                handleStudentClick(student);
-                              }
-                            }}
-                            className={`flex items-center gap-1 p-1.5 rounded border cursor-pointer hover:opacity-90 transition-opacity min-w-0 overflow-hidden ${bgColor}`}
-                            style={{
-                              width: '100%',
-                              height: `${studentCardHeight}px`
-                            }}
-                          >
-                            <div className="flex-1 min-w-0 flex items-center gap-2 pr-1" style={isTeacherView ? { display: 'inline-flex', width: '100%', transform: 'rotate(-180deg)' } : undefined}>
-                              <p 
-                                className="font-medium text-gray-800 overflow-hidden whitespace-nowrap flex-1 min-w-0 pr-1"
-                                style={{
-                                  fontSize: 'clamp(0.8rem, 110%, 1.25rem)',
-                                  lineHeight: '1.2'
-                                }}
-                              >
-                                {student.first_name}
-                              </p>
-                              <span className="text-red-600 font-semibold flex-shrink-0 text-right tabular-nums" style={{
-                                width: `${studentPointsWidth}px`,
-                                fontSize: 'clamp(0.875rem, 120%, 1.5rem)', // Fixed font size for all groups (same as 1-column groups)
-                                lineHeight: '1.2'
-                              }}>
-                                {student.points || 0}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      };
-                      
-                      return (
-                        <div
-                          key={group.id}
-                          className="bg-white rounded-lg border-2 border-gray-300 shadow-lg flex flex-col transition-shadow"
-                          style={{
-                            position: 'absolute',
-                            left: `${groupX}px`,
-                            top: `${groupY}px`,
-                            width: `${groupWidth}px`,
-                            height: `${groupHeight}px`,
-                            zIndex: 1,
-                            boxSizing: 'border-box',
-                            gap: 0,
-                            overflow: 'hidden',
-                            pointerEvents: 'auto'
-                          }}
-                        >
-                          {/* Group Header - Row 1 (clickable: award points to whole group, only when not in multi-select) */}
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!isMultiSelectMode) {
-                                handleGroupClick(group.id);
-                              }
-                            }}
-                            className={`border-b border-gray-200 bg-purple-50 rounded-t-lg transition-colors ${!isMultiSelectMode ? 'cursor-pointer hover:bg-purple-100' : ''}`}
-                            style={{
-                              height: '50px',
-                              minHeight: '50px',
-                              maxHeight: '50px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              padding: '0 0.5rem',
-                              boxSizing: 'border-box'
-                            }}
-                          >
-                            {/* Team Name */}
-                            <div className="flex-1" style={isTeacherView ? { display: 'inline-block', transform: 'rotate(-180deg)' } : undefined}>
-                              <h4 className="font-semibold text-gray-800">{group.name}</h4>
-                            </div>
-                          </div>
-                          
-                          {/* Fixed-slot grid (matches editor): empty slots shown as placeholders */}
-                          {Array.from({ length: numRows }, (_, rowIndex) => (
-                            <div
-                              key={`${group.id}-row-${rowIndex}`}
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: `repeat(${validColumns}, 1fr)`,
-                                gap: '0.5rem',
-                                padding: '0 0.5rem',
-                                backgroundColor: '#f9fafb',
-                                height: '50px',
-                                minHeight: '50px',
-                                maxHeight: '50px',
-                                overflow: 'hidden',
-                                boxSizing: 'border-box',
-                                alignItems: 'center'
-                              }}
-                            >
-                              {Array.from({ length: validColumns }, (_, colIndex) => {
-                                // Teacher view: canvas is rotated 180°, so DOM (row 0, col 0) appears bottom-right = seat 1; use same formula
-                                const slotIndex = getSlotIndex(rowIndex, colIndex, validColumns);
-                                const student = studentAtSlot(group.id, slotIndex);
-                                if (student) {
-                                  return <div key={slotIndex} className="w-full min-w-0">{renderStudentCard(student)}</div>;
-                                }
-                                return (
-                                  <div
-                                    key={slotIndex}
-                                    className="rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-xs bg-gray-50/50"
-                                    style={{ height: `${studentCardHeight}px` }}
-                                  >
-                                    <span style={isTeacherView ? { display: 'inline-block', transform: 'rotate(-180deg)' } : undefined}>Empty</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })}
-              </div>
-            ) : null}
+            <SeatingGroupsCanvas
+              isTeacherView={isTeacherView}
+              isMultiSelectMode={isMultiSelectMode}
+              selectedStudentIds={selectedStudentIds}
+              onSelectStudent={onSelectStudent}
+            />
           </div>
-          <ClassPointLogSlidePanel
-            isOpen={isPointLogOpen}
-            position="absolute"
-            rightPx={72}
-            topPx={8}
-            bottomPx={8}
-            logTotalCount={logTotalCount}
-            pointLogError={pointLogError}
-            isPointLogLoading={isPointLogLoading}
-            pagedRows={pagedPointLogRows}
-            safeLogPage={safeLogPage}
-            totalPages={totalPages}
-            rowsPerPage={rowsPerPage}
-            setLogPage={setLogPage}
-            setRowsPerPage={setRowsPerPage}
-          />
+        )}
       </div>
 
-      {/* Delete Layout Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -803,12 +418,7 @@ export default function SeatingChartView({
         confirmButtonColor="red"
         icon={
           <div className="flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-            <svg
-              className="h-6 w-6 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -820,14 +430,12 @@ export default function SeatingChartView({
         }
       />
 
-      {/* Create Layout Modal */}
       <CreateLayoutModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreateLayout={handleCreateLayout}
       />
 
-      {/* Edit Layout Name Modal */}
       <EditLayoutModal
         isOpen={isEditLayoutModalOpen && layoutToEdit !== null}
         onClose={() => {
@@ -837,7 +445,6 @@ export default function SeatingChartView({
         currentName={layoutToEdit?.name ?? ''}
         onSave={handleEditLayoutSave}
       />
-
     </div>
   );
 }

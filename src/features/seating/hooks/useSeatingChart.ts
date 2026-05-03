@@ -2,7 +2,7 @@
 
 /**
  * Seating chart **editor** controller (Layer 1 integration).
- * Distinct from `useSeatingChart` in `@/context/SeatingChartContext` (sidebar selection / unseated list).
+ * Distinct from `useSeatingStore` (sidebar selection / unseated list for the editor).
  */
 
 import { useState, useEffect, useCallback, useRef, type Dispatch, type SetStateAction } from 'react';

@@ -3,7 +3,8 @@
 import { useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useDashboard } from '@/context/DashboardContext';
-import { useSeatingChart } from '@/context/SeatingChartContext';
+import { useShallow } from 'zustand/react/shallow';
+import { useSeatingStore } from '@/stores/useSeatingStore';
 import { Student } from '@/lib/types';
 import CreateLayoutModal from '@/components/modals/CreateLayoutModal';
 import EditGroupModal from '@/components/modals/EditGroupModal';
@@ -21,7 +22,14 @@ interface SeatingChartEditorViewProps {
 
 export default function SeatingChartEditorView({ classId, students }: SeatingChartEditorViewProps) {
   const { selectedStudentForGroup, setSelectedStudentForGroup, setUnseatedStudents, unseatedStudents } =
-    useSeatingChart();
+    useSeatingStore(
+      useShallow((s) => ({
+        unseatedStudents: s.unseatedStudents,
+        setUnseatedStudents: s.setUnseatedStudents,
+        selectedStudentForGroup: s.selectedStudentForGroup,
+        setSelectedStudentForGroup: s.setSelectedStudentForGroup,
+      }))
+    );
   const { activeSeatingLayoutId, setActiveSeatingLayoutId } = useDashboard();
   const searchParams = useSearchParams();
   const router = useRouter();

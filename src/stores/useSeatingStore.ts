@@ -1,0 +1,175 @@
+import { create } from 'zustand';
+import type { Student } from '@/lib/types';
+import type { GroupAssignment, SeatingChartRecord, SeatingGroupRecord } from '@/api/seating';
+import { STUDENT_EVENTS, type SeatingStudentPointsDeltaDetail } from '@/lib/events/students';
+
+export type UnseatedSet = Student[] | ((prev: Student[]) => Student[]);
+export type SelectedForGroupSet = Student | null | ((prev: Student | null) => Student | null);
+
+function mapAssignmentsToRecord(map: Map<string, GroupAssignment[]>): Record<string, GroupAssignment[]> {
+  const out: Record<string, GroupAssignment[]> = {};
+  map.forEach((v, k) => {
+    out[k] = v;
+  });
+  return out;
+}
+
+interface SeatingStore {
+  layouts: SeatingChartRecord[];
+  isLoadingLayouts: boolean;
+  layoutsError: string | null;
+  groups: SeatingGroupRecord[];
+  isLoadingGroups: boolean;
+  groupAssignmentsById: Record<string, GroupAssignment[]>;
+  groupPositionsById: Record<string, { x: number; y: number }>;
+  showGrid: boolean;
+  showObjects: boolean;
+  layoutOrientation: string;
+  unseatedStudents: Student[];
+  selectedStudentForGroup: Student | null;
+  setLayouts: (layouts: SeatingChartRecord[]) => void;
+  setLayoutLoading: (v: boolean) => void;
+  setLayoutsError: (e: string | null) => void;
+  setGroupsLoading: (v: boolean) => void;
+  setGroups: (groups: SeatingGroupRecord[]) => void;
+  setGroupAssignmentsById: (next: Record<string, GroupAssignment[]>) => void;
+  setGroupPositionsById: (next: Record<string, { x: number; y: number }>) => void;
+  mergeGroupPositions: (
+    updater: (prev: Record<string, { x: number; y: number }>) => Record<string, { x: number; y: number }>
+  ) => void;
+  applyLayoutViewSettings: (data: {
+    show_grid?: boolean | null;
+    show_objects?: boolean | null;
+    layout_orientation?: string | null;
+  }) => void;
+  setUnseatedStudents: (next: UnseatedSet) => void;
+  setSelectedStudentForGroup: (next: SelectedForGroupSet) => void;
+  addStudentToGroup: (studentId: string, groupId: string) => void;
+  resetForClassSwitch: () => void;
+  applyGroupsFetch: (
+    groupsData: SeatingGroupRecord[] | null | undefined,
+    assignmentsMap: Map<string, GroupAssignment[]>
+  ) => void;
+  patchGroupAssignmentsForPointsDelta: (studentIds: string[], delta: number) => void;
+}
+
+const initialViewSettings = {
+  showGrid: true,
+  showObjects: true,
+  layoutOrientation: 'Left' as string,
+};
+
+export const useSeatingStore = create<SeatingStore>((set, get) => ({
+  layouts: [],
+  isLoadingLayouts: false,
+  layoutsError: null,
+  groups: [],
+  isLoadingGroups: false,
+  groupAssignmentsById: {},
+  groupPositionsById: {},
+  ...initialViewSettings,
+  unseatedStudents: [],
+  selectedStudentForGroup: null,
+
+  setLayouts: (layouts) => set({ layouts }),
+  setLayoutLoading: (isLoadingLayouts) => set({ isLoadingLayouts }),
+  setLayoutsError: (layoutsError) => set({ layoutsError }),
+  setGroupsLoading: (isLoadingGroups) => set({ isLoadingGroups }),
+  setGroups: (groups) => set({ groups }),
+  setGroupAssignmentsById: (groupAssignmentsById) => set({ groupAssignmentsById }),
+  setGroupPositionsById: (groupPositionsById) => set({ groupPositionsById }),
+  mergeGroupPositions: (updater) =>
+    set((s) => ({ groupPositionsById: updater(s.groupPositionsById) })),
+
+  applyLayoutViewSettings: (data) =>
+    set({
+      showGrid: data.show_grid ?? true,
+      showObjects: data.show_objects ?? true,
+      layoutOrientation: data.layout_orientation ?? 'Left',
+    }),
+
+  setUnseatedStudents: (next) =>
+    set((s) => ({
+      unseatedStudents: typeof next === 'function' ? (next as (p: Student[]) => Student[])(s.unseatedStudents) : next,
+    })),
+
+  setSelectedStudentForGroup: (next) =>
+    set((s) => ({
+      selectedStudentForGroup:
+        typeof next === 'function'
+          ? (next as (p: Student | null) => Student | null)(s.selectedStudentForGroup)
+          : next,
+    })),
+
+  addStudentToGroup: (studentId, groupId) => {
+    get().setUnseatedStudents((prev) => prev.filter((st) => st.id !== studentId));
+    get().setSelectedStudentForGroup(null);
+    window.dispatchEvent(new CustomEvent('addStudentToGroup', { detail: { studentId, groupId } }));
+  },
+
+  resetForClassSwitch: () =>
+    set({
+      groups: [],
+      groupAssignmentsById: {},
+      groupPositionsById: {},
+      layoutsError: null,
+      isLoadingGroups: false,
+      unseatedStudents: [],
+      selectedStudentForGroup: null,
+      ...initialViewSettings,
+    }),
+
+  applyGroupsFetch: (groupsData, assignmentsMap) => {
+    if (!groupsData || groupsData.length === 0) {
+      set({ groups: [], groupAssignmentsById: {}, groupPositionsById: {}, isLoadingGroups: false });
+      return;
+    }
+    const groupPositionsById: Record<string, { x: number; y: number }> = { ...get().groupPositionsById };
+    groupsData.forEach((group, index) => {
+      if (group.position_x !== undefined && group.position_y !== undefined) {
+        groupPositionsById[group.id] = { x: group.position_x, y: group.position_y };
+      } else if (groupPositionsById[group.id] === undefined) {
+        groupPositionsById[group.id] = { x: 20 + index * 20, y: 20 + index * 100 };
+      }
+    });
+    set({
+      groups: groupsData,
+      groupAssignmentsById: mapAssignmentsToRecord(assignmentsMap),
+      groupPositionsById,
+      isLoadingGroups: false,
+    });
+  },
+
+  patchGroupAssignmentsForPointsDelta: (studentIds, delta) => {
+    if (studentIds.length === 0 || delta === 0 || !Number.isFinite(delta)) return;
+    const idSet = new Set(studentIds);
+    set((s) => {
+      const nextAssignments: Record<string, GroupAssignment[]> = {};
+      let touched = false;
+      for (const [gid, list] of Object.entries(s.groupAssignmentsById)) {
+        nextAssignments[gid] = list.map((ga) => {
+          if (!idSet.has(ga.student.id)) return ga;
+          touched = true;
+          return {
+            ...ga,
+            student: {
+              ...ga.student,
+              points: (ga.student.points ?? 0) + delta,
+            },
+          };
+        });
+      }
+      return touched ? { groupAssignmentsById: nextAssignments } : {};
+    });
+  },
+}));
+
+export function subscribeSeatingPointsDeltaForClass(classId: string): () => void {
+  const handler = (e: Event) => {
+    const d = (e as CustomEvent<SeatingStudentPointsDeltaDetail>).detail;
+    if (!d || d.classId !== classId) return;
+    useSeatingStore.getState().patchGroupAssignmentsForPointsDelta(d.studentIds, d.delta);
+  };
+  window.addEventListener(STUDENT_EVENTS.SEATING_STUDENT_POINTS_DELTA, handler as EventListener);
+  return () => window.removeEventListener(STUDENT_EVENTS.SEATING_STUDENT_POINTS_DELTA, handler as EventListener);
+}

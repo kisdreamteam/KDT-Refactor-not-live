@@ -4,9 +4,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Sus
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { DashboardProvider, useDashboard } from '@/context/DashboardContext';
 import { DashboardStudentSync } from '@/hooks/useDashboardStudentSync';
+import { SeatingChartDataSync } from '@/hooks/useSeatingChartDataSync';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { StudentSortProvider, useStudentSort } from '@/context/StudentSortContext';
-import { SeatingChartProvider } from '@/context/SeatingChartContext';
 import { SeatingLayoutNavProvider, SeatingLayoutNavData } from '@/context/SeatingLayoutNavContext';
 import LeftNav from '@/components/features/navbars/LeftNav';
 import LeftNavSeatingChartEdit from '@/components/features/navbars/LeftNavSeatingChartEdit';
@@ -150,7 +150,7 @@ function DashboardLayoutShell({
   }, [pathname, router]);
 
   return (
-    <SeatingChartProvider>
+    <>
       <StudentSortProvider>
         <SeatingLayoutNavProvider setSeatingLayoutData={setSeatingLayoutData}>
           <div className="h-screen w-screen overflow-hidden flex flex-row bg-brand-purple" >
@@ -207,7 +207,7 @@ function DashboardLayoutShell({
         />
       )}
       <DashboardClassModalsHost />
-    </SeatingChartProvider>
+    </>
   );
 }
 
@@ -220,6 +220,7 @@ export default function DashboardLayout({
     <Suspense fallback={<DashboardLayoutFallback />}>
       <DashboardProvider>
         <DashboardStudentSync />
+        <SeatingChartDataSync />
         <DashboardLayoutShell>{children}</DashboardLayoutShell>
       </DashboardProvider>
     </Suspense>
