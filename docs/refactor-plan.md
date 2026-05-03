@@ -1,6 +1,6 @@
 # KIS-Points Refactor Checklist
 
-**Goal:** Migrate the codebase to the 3-Tier/3-Layer blueprint defined in `architecture.md` without changing existing behavior.
+**Goal:** Migrate the codebase to the 3-Tier/3-Layer blueprint defined in `/docs/architecture.md` without changing existing behavior.
 
 **Rules of Engagement:**
 1. **One Task = One PR/Session.** Do not mix structural moves with feature additions or cosmetic cleanups.
@@ -13,7 +13,7 @@
 *Goal: Ensure we know exactly what is broken before we fix it.*
 
 - [ ] Run a manual smoke test (Log in, view dashboard, award a point, view seating chart). Note any existing bugs so we don't blame the refactor later.
-- [ ] Ensure `.cursorrules` and `architecture.md` are in the root directory.
+- [ ] Ensure `.cursorrules` is in the root directory and `architecture.md` is in /docs/.
 
 ---
 
@@ -59,6 +59,8 @@
 - [x] **Dead Variables:** Clean up declared but unread parameters in hooks/components (e.g., renaming unused props to `_studentId` for TS compliance).
 - [x] **Orphaned Files:** Safely delete disconnected components and outdated documentation (e.g., `AddGroupModal.tsx`, legacy `README.md` files).
 - [x] **Guardrails:** Verify that no Layer 3 API files (`/src/api/**`) or optimized Contexts (`DashboardContext`, `SeatingChartContext`) were altered during the sweep.
+[ ] The Next Priority (useSeatingChart.ts): Extract complex state management from SeatingChartEditorView.tsx.
+    Extract the Logic: Move dragging, dropping, and allocation state to src/features/seating/hooks/useSeatingChart.ts. Zero-Latency "Desk": Hook manages local React state (The Desk) and coordinates with @/api/seating (The Library) for batch saving.
 
 ---
 
