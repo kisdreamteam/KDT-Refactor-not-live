@@ -60,7 +60,6 @@ function DashboardLayoutShell({
   const { teacherProfile, isLoadingProfile, refreshClasses, viewMode, setViewMode, viewPreference } =
     useDashboard();
   const classes = useDashboardStore((s) => s.classes);
-  const isLoadingClasses = useDashboardStore((s) => s.isLoadingClasses);
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [isRandomOpen, setIsRandomOpen] = useState(false);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
@@ -165,8 +164,6 @@ function DashboardLayoutShell({
                   <LeftNavSeatingChartEdit />
                 ) : (
                   <LeftNav
-                    classes={classes}
-                    isLoadingClasses={isLoadingClasses}
                     viewMode={viewMode}
                     setViewMode={setViewMode}
                     seatingLayoutData={isSeatingChartView && !isEditMode ? seatingLayoutData : null}

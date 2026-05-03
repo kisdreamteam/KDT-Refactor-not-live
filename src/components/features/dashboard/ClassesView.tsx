@@ -18,6 +18,7 @@ import {
 export default function ClassesView() {
   const classes = useDashboardStore((s) => s.classes);
   const isLoadingClasses = useDashboardStore((s) => s.isLoadingClasses);
+  const hasAccessibleClasses = useDashboardStore((s) => s.allAccessibleClasses.length > 0);
   const { refreshClasses, viewMode } = useDashboard();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -163,8 +164,9 @@ export default function ClassesView() {
     }
   };
 
-  // Render loading state
-  if (isLoadingClasses) {
+  const showInitialClassesLoading = isLoadingClasses && !hasAccessibleClasses;
+
+  if (showInitialClassesLoading) {
     return <LoadingState message={`Loading ${isArchivedView ? 'archived ' : ''}classes...`} />;
   }
 
@@ -178,7 +180,7 @@ export default function ClassesView() {
         </div>
       )}
 
-      {!isLoadingClasses && classes.length === 0 ? (
+      {!showInitialClassesLoading && classes.length === 0 ? (
         <EmptyState
           onAddClick={() => !isArchivedView && setIsModalOpen(true)}
           title={isArchivedView ? 'No Archived Classes' : undefined}

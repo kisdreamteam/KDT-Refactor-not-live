@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { normalizeClassIconPath } from '@/lib/iconUtils';
 import IconTimerClock from '@/components/iconsCustom/iconTimerClock';
 import IconEditPencil from '@/components/iconsCustom/iconEditPencil';
@@ -10,28 +10,21 @@ import type { SeatingLayoutNavData } from '@/context/SeatingLayoutNavContext';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 
-interface Class {
-  id: string;
-  name: string;
-  icon?: string;
-  is_archived?: boolean;
-}
-
 interface LeftNavProps {
-  classes: Class[];
-  isLoadingClasses: boolean;
   viewMode?: 'active' | 'archived';
   setViewMode?: (mode: 'active' | 'archived') => void;
   seatingLayoutData?: SeatingLayoutNavData | null;
 }
 
-export default function LeftNav({ classes, isLoadingClasses, viewMode, setViewMode, seatingLayoutData }: LeftNavProps) {
+export default function LeftNav({ viewMode, setViewMode, seatingLayoutData }: LeftNavProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const pathname = usePathname();
   const currentView = searchParams?.get('view') || 'grid';
   const classLinkSuffix = currentView === 'seating' ? '?view=seating' : '?view=grid';
-  const activeClassId = pathname?.match(/\/dashboard\/classes\/([^/]+)/)?.[1] ?? null;
+  const allAccessibleClasses = useDashboardStore((s) => s.allAccessibleClasses);
+  const isLoadingClasses = useDashboardStore((s) => s.isLoadingClasses);
+  const activeClassId = useDashboardStore((s) => s.activeClassId);
+  const showClassesBootstrapSpinner = isLoadingClasses && allAccessibleClasses.length === 0;
 
   const handleAllClassesClick = () => {
     useLayoutStore.getState().setActiveView('classes');
@@ -41,9 +34,8 @@ export default function LeftNav({ classes, isLoadingClasses, viewMode, setViewMo
     router.push('/dashboard');
   };
 
-  // Separate active and archived classes
-  const activeClasses = classes.filter(cls => !cls.is_archived);
-  const hasArchivedClasses = classes.some(cls => cls.is_archived);
+  const activeClasses = allAccessibleClasses.filter((cls) => !cls.is_archived);
+  const hasArchivedClasses = allAccessibleClasses.some((cls) => cls.is_archived);
 
   const handleArchivedClassesClick = () => {
     useLayoutStore.getState().setActiveView('classes');

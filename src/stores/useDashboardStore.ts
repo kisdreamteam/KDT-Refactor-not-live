@@ -6,11 +6,15 @@ export type DashboardSetStudents = Student[] | ((prev: Student[]) => Student[]);
 
 interface DashboardStore {
   activeClassId: string | null;
+  /** Full list from `fetchAccessibleClassesForUser` (unfiltered). */
+  allAccessibleClasses: ClassRecord[];
+  /** Filtered by dashboard viewMode (active vs archived). */
   classes: ClassRecord[];
   students: Student[];
   isLoadingStudents: boolean;
   isLoadingClasses: boolean;
   setActiveClassId: (id: string | null) => void;
+  setAllAccessibleClasses: (classes: ClassRecord[]) => void;
   setClasses: (classes: ClassRecord[]) => void;
   setStudents: (next: DashboardSetStudents) => void;
   setLoadingStudents: (v: boolean) => void;
@@ -21,11 +25,13 @@ interface DashboardStore {
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
   activeClassId: null,
+  allAccessibleClasses: [],
   classes: [],
   students: [],
   isLoadingStudents: false,
   isLoadingClasses: true,
   setActiveClassId: (id) => set({ activeClassId: id }),
+  setAllAccessibleClasses: (allAccessibleClasses) => set({ allAccessibleClasses }),
   setClasses: (data) => set({ classes: data }),
   setStudents: (next) =>
     set((state) => ({

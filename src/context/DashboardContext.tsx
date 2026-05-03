@@ -9,7 +9,7 @@ import {
   type TeacherProfile,
   type ViewPreference,
 } from '@/api/auth';
-import { fetchAccessibleClassesForUser, type ClassRecord } from '@/api/classes';
+import { refreshDashboardClassesForUserAction } from '@/hooks/useDashboardClassesSync';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 
 interface DashboardContextType {
@@ -44,7 +44,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(() => cachedTeacherProfile);
   const [isLoadingProfile, setIsLoadingProfile] = useState(() => !cachedTeacherProfile);
-  const [allClasses, setAllClasses] = useState<ClassRecord[]>([]);
   const [viewMode, setViewMode] = useState<'active' | 'archived'>('active');
   const [viewPreference, setViewPreference] = useState<ViewPreference>(() => cachedViewPreference ?? 'students');
   const [activeSeatingLayoutId, setActiveSeatingLayoutId] = useState<string | null>(null);
@@ -101,24 +100,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   }, [router]);
 
-  const fetchClasses = useCallback(async () => {
-    const { setLoadingClasses } = useDashboardStore.getState();
-    try {
-      setLoadingClasses(true);
-      const userId = await getSessionUserId();
-      if (!userId) {
-        router.replace('/login');
-        return;
-      }
-      const rows = await fetchAccessibleClassesForUser(userId);
-      setAllClasses(rows);
-    } catch (err) {
-      console.error('Unexpected error fetching classes:', err);
-    } finally {
-      setLoadingClasses(false);
-    }
-  }, [router]);
-
   const updateViewPreference = useCallback(async (newView: ViewPreference) => {
     setViewPreference(newView);
     cachedViewPreference = newView;
@@ -136,15 +117,16 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void fetchTeacherProfile();
-    void fetchClasses();
-  }, [fetchTeacherProfile, fetchClasses]);
+  }, [fetchTeacherProfile]);
+
+  const allAccessibleClasses = useDashboardStore((s) => s.allAccessibleClasses);
 
   useEffect(() => {
-    const filtered = allClasses.filter((cls) =>
+    const filtered = allAccessibleClasses.filter((cls) =>
       viewMode === 'archived' ? cls.is_archived : !cls.is_archived
     );
     useDashboardStore.getState().setClasses(filtered);
-  }, [allClasses, viewMode]);
+  }, [allAccessibleClasses, viewMode]);
 
   const value = useMemo<DashboardContextType>(
     () => ({
@@ -152,7 +134,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       teacherProfile,
       isLoadingProfile,
       isLoading: isLoadingProfile || isLoadingClasses || isLoadingStudents,
-      refreshClasses: fetchClasses,
+      refreshClasses: refreshDashboardClassesForUserAction,
       viewMode,
       setViewMode,
       viewPreference,
@@ -165,7 +147,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       teacherProfile,
       isLoadingProfile,
       isLoadingStudents,
-      fetchClasses,
+      refreshDashboardClassesForUserAction,
       viewMode,
       viewPreference,
       updateViewPreference,

@@ -59,6 +59,17 @@
 - [x] **View:** [`SeatingChartView.tsx`](../src/components/features/dashboard/SeatingChartView.tsx) always renders the outer shell; loading, error, and “no layouts” are inner overlays or messages inside the cream panel. Group geometry subscribes via [`SeatingGroupsCanvas.tsx`](../src/components/features/dashboard/seating/SeatingGroupsCanvas.tsx) with `useShallow`. Realtime / visibility / `SEATING_VIEW_SETTINGS_CHANGED` stay in the view and only call store setters + `refreshSeatingGroupsForLayout` where needed.
 - [x] **Context removal:** `SeatingChartProvider` / `useSeatingChart` removed; [`SeatingChartEditorView.tsx`](../src/components/features/dashboard/SeatingChartEditorView.tsx) and [`LeftNavSeatingChartEdit.tsx`](../src/components/features/navbars/LeftNavSeatingChartEdit.tsx) read the same fields from `useSeatingStore`. `SeatingChartContext.tsx` deleted; [`useSeatingChartEditor`](../src/features/seating/hooks/useSeatingChart.ts) unchanged aside from comment.
 - [x] **Verification:** `npm run build` passes. Manual smoke: switch classes on seating (cream frame stable), editor unseated list + add-to-group + multi-select / points delta on seating still behave as before.
+
+## Phase 4.75: LeftNav Stability (Tier 1 Insulation)
+**Target:** Keep the class list in the sidebar visible and avoid a “Loading classes…” swap when switching classes or remounting `DashboardProvider` (e.g. `/dashboard` ↔ `/dashboard/classes/[id]`). Student and seating fetches stay on `activeClassId` only.
+
+- [x] **Store:** [`useDashboardStore.ts`](../src/stores/useDashboardStore.ts) adds `allAccessibleClasses` + `setAllAccessibleClasses`; `classes` remains the **viewMode-filtered** slice written by [`DashboardContext.tsx`](../src/context/DashboardContext.tsx).
+- [x] **Layer 1:** [`useDashboardClassesSync.tsx`](../src/hooks/useDashboardClassesSync.tsx) exports `DashboardClassesSync`, `refreshDashboardClasses`, and `refreshDashboardClassesForUserAction`. Initial load runs from [`app/dashboard/layout.tsx`](../src/app/dashboard/layout.tsx) (persists across dashboard page swaps). `isLoadingClasses` is toggled only for the **bootstrap** empty load; CRUD refresh uses a **silent** path when `allAccessibleClasses` is already populated.
+- [x] **Context:** [`DashboardContext.tsx`](../src/context/DashboardContext.tsx) no longer fetches classes on mount; it mirrors `allAccessibleClasses` → filtered `classes` and wires `refreshClasses` to `refreshDashboardClassesForUserAction`.
+- [x] **LeftNav:** [`LeftNav.tsx`](../src/components/features/navbars/LeftNav.tsx) uses strict selectors for `allAccessibleClasses`, `isLoadingClasses`, and `activeClassId`; spinner only when `isLoadingClasses && allAccessibleClasses.length === 0`. [`DashboardLayout.tsx`](../src/layouts/dashboard/DashboardLayout.tsx) no longer passes `classes` / `isLoadingClasses` into `LeftNav`.
+- [x] **Classes grid:** [`ClassesView.tsx`](../src/components/features/dashboard/ClassesView.tsx) full-page loading uses the same “no accessible rows yet” rule so background class refresh does not blank the grid.
+- [x] **Verification:** `npm run build`. Manually: switch classes in the sidebar (no list flicker); `/dashboard` ↔ a class route with list already loaded; create/archive class still updates the list.
+
 ---
 
 ## Phase 5: The Cleanup
