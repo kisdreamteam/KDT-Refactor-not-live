@@ -25,6 +25,7 @@ import {
   type SeatingGroupRecord,
   updateSeatingLayoutName,
 } from '@/api/seating';
+import { getNextIndex, getSlotIndex } from '@/features/seating/services/seatingLogic';
 import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
 import {
   STUDENT_EVENTS,
@@ -629,7 +630,10 @@ export default function SeatingChartView({
                       const position = groupPositions.get(group.id) || { x: 20 + (index * 20), y: 20 + (index * 100) };
                       const groupX = position.x;
                       const groupY = position.y;
-                      const maxIndex = assignmentsInGroup.length === 0 ? 0 : Math.max(...assignmentsInGroup.map(a => a.seat_index));
+                      const maxIndex =
+                        assignmentsInGroup.length === 0
+                          ? 0
+                          : getNextIndex(assignmentsInGroup.map((a) => a.seat_index)) - 1;
                       const numRows = Math.max(1, Math.ceil(maxIndex / validColumns));
                       const headerHeight = 50;
                       const studentRowHeight = 50;
@@ -770,7 +774,7 @@ export default function SeatingChartView({
                             >
                               {Array.from({ length: validColumns }, (_, colIndex) => {
                                 // Teacher view: canvas is rotated 180°, so DOM (row 0, col 0) appears bottom-right = seat 1; use same formula
-                                const slotIndex = rowIndex * validColumns + colIndex + 1;
+                                const slotIndex = getSlotIndex(rowIndex, colIndex, validColumns);
                                 const student = studentAtSlot(group.id, slotIndex);
                                 if (student) {
                                   return <div key={slotIndex} className="w-full min-w-0">{renderStudentCard(student)}</div>;

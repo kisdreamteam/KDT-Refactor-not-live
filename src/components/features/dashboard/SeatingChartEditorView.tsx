@@ -31,6 +31,7 @@ import SuccessNotificationModal from '@/components/modals/SuccessNotificationMod
 import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
 import IconEditPencil from '@/components/iconsCustom/iconEditPencil';
 import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
+import { getCoordinates, getNextIndex, getSlotIndex } from '@/features/seating/services/seatingLogic';
 import { STUDENT_EVENTS, emitSeatingEditMode } from '@/lib/events/students';
 
 interface SeatingChart {
@@ -85,16 +86,18 @@ const BATCH_GROUP_START_Y = 50;
 
 function getMaxSeatIndexFromAssignments(assignments: GroupAssignment[]): number {
   if (assignments.length === 0) return 0;
-  return Math.max(...assignments.map((a) => a.seat_index ?? 0));
+  return getNextIndex(assignments.map((a) => a.seat_index ?? 0)) - 1;
 }
 
 function getMaxSeatIndexInColumn(assignments: GroupAssignment[], column: number, columns: number): number {
-  const inColumn = assignments.filter((a) => ((a.seat_index ?? 0) - 1) % columns === column);
+  const inColumn = assignments.filter(
+    (a) => getCoordinates(a.seat_index ?? 0, columns).col === column
+  );
   return inColumn.length === 0 ? 0 : Math.max(...inColumn.map((a) => a.seat_index ?? 0));
 }
 
 function getNextSeatIndex(assignments: GroupAssignment[]): number {
-  return getMaxSeatIndexFromAssignments(assignments) + 1;
+  return getNextIndex(assignments.map((a) => a.seat_index ?? 0));
 }
 
 function getNextSeatIndexInColumn(assignments: GroupAssignment[], column: number, columns: number): number {
@@ -163,10 +166,6 @@ function getDefaultStaggerPosition(index: number): { x: number; y: number } {
     x: DEFAULT_GROUP_START + index * DEFAULT_GROUP_STAGGER_X,
     y: DEFAULT_GROUP_START + index * DEFAULT_GROUP_STAGGER_Y,
   };
-}
-
-function getSlotIndex(rowIndex: number, colIndex: number, columns: number): number {
-  return rowIndex * columns + colIndex + 1;
 }
 
 interface SeatingChartEditorViewProps {
@@ -535,8 +534,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
   const computeGroupRowsFromAssignments = useCallback(
     (assignmentsInGroup: GroupAssignment[], groupColumns: number) => {
       const studentsPerRow = groupColumns || 2;
-      const maxIdx =
-        assignmentsInGroup.length === 0 ? 0 : Math.max(...assignmentsInGroup.map((a) => a.seat_index));
+      const maxIdx = getMaxSeatIndexFromAssignments(assignmentsInGroup);
       const studentRowCount = maxIdx === 0 ? 1 : Math.ceil(maxIdx / studentsPerRow);
       return Math.max(2, 1 + studentRowCount);
     },
@@ -2230,7 +2228,7 @@ export default function SeatingChartEditorView({ classId, students }: SeatingCha
                                 )}
                               </div>
 
-                                {/* Fixed-slot grid: row = ceil(index/C), col = (index-1) % C */}
+                                {/* Fixed-slot grid: see getSlotIndex / getCoordinates in @/features/seating/services/seatingLogic and docs/seat-index-logic.md */}
                                 {Array.from({ length: numRows }, (_, rowIndex) => (
                                   <div
                                     key={`${group.id}-row-${rowIndex}`}
