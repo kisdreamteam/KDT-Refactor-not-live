@@ -6,7 +6,7 @@ export default function LandingForm() {
   return (
     <>
       {/* Header */}
-      <header className="w-full bg-blue-500 h-[150px] relative">
+      <header className="w-full bg-[#4A3B8D] h-[150px] relative">
         <div
           className="absolute flex items-center bottom-3 right-2 gap-9 mr-90 font-spartan"
         >
