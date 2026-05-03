@@ -9,7 +9,7 @@ This folder contains reusable UI building blocks used across multiple features.
 - Components that can be reused by different domains.
 
 ## What Does Not Belong Here
-- Supabase or `@/api/*` imports (Layer 3 belongs in `/src/api` only; see `docs/architecture.md` §3).
+- Supabase or `@/api/*` imports (Layer 3 belongs in `/src/api` only; see `docs/architecture-plan.md` §3).
 - Feature-specific orchestration logic.
 - Routing or URL synchronization logic.
 

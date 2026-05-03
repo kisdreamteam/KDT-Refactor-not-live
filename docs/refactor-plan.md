@@ -1,6 +1,6 @@
 # KIS-Points Refactor Checklist
 
-**Goal:** Migrate the codebase to the 3-Tier/3-Layer blueprint defined in [`architecture.md`](architecture.md) (see **§4 Final Directory Map** for the canonical folder layout) without changing existing behavior.
+**Goal:** Migrate the codebase to the 3-Tier/3-Layer blueprint defined in [`architecture-plan.md`](architecture-plan.md) (see **§4 Final Directory Map** for the canonical folder layout) without changing existing behavior.
 
 **Rules of Engagement:**
 1. **One Task = One PR/Session.** Do not mix structural moves with feature additions or cosmetic cleanups.
@@ -13,12 +13,12 @@
 *Goal: Ensure we know exactly what is broken before we fix it.*
 
 - [ ] Run a manual smoke test (Log in, view dashboard, award a point, view seating chart). Note any existing bugs so we don't blame the refactor later.
-- [ ] Ensure `.cursorrules` is in the root directory and [`architecture.md`](architecture.md) is in `/docs/`.
+- [ ] Ensure `.cursorrules` is in the root directory and [`architecture-plan.md`](architecture-plan.md) is in `/docs/`.
 
 ---
 
 ## Phase 2: The Plumbing (Data Layer 3)
-*Goal: Remove ALL direct `createClient` and `supabase` imports from React UI components and Contexts. Move them strictly to [`/src/api/`](../src/api/) (Layer 3 in [architecture.md](architecture.md) §3).*
+*Goal: Remove ALL direct `createClient` and `supabase` imports from React UI components and Contexts. Move them strictly to [`/src/api/`](../src/api/) (Layer 3 in [architecture-plan.md](architecture-plan.md) §3).*
 
 **Auth & Users**
 - [x] Move [`LoginForm.tsx`](../src/components/features/auth/LoginForm.tsx) supabase calls to [`auth.ts`](../src/api/auth.ts)
@@ -68,4 +68,4 @@
 
 - [x] **Navbars:** Decouple [`BottomNavStudents`](../src/components/features/navbars/BottomNavStudents.tsx) / [`BottomNavSeatingEdit`](../src/components/features/navbars/BottomNavSeatingEdit.tsx) from persistence; shell + [`SeatingEditBottomNavBridge`](../src/components/features/navbars/SeatingEditBottomNavBridge.tsx) + [`useSeatingEditBottomNav`](../src/features/seating/hooks/useSeatingEditBottomNav.ts).
 - [x] **Modals:** Presentational modals with `onSubmit` / parents wiring API (e.g. [`EditStudentModal`](../src/components/modals/EditStudentModal.tsx), [`AddSkillForm`](../src/components/forms/AddSkillForm.tsx)); class edit lives in [`EditClassModalRoot`](../src/features/classes/components/EditClassModalRoot.tsx) with a thin [`EditClassModal`](../src/components/modals/EditClassModal.tsx) façade.
-- [x] **Atoms:** Keep shared UI under [`/src/components/ui/`](../src/components/ui/) free of `@/api` / Supabase; compose only via props and callbacks (see [architecture.md](architecture.md) §2 Tier 3).
+- [x] **Atoms:** Keep shared UI under [`/src/components/ui/`](../src/components/ui/) free of `@/api` / Supabase; compose only via props and callbacks (see [architecture-plan.mdd](architecture-plan.md) §2 Tier 3).

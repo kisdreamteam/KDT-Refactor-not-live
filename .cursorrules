@@ -1,39 +1,28 @@
-# KIS-Points Master Codebase Rules (The Constitution)
+# KIS-Points Prototype 1 - Cursor Rules
 
-You are an expert enterprise SaaS architect assisting in building KIS-Points. Your primary directive is to enforce the "Zero-Spaghetti" architecture. You must strictly obey the Visual 3-Tier System and the Data 3-Layer System.
+## 1. Architectural Mandate: The 3-Tier Visual / 3-Layer Data System
+You must strictly adhere to the established architecture. Do not blur the lines between routing, state, and pure UI components.
 
-## 1. THE VISUAL ARCHITECTURE (3-TIER FRONT-END)
-This governs what renders on the screen and layout physics. Do not mix data fetching into these tiers.
+### The 3-Tier Visual Architecture
+* **Tier 1 (Scaffolding):** Layouts, Shells, Navbars (`TopNav`, `LeftNav`). These handle application layout and routing bounds, not complex business logic.
+* **Tier 2 (The Stage):** Main view containers (e.g., `DashboardMainStage`). Determines *which* Tier 3 components to display based on the current UI state.
+* **Tier 3 (The Actors):** Pure UI components (`StudentCard`, `ActionButtons`, modals). They receive data, render UI, and trigger events, but rarely manage their own complex state.
 
-* **TIER 1: Routing (The Front Door)**
-  * **Location:** `/src/app/`
-  * **Rule:** Files must be under 15 lines. No React `useState`, no logic, and absolutely ZERO database calls. These files act as thin shells that merely import and return a Tier 2 Module.
-* **TIER 2: Layouts, Modules & Providers (The Skeleton & Stage)**
-  * **Location:** `/src/layouts/`, `/src/modules/`, `/src/providers/`
-  * **Rule:** Layouts govern pure CSS physics (e.g., the `h-screen w-screen overflow-hidden` GOD Box). Modules are the "Stage Managers" that dictate CSS Grid/flex layouts to slot components together. Providers wrap the application/modules to distribute Context ("The Desk").
-* **TIER 3: Features & Atoms (The Furniture)**
-  * **Location:** `/src/components/ui/` (generic atoms), `/src/components/features/` (domain UI)
-  * **Rule:** UI components must be completely "Dumb". They do not know the database exists. They only accept props, manage local visual state (like toggles), and execute callback functions.
+### The 3-Layer Data Architecture
+* **Layer 1 (The Orchestrators):** Custom hooks (e.g., `useClassPointLog`, `useAwardPointsService`). They handle business logic: they call Layer 3 to fetch data, then push that data into Layer 2 (Zustand). 
+* **Layer 2 (The Desk - STATE):** Zustand Stores. Pure data storage and setter functions. **No Supabase calls or complex data transformations live here.**
+* **Layer 3 (The Vault):** Pure API/Database interactions. Files that talk strictly to Supabase and return raw data arrays/objects to Layer 1.
 
-## 2. THE DATA ARCHITECTURE (3-LAYER BACK-END)
-This governs how data is calculated, validated, and saved to Supabase.
+## 2. STRICT STATE MANAGEMENT RULES (ZUSTAND OVER CONTEXT)
+* 🚫 **REACT CONTEXT IS FORBIDDEN** for global application state, UI state, or data caching.
+* ✅ **USE ZUSTAND** for all global state management (stores must be located in `/src/stores/`).
+* 🎯 **STRICT SELECTORS ARE MANDATORY:** When a Tier 2 or Tier 3 component reads data from a Zustand store, it MUST subscribe *only* to the specific slice of state it needs. This is critical to prevent grid-wide re-renders.
+  * ❌ **BAD:** `const { students } = useDashboardStore()` (Triggers a re-render anytime *anything* in the store changes).
+  * ✅ **GOOD:** `const students = useDashboardStore(state => state.students)`
+  * ✅ **GOOD (Deep Selection):** `const studentPoints = useDashboardStore(state => state.students.find(s => s.id === props.id)?.points)`
 
-* **LAYER 1: Integration (Custom Hooks)**
-  * **Location:** `/src/hooks/` or `/src/features/*/hooks/`
-  * **Rule:** The middleman. This layer talks to React (UI) and pure Javascript (Logic). Handles loading states, toast notifications, and updates the local Context ("The Desk") for optimistic UI.
-* **LAYER 2: Domain (Business Logic / Services)**
-  * **Location:** `/src/features/*/services/`
-  * **Rule:** Pure math and business rules (e.g., point calculation logic). Written in pure TypeScript. No React (`useState`), no Supabase (`.insert`). Just pure data in, pure data out.
-* **LAYER 3: Service (Data Access / API)**
-  * **Location:** `/src/api/`
-  * **Rule:** The "Plumbing". This is the ONLY place in the entire application where `import { supabase } from '@client'` is allowed. All DB fetches, inserts, and updates live here.
-
-## 3. STRICT GLOBAL CONSTRAINTS
-* **Database Isolation:** NEVER put a direct Supabase call inside a React UI component. 
-* **Optimistic UI (Desk vs. Library):** Fetch data from Supabase once on load. Store it in Context. UI components must read from and modify the Context for zero-latency updates.
-* **Soft Deletes ONLY:** Never execute a hard `.delete()` on a student or class. Always update the record to `is_archived: true`.
-* **Custom Student Numbering:** Never use auto-incrementing database integers (`id`) for a student's front-end display number. Always respect the custom school numbering logic.
-* **Styling:** Use Tailwind CSS strictly. Do not create custom CSS files unless absolutely necessary for global root variables.
-
-## 4. USING BLUEPRINTS
-If the user mentions `/docs/` or `@architecture-blueprint.md`, you MUST read those explicit markdown files before writing code to understand specific feature folder mapping.
+## 3. General Best Practices
+* **TypeScript:** Strictly type all component props, Zustand store shapes, and Supabase database responses. Rely on `/src/lib/types.ts`. Avoid `any`.
+* **Tailwind CSS:** Use Tailwind utility classes for all styling. 
+* **Component Size:** Avoid "God Components." If a component handles multiple responsibilities or grows too large, extract the sub-elements into smaller Tier 3 Actors.
+* **Optimistic UI:** When mutating data (e.g., awarding a point), Layer 1 should immediately update the Zustand store (Layer 2) for an instant UI reaction, *then* process the Layer 3 database call in the background.
