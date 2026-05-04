@@ -1,44 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCallback } from 'react';
 import Modal from '@/components/ui/modals/Modal';
 import AddSkillModal from '@/components/ui/modals/AddSkillModal';
-import EditSkillsModal from '@/components/ui/modals/EditSkillsModal';
+import EditSkillsModal from '@/components/dashboard/EditSkillsModal';
 import SkillCard from '@/components/dashboard/cards/SkillCard';
 import SkillActionCard from '@/components/dashboard/cards/SkillActionCard';
 import { PointCategory, Student } from '@/lib/types';
-import { fetchPointCategoriesByClassIds } from '@/lib/api/points';
-import { createSkill } from '@/lib/api/skills';
-import type { AddSkillFormSubmitValues } from '@/components/ui/forms/AddSkillForm';
-import { useAwardPointsService } from '@/hooks/useAwardPointsService';
-
-// Helper function to add cache-busting parameter to icon URLs
-// Uses modal open state to generate a fresh cache-busting parameter
-const addCacheBuster = (iconPath: string, cacheKey?: string | number): string => {
-  if (!iconPath) return iconPath;
-  // Add cache-busting parameter to force fresh image fetch
-  // Use provided cacheKey or generate one based on current time
-  const separator = iconPath.includes('?') ? '&' : '?';
-  const version = cacheKey || Date.now();
-  return `${iconPath}${separator}v=${version}`;
-};
-
-const skillsByScopeCache = new Map<string, PointCategory[]>();
-
-function toSkillScopeKey(classIds: string[]): string {
-  return [...classIds].sort().join(',');
-}
-
-function normalizeCategoryIcons(data: PointCategory[]): PointCategory[] {
-  return data.map((category) => ({
-    ...category,
-    icon: category.icon?.includes('/images/classes/icons/icon-pos-')
-      ? category.icon.replace('/images/classes/icons/icon-pos-', '/images/dashboard/award-points-icons/icons-positive/icon-pos-')
-      : category.icon?.includes('/images/classes/icons/icon-neg-')
-      ? category.icon.replace('/images/classes/icons/icon-neg-', '/images/dashboard/award-points-icons/icons-negative/icon-neg-')
-      : category.icon,
-  }));
-}
+import type { AddSkillFormSubmitValues } from '@/components/dashboard/AddSkillForm';
+import { usePointAwarding } from '@/hooks/usePointAwarding';
+import { useSkillManagement } from '@/hooks/useSkillManagement';
 
 interface AwardPointsModalProps {
   isOpen: boolean;
@@ -81,141 +52,45 @@ export default function AwardPointsModal({
   const isMultiStudentMode = selectedStudentIds && selectedStudentIds.length > 0;
   const isWholeClassMode = student === null && !isMultiClassMode && !isMultiStudentMode;
   
-  const [categories, setCategories] = useState<PointCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'positive' | 'negative' | 'custom'>('positive');
-  const [customPoints, setCustomPoints] = useState<number>(0);
-  const [customMemo, setCustomMemo] = useState<string>('');
-  const [isManageSkillsModalOpen, setManageSkillsModalOpen] = useState(false);
-  const [isEditModalOpen, setEditModalOpen] = useState(false);
-  const [imageCacheKey, setImageCacheKey] = useState<number>(Date.now());
-  const { awardSkill, awardCustom } = useAwardPointsService({
-    context: {
-      studentId: student?.id ?? null,
-      classId,
-      selectedClassIds,
-      selectedStudentIds,
-    },
+  const {
+    categories,
+    isLoading,
+    activeTab,
+    setActiveTab,
+    customPoints,
+    setCustomPoints,
+    customMemo,
+    setCustomMemo,
+    isManageSkillsModalOpen,
+    setManageSkillsModalOpen,
+    isEditModalOpen,
+    setEditModalOpen,
+    imageCacheKey,
+    activeCategories,
+    positiveSkills,
+    negativeSkills,
+    refreshCategories,
+    awardSkill,
+    handleCustomAward,
+    addCacheBuster,
+  } = usePointAwarding({
+    isOpen,
     student,
+    classId,
     className,
     classIcon,
     onRefresh,
     onPointsAwarded,
+    selectedClassIds,
+    selectedStudentIds,
     onAwardComplete,
-    onClose,
     skipRefreshAfterAward,
   });
-
-  // Fetch categories function
-  const fetchCategories = useCallback(async (force = false) => {
-    if (!isOpen) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // For multi-class mode, fetch categories from all selected classes
-      // For other modes, use the single classId
-      const classIdsToFetch = (selectedClassIds && selectedClassIds.length > 0)
-        ? selectedClassIds 
-        : [classId];
-      const cacheKey = toSkillScopeKey(classIdsToFetch);
-      const cached = skillsByScopeCache.get(cacheKey);
-      if (!force && cached) {
-        setCategories(cached);
-        return;
-      }
-
-      const data = await fetchPointCategoriesByClassIds(classIdsToFetch);
-      const normalizedData = normalizeCategoryIcons(data || []);
-
-      // For multi-class mode, we might have duplicate categories, so we'll use unique ones
-      // For now, we'll just use all categories (they should be class-specific anyway)
-      skillsByScopeCache.set(cacheKey, normalizedData);
-      setCategories(normalizedData);
-    } catch (err) {
-      console.error('Unexpected error fetching categories:', err);
-      setCategories([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isOpen, classId, selectedClassIds]);
-
-  const refreshCategories = useCallback(() => {
-    void fetchCategories(true);
-  }, [fetchCategories]);
-
-  const handleSubmitAddSkill = useCallback(
-    async (values: AddSkillFormSubmitValues) => {
-      await createSkill({
-        classId: values.classId,
-        name: values.name,
-        points: values.points,
-        type: values.type,
-        icon: values.icon,
-      });
-      refreshCategories();
-    },
-    [refreshCategories]
-  );
-
-  // Fetch categories when modal opens or classId/selectedClassIds changes
-  useEffect(() => {
-    if (isOpen) {
-      // Update cache key when modal opens to force fresh image loads
-      setImageCacheKey(Date.now());
-      fetchCategories();
-    }
-  }, [isOpen, classId, selectedClassIds, fetchCategories]);
-
-  // Filter categories into positive and negative skills
-  const activeCategories = useMemo(
-    () => categories.filter((category) => category.is_archived !== true),
-    [categories]
-  );
-
-  const positiveSkills = useMemo(() => {
-    const filtered = activeCategories.filter((category) => {
-      const points = category.points ?? category.default_points ?? 0;
-      return points > 0;
-    }).map((category) => {
-      const points = category.points ?? category.default_points ?? 0;
-      return {
-        id: category.id,
-        name: category.name,
-        points: points,
-        icon: category.icon, // Use icon from database
-      };
-    });
-    return filtered;
-  }, [activeCategories]);
-
-  const negativeSkills = useMemo(() => {
-    const filtered = activeCategories.filter((category) => {
-      const points = category.points ?? category.default_points ?? 0;
-      return points < 0;
-    }).map((category) => {
-      const points = category.points ?? category.default_points ?? 0;
-      return {
-        id: category.id,
-        name: category.name,
-        points: points,
-        icon: category.icon, // Use icon from database
-      };
-    });
-    return filtered;
-  }, [activeCategories]);
-
-  // Handle custom points submission
-  const handleCustomAward = async () => {
-    const didSucceed = await awardCustom(customPoints, customMemo);
-    if (didSucceed) {
-      setCustomPoints(0);
-      setCustomMemo('');
-    }
-  };
+  const { addSkill } = useSkillManagement();
+  const handleSubmitAddSkill = useCallback(async (values: AddSkillFormSubmitValues) => {
+    await addSkill(values);
+    refreshCategories();
+  }, [addSkill, refreshCategories]);
 
   return (
     <>

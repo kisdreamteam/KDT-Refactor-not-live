@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Student } from '@/lib/types';
 import Image from 'next/image';
-import AwardPointsModal from '@/components/ui/modals/AwardPointsModal';
-import PointsAwardedConfirmationModal from '@/components/ui/modals/PointsAwardedConfirmationModal';
+import AwardPointsModal from '@/components/dashboard/AwardPointsModal';
+import PointsAwardedConfirmationModal from '@/components/dashboard/PointsAwardedConfirmationModal';
 import { normalizeAvatarPath } from '@/lib/iconUtils';
 import { useAwardPointsFlow } from '@/hooks/useAwardPointsFlow';
 import {

@@ -2,15 +2,24 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { createClassForCurrentUser } from '@/lib/api/classes';
+
+export type CreateClassFormValues = {
+  className: string;
+  grade: string;
+  icon: string;
+  schoolYear: string;
+};
+
 interface CreateClassFormProps {
   onClose: () => void;
+  onSubmit: (values: CreateClassFormValues) => void | Promise<void>;
+  isLoading: boolean;
+  error?: string | null;
 }
 
-export default function CreateClassForm({ onClose }: CreateClassFormProps) {
+export default function CreateClassForm({ onClose, onSubmit, isLoading, error }: CreateClassFormProps) {
   const [className, setClassName] = useState('');
   const [grade, setGrade] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   // Initialize with random icon
   const getRandomIcon = () => {
@@ -43,26 +52,12 @@ export default function CreateClassForm({ onClose }: CreateClassFormProps) {
 
   const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      await createClassForCurrentUser({
-        className,
-        grade,
-        schoolYear: '2025-2026',
-        icon: selectedIcon,
-      });
-      onClose();
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      if (error instanceof Error && error.message === 'AUTH_REQUIRED') {
-        alert('You must be logged in to create a class.');
-      } else {
-        alert('Failed to create class. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    await onSubmit({
+      className,
+      grade,
+      schoolYear: '2025-2026',
+      icon: selectedIcon,
+    });
   };
 
   return (
@@ -226,6 +221,7 @@ export default function CreateClassForm({ onClose }: CreateClassFormProps) {
             {isLoading ? 'Creating...' : 'Create'}
           </button>
         </div>
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </form>
     </div>
   );

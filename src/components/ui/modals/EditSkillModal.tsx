@@ -1,7 +1,7 @@
 'use client';
 
 import Modal from '@/components/ui/modals/Modal';
-import EditSkillForm from '@/components/ui/forms/EditSkillForm';
+import EditSkillForm from '@/components/dashboard/EditSkillForm';
 import { PointCategory } from '@/lib/types';
 
 interface EditSkillModalProps {

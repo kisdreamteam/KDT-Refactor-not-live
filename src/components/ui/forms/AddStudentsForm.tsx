@@ -1,26 +1,43 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  getNextStartingStudentNumber,
-  insertStudent,
-  insertStudentsBulk,
-} from '@/lib/api/students';
+
+export type AddStudentsFormSubmitValues =
+  | {
+      mode: 'single';
+      studentName: string;
+      gender: string | null;
+    }
+  | {
+      mode: 'bulk';
+      studentList: string;
+      importType: 'word' | 'excel';
+    };
 
 interface AddStudentsFormProps {
   isOpen: boolean;
   onClose: () => void;
-  classId: string;
+  onSubmit: (values: AddStudentsFormSubmitValues) => void | Promise<void>;
+  isLoading: boolean;
+  error?: string | null;
+  nextStudentNumber?: number | null;
   onStudentAdded: () => void;
 }
 
-export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdded }: AddStudentsFormProps) {
+export default function AddStudentsForm({
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+  error,
+  nextStudentNumber,
+  onStudentAdded,
+}: AddStudentsFormProps) {
   const [view, setView] = useState<'single' | 'bulk'>('single');
   const [studentName, setStudentName] = useState('');
   const [gender, setGender] = useState<string>('');
   const [studentList, setStudentList] = useState('');
   const [importType, setImportType] = useState<'word' | 'excel'>('word');
-  const [nextStudentNumber, setNextStudentNumber] = useState<number | null>(null);
 
   const handleClose = () => {
     setView('single');
@@ -28,98 +45,23 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
     setGender('');
     setStudentList('');
     setImportType('word');
-    setNextStudentNumber(null);
     onClose();
-  };
-
-  // Fetch next student number when modal opens or classId changes
-  useEffect(() => {
-    if (isOpen && classId) {
-      const fetchNumber = async () => {
-        try {
-          const number = await getNextStartingStudentNumber(classId);
-          setNextStudentNumber(number);
-        } catch (err) {
-          console.error('Unexpected error getting next student number:', err);
-          setNextStudentNumber(1);
-        }
-      };
-      fetchNumber();
-    } else {
-      setNextStudentNumber(null);
-    }
-  }, [isOpen, classId]);
-
-  const getRandomAvatar = () => {
-    const avatarNumber = Math.floor(Math.random() * 40) + 1;
-    const avatarName = `avatar-${String(avatarNumber).padStart(2, '0')}.png`;
-    return `/images/dashboard/student-avatars/${avatarName}`;
   };
 
   const handleSaveStudent = async () => {
     const name = studentName.trim();
     if (!name) return;
-
-    try {
-      const parts = name.split(' ');
-      const first_name = parts[0];
-      const last_name = parts.slice(1).join(' ');
-
-      const studentData = {
-        first_name,
-        last_name,
-        class_id: classId,
-        avatar: getRandomAvatar(),
-        gender: gender.trim() || null,
-      };
-
-      await insertStudent(studentData);
-
-      // Success: refresh the student list and close modal
-      onStudentAdded();
-      handleClose();
-    } catch (err) {
-      console.error('Unexpected error saving student:', err);
-    }
+    await onSubmit({ mode: 'single', studentName: name, gender: gender.trim() || null });
+    onStudentAdded();
+    handleClose();
   };
 
   const handleImportList = async () => {
     const text = studentList.trim();
     if (!text) return;
-
-    try {
-      const lines = text.split('\n').filter((line) => line.trim() !== '');
-
-      const newStudents = lines.map((line) => {
-        let first_name: string;
-        let last_name: string;
-
-        if (line.includes(',')) {
-          const parts = line.split(',');
-          last_name = parts[0].trim();
-          first_name = parts[1].trim();
-        } else {
-          const parts = line.split(' ');
-          first_name = parts[0].trim();
-          last_name = parts.slice(1).join(' ').trim();
-        }
-
-        return {
-          first_name,
-          last_name,
-          class_id: classId,
-          avatar: getRandomAvatar(),
-        };
-      });
-
-      await insertStudentsBulk(newStudents);
-
-      // Success: refresh the student list and close modal
-      onStudentAdded();
-      handleClose();
-    } catch (err) {
-      console.error('Unexpected error importing students:', err);
-    }
+    await onSubmit({ mode: 'bulk', studentList: text, importType });
+    onStudentAdded();
+    handleClose();
   };
 
   return (
@@ -189,7 +131,7 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
             </button>
             <button
               onClick={handleSaveStudent}
-              disabled={!studentName.trim()}
+              disabled={!studentName.trim() || isLoading}
               className="px-6 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save
@@ -251,12 +193,13 @@ export default function AddStudentsForm({ isOpen, onClose, classId, onStudentAdd
           <div className="flex justify-end pt-2">
             <button
               onClick={handleImportList}
-              disabled={!studentList.trim()}
+              disabled={!studentList.trim() || isLoading}
               className="px-6 py-2 bg-purple-400 text-white rounded-lg font-medium hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Import list
             </button>
           </div>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
         </div>
       )}
     </div>

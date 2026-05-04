@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import ConfirmationModal from '@/components/ui/modals/ConfirmationModal';
 import CreateLayoutModal from '@/components/ui/modals/CreateLayoutModal';
 import EditLayoutModal from '@/components/ui/modals/EditLayoutModal';
-import ClassPointLogSlidePanel from '@/components/ui/ClassPointLogSlidePanel';
+import ClassPointLogSlidePanel from '@/components/dashboard/ClassPointLogSlidePanel';
 import SeatingCanvasDecor from '@/components/dashboard/seating/SeatingCanvasDecor';
 import SeatingGroupsCanvas from '@/components/dashboard/seating/SeatingGroupsCanvas';
 import type { PointLogRow } from '@/hooks/useClassPointLog';

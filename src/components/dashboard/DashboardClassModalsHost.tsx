@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { refreshDashboardStudents } from '@/hooks/useDashboardStudentSync';
 import { useDashboardStore } from '@/stores/useDashboardStore';
@@ -12,11 +12,17 @@ import {
 } from '@/lib/events/students';
 import { normalizeClassIconPath } from '@/lib/iconUtils';
 import AddStudentsModal from '@/components/ui/modals/AddStudentsModal';
-import AwardPointsModal from '@/components/ui/modals/AwardPointsModal';
+import AwardPointsModal from './AwardPointsModal';
 import EditStudentModal from '@/components/ui/modals/EditStudentModal';
 import type { EditStudentModalSubmitValues } from '@/components/ui/modals/EditStudentModal';
-import PointsAwardedConfirmationModal from '@/components/ui/modals/PointsAwardedConfirmationModal';
-import { updateStudentById } from '@/lib/api/students';
+import PointsAwardedConfirmationModal from './PointsAwardedConfirmationModal';
+import {
+  getNextStartingStudentNumber,
+  insertStudent,
+  insertStudentsBulk,
+  updateStudentById,
+} from '@/lib/api/students';
+import type { AddStudentsFormSubmitValues } from '@/components/ui/forms/AddStudentsForm';
 
 export default function DashboardClassModalsHost() {
   const pathname = usePathname();
@@ -36,6 +42,9 @@ export default function DashboardClassModalsHost() {
     openAwardConfirmation,
     closeAwardConfirmation,
   } = useAwardPointsFlow();
+  const [isAddingStudents, setIsAddingStudents] = useState(false);
+  const [addStudentsError, setAddStudentsError] = useState<string | null>(null);
+  const [nextStudentNumber, setNextStudentNumber] = useState<number | null>(null);
 
   const currentClass = useMemo(
     () => (currentClassId ? classes.find((c) => c.id === currentClassId) ?? null : null),
@@ -59,6 +68,66 @@ export default function DashboardClassModalsHost() {
   const handleStudentAdded = useCallback(async () => {
     await refreshDashboardStudents(true);
   }, []);
+
+  useEffect(() => {
+    if (!(isModalOpen && modalType === 'add_students' && currentClassId)) return;
+    void (async () => {
+      try {
+        const number = await getNextStartingStudentNumber(currentClassId);
+        setNextStudentNumber(number);
+      } catch {
+        setNextStudentNumber(1);
+      }
+    })();
+  }, [isModalOpen, modalType, currentClassId]);
+
+  const handleAddStudentsSubmit = useCallback(
+    async (values: AddStudentsFormSubmitValues) => {
+      if (!currentClassId) return;
+      setIsAddingStudents(true);
+      setAddStudentsError(null);
+      try {
+        const getRandomAvatar = () => {
+          const avatarNumber = Math.floor(Math.random() * 40) + 1;
+          const avatarName = `avatar-${String(avatarNumber).padStart(2, '0')}.png`;
+          return `/images/dashboard/student-avatars/${avatarName}`;
+        };
+
+        if (values.mode === 'single') {
+          const parts = values.studentName.split(' ');
+          await insertStudent({
+            first_name: parts[0],
+            last_name: parts.slice(1).join(' '),
+            class_id: currentClassId,
+            avatar: getRandomAvatar(),
+            gender: values.gender,
+          });
+        } else {
+          const lines = values.studentList.split('\n').filter((line) => line.trim() !== '');
+          const newStudents = lines.map((line) => {
+            let first_name: string;
+            let last_name: string;
+            if (line.includes(',')) {
+              const parts = line.split(',');
+              last_name = parts[0].trim();
+              first_name = parts[1].trim();
+            } else {
+              const parts = line.split(' ');
+              first_name = parts[0].trim();
+              last_name = parts.slice(1).join(' ').trim();
+            }
+            return { first_name, last_name, class_id: currentClassId, avatar: getRandomAvatar() };
+          });
+          await insertStudentsBulk(newStudents);
+        }
+      } catch (err) {
+        setAddStudentsError(err instanceof Error ? err.message : 'Failed to add students.');
+      } finally {
+        setIsAddingStudents(false);
+      }
+    },
+    [currentClassId]
+  );
 
   const handlePointsAwarded = useCallback(
     (info: AwardPointsInfo) => {
@@ -106,7 +175,10 @@ export default function DashboardClassModalsHost() {
         <AddStudentsModal
           isOpen
           onClose={closeModal}
-          classId={currentClassId}
+          onSubmit={handleAddStudentsSubmit}
+          isLoading={isAddingStudents}
+          error={addStudentsError}
+          nextStudentNumber={nextStudentNumber}
           onStudentAdded={() => void handleStudentAdded()}
         />
       )}

@@ -1,22 +1,36 @@
 'use client';
 
 import Modal from '@/components/ui/modals/Modal';
-import AddStudentsForm from '@/components/ui/forms/AddStudentsForm';
+import AddStudentsForm, { type AddStudentsFormSubmitValues } from '@/components/ui/forms/AddStudentsForm';
 
 interface AddStudentsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  classId: string;
+  onSubmit: (values: AddStudentsFormSubmitValues) => void | Promise<void>;
+  isLoading: boolean;
+  error?: string | null;
+  nextStudentNumber?: number | null;
   onStudentAdded: () => void;
 }
 
-export default function AddStudentsModal({ isOpen, onClose, classId, onStudentAdded }: AddStudentsModalProps) {
+export default function AddStudentsModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+  error,
+  nextStudentNumber,
+  onStudentAdded,
+}: AddStudentsModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <AddStudentsForm
         isOpen={isOpen}
         onClose={onClose}
-        classId={classId}
+        onSubmit={onSubmit}
+        isLoading={isLoading}
+        error={error}
+        nextStudentNumber={nextStudentNumber}
         onStudentAdded={onStudentAdded}
       />
     </Modal>

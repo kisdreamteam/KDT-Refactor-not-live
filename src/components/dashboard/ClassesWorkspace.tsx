@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import ConfirmationModal from '@/components/ui/modals/ConfirmationModal';
 import CreateClassModal from '@/components/ui/modals/CreateClassModal';
 import EditClassModal from '@/components/ui/modals/EditClassModal';
+import type { CreateClassFormValues } from '@/components/ui/forms/CreateClassForm';
 import { refreshDashboardClassesForUserAction } from '@/hooks/useDashboardClassesSync';
 import LoadingState from '@/components/ui/LoadingState';
 import EmptyState from '@/components/ui/EmptyState';
 import ClassCardsGrid from './ClassCardsGrid';
-import { fetchStudentCountsByClassIds, type ClassRecord } from '@/lib/api/classes';
+import { createClassForCurrentUser, fetchStudentCountsByClassIds, type ClassRecord } from '@/lib/api/classes';
 
 type ClassesWorkspaceProps = {
   classes: ClassRecord[];
@@ -38,6 +39,8 @@ export default function ClassesWorkspace({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteClassId, setDeleteClassId] = useState<string | null>(null);
   const [deleteClassName, setDeleteClassName] = useState<string>('');
+  const [isCreatingClass, setIsCreatingClass] = useState(false);
+  const [createClassError, setCreateClassError] = useState<string | null>(null);
 
   const isArchivedView = viewMode === 'archived';
   const classOwnerMap = new Map(classes.map((cls) => [cls.id, cls.is_owner !== false]));
@@ -80,10 +83,29 @@ export default function ClassesWorkspace({
 
   // Handle modal close with refresh
   const handleModalClose = () => {
-    console.log('Modal closing, refreshing classes...');
+    setCreateClassError(null);
     setIsModalOpen(false);
     void refreshDashboardClassesForUserAction();
   };
+
+  const handleCreateClassSubmit = useCallback(async (values: CreateClassFormValues) => {
+    setCreateClassError(null);
+    setIsCreatingClass(true);
+    try {
+      await createClassForCurrentUser({
+        className: values.className,
+        grade: values.grade,
+        schoolYear: values.schoolYear,
+        icon: values.icon,
+      });
+      handleModalClose();
+    } catch (err) {
+      console.error('Unexpected error creating class:', err);
+      setCreateClassError(err instanceof Error ? err.message : 'Failed to create class. Please try again.');
+    } finally {
+      setIsCreatingClass(false);
+    }
+  }, []);
 
   // Handle dropdown toggle
   const toggleDropdown = (classId: string, event: React.MouseEvent) => {
@@ -207,7 +229,13 @@ export default function ClassesWorkspace({
 
       {/* Create Class Modal - only for active view */}
       {!isArchivedView && (
-        <CreateClassModal isOpen={isModalOpen} onClose={handleModalClose} />
+        <CreateClassModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onSubmit={handleCreateClassSubmit}
+          isLoading={isCreatingClass}
+          error={createClassError}
+        />
       )}
 
       {/* Edit Class Modal */}

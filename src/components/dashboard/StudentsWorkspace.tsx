@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import ClassPointLogSlidePanel from '@/components/ui/ClassPointLogSlidePanel';
-import SeatingChartView from '@/components/dashboard/SeatingChartView';
-import SeatingChartEditorView from '@/components/dashboard/SeatingChartEditorView';
+import ClassPointLogSlidePanel from '@/components/dashboard/ClassPointLogSlidePanel';
+import SeatingChartView from './SeatingChartView';
+import SeatingChartEditorView from './SeatingChartEditorView';
 import StudentCardsGrid from '@/components/dashboard/StudentCardsGrid';
 import LoadingState from '@/components/ui/LoadingState';
 import ErrorState from '@/components/ui/ErrorState';

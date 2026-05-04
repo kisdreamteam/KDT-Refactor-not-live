@@ -14,6 +14,8 @@ import BaseBottomNav from '@/components/ui/BaseBottomNav';
 
 interface StudentsBottomNavProps {
   currentClassName: string | null;
+  currentView: 'grid' | 'seating';
+  onViewChange: (view: 'grid' | 'seating') => void;
   onTimerClick: () => void;
   onRandomClick: () => void;
   sortingDisabled?: boolean;
@@ -27,6 +29,8 @@ interface StudentsBottomNavProps {
 
 export default function StudentsBottomNav({
   currentClassName,
+  currentView,
+  onViewChange,
   onTimerClick,
   onRandomClick,
   sortingDisabled = false,
@@ -78,7 +82,15 @@ export default function StudentsBottomNav({
             }}
             stopPropagation={true}
           />
-          <ViewModeModal isOpen={isViewPopupOpen} onClose={() => setIsViewPopupOpen(false)} />
+          <ViewModeModal
+            isOpen={isViewPopupOpen}
+            onClose={() => setIsViewPopupOpen(false)}
+            currentView={currentView}
+            onViewChange={(view) => {
+              onViewChange(view);
+              setIsViewPopupOpen(false);
+            }}
+          />
         </div>
       )}
 

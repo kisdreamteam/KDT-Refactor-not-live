@@ -1,46 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Modal from '@/components/ui/modals/Modal';
 import ConfirmationModal from '@/components/ui/modals/ConfirmationModal';
-import { Student } from '@/lib/types';
 import AddStudentsModal from '@/components/ui/modals/AddStudentsModal';
 import { normalizeAvatarPath } from '@/lib/iconUtils';
-import { getSessionUser } from '@/lib/api/auth';
-import {
-  addClassCollaborator,
-  fetchClassById,
-  fetchStudentsForClassEdit,
-  getCurrentSessionUserId,
-  listClassCollaborators,
-  lookupTeacherByEmail,
-  removeClassCollaborator,
-  updateClassInfo,
-} from '@/lib/api/classes';
-import {
-  bulkUpdateStudents,
-  deleteCustomPointEventsByStudentIds,
-  fetchStudentIdsByClassIdForReset,
-  resetPointsByStudentIds,
-} from '@/lib/api/students';
-
-interface CollaboratorTeacher {
-  collaboratorRowId: string;
-  collaboratorId: string;
-  email: string;
-  name?: string;
-}
-
-function isKshcmNetEmail(email: string): boolean {
-  const e = email.trim().toLowerCase();
-  return e.endsWith('@kshcm.net');
-}
-
-interface StudentWithPhoto extends Student {
-  photo?: string;
-}
+import { useClassManagement } from '@/hooks/useClassManagement';
 
 export interface EditClassModalProps {
   isOpen: boolean;
@@ -50,36 +16,57 @@ export interface EditClassModalProps {
 }
 
 export function EditClassModalRoot({ isOpen, onClose, classId, onRefresh }: EditClassModalProps) {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'info' | 'students' | 'teachers' | 'settings'>('info');
-  const [className, setClassName] = useState('');
-  const [grade, setGrade] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState<string>('/images/dashboard/class-icons/icon-1.png');
   const [isIconDropdownOpen, setIsIconDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [students, setStudents] = useState<StudentWithPhoto[]>([]);
-  const [originalStudents, setOriginalStudents] = useState<StudentWithPhoto[]>([]);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [teachers, setTeachers] = useState<CollaboratorTeacher[]>([]);
-  const [newTeacherEmail, setNewTeacherEmail] = useState('');
-  const [pendingCollaborator, setPendingCollaborator] = useState<{
-    id: string;
-    name: string | null;
-    email: string;
-  } | null>(null);
-  const [showConfirmAddCollaborator, setShowConfirmAddCollaborator] = useState(false);
-  const [showNotFoundCollaborator, setShowNotFoundCollaborator] = useState(false);
-  const [showCollaboratorSuccess, setShowCollaboratorSuccess] = useState(false);
-  const [collaboratorSuccessName, setCollaboratorSuccessName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingData, setIsLoadingData] = useState(true);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
-  const [showValidationWarning, setShowValidationWarning] = useState(false);
-  const [studentsWithoutFirstName, setStudentsWithoutFirstName] = useState<StudentWithPhoto[]>([]);
-  const [showResetPointsPopup, setShowResetPointsPopup] = useState(false);
-  const [isResettingPoints, setIsResettingPoints] = useState(false);
-  const [isClassOwner, setIsClassOwner] = useState(true);
+  const {
+    className,
+    setClassName,
+    grade,
+    setGrade,
+    selectedIcon,
+    setSelectedIcon,
+    students,
+    setStudents,
+    originalStudents,
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
+    teachers,
+    newTeacherEmail,
+    setNewTeacherEmail,
+    pendingCollaborator,
+    setPendingCollaborator,
+    showConfirmAddCollaborator,
+    setShowConfirmAddCollaborator,
+    showNotFoundCollaborator,
+    setShowNotFoundCollaborator,
+    showCollaboratorSuccess,
+    setShowCollaboratorSuccess,
+    collaboratorSuccessName,
+    isLoading,
+    isLoadingData,
+    showSaveConfirmation,
+    setShowSaveConfirmation,
+    showValidationWarning,
+    setShowValidationWarning,
+    studentsWithoutFirstName,
+    showResetPointsPopup,
+    setShowResetPointsPopup,
+    isResettingPoints,
+    isClassOwner,
+    isAddingStudents,
+    addStudentsError,
+    nextStudentNumber,
+    submitAddStudents,
+    handleSaveInfo,
+    handleAddTeacher,
+    handleConfirmAddCollaborator,
+    handleRemoveTeacher,
+    handleSaveAllChanges,
+    handleResetPoints,
+    handleReturnToDashboard,
+  } = useClassManagement({ isOpen, classId, onRefresh, onClose });
 
   // Generate array of all available icons
   const availableIcons = Array.from({ length: 15 }, (_, i) => 
@@ -100,247 +87,6 @@ export function EditClassModalRoot({ isOpen, onClose, classId, onRefresh }: Edit
     }
   }, [isIconDropdownOpen]);
 
-  const fetchClassData = useCallback(async () => {
-    try {
-      setIsLoadingData(true);
-      const userId = await getCurrentSessionUserId();
-      const data = await fetchClassById(classId);
-      if (!data) {
-        console.error('Error fetching class');
-        return;
-      }
-
-      setClassName(data.name || '');
-      setGrade(data.grade || '');
-      setSelectedIcon(data.icon || '/images/dashboard/class-icons/icon-1.png');
-      setIsClassOwner(userId === data.teacher_id);
-    } catch (err) {
-      console.error('Unexpected error fetching class:', err);
-    } finally {
-      setIsLoadingData(false);
-    }
-  }, [classId]);
-
-  const fetchStudents = useCallback(async () => {
-    try {
-      const studentsData = await fetchStudentsForClassEdit(classId);
-
-      if (studentsData) {
-        // Sort by student number first (nulls last), then by first name alphabetically
-        const sortedStudents = [...studentsData].sort((a, b) => {
-          // Primary sort: student_number
-          // Handle null values - put them at the end
-          if (a.student_number === null && b.student_number === null) {
-            // Both null, sort by first name
-            return (a.first_name || '').localeCompare(b.first_name || '');
-          }
-          if (a.student_number === null) return 1; // a goes to end
-          if (b.student_number === null) return -1; // b goes to end
-          
-          // Both have numbers, compare them
-          if (a.student_number !== b.student_number) {
-            return a.student_number - b.student_number;
-          }
-          
-          // If student numbers are equal, sort by first name (secondary sort)
-          return (a.first_name || '').localeCompare(b.first_name || '');
-        });
-        
-        const typedStudents = sortedStudents as StudentWithPhoto[];
-        setStudents(typedStudents);
-        setOriginalStudents(JSON.parse(JSON.stringify(typedStudents))); // Deep copy for comparison
-        setHasUnsavedChanges(false);
-      } else {
-        setStudents([]);
-        setOriginalStudents([]);
-        setHasUnsavedChanges(false);
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching students:', err);
-      setStudents([]);
-      setOriginalStudents([]);
-      setHasUnsavedChanges(false);
-    }
-  }, [classId]);
-
-  const fetchTeachers = useCallback(async () => {
-    try {
-      const data = await listClassCollaborators(classId);
-
-      if (data && Array.isArray(data)) {
-        const list: CollaboratorTeacher[] = data.map(
-          (row: { row_id: string; collaborator_id: string; name: string | null; email: string }) => ({
-            collaboratorRowId: row.row_id,
-            collaboratorId: row.collaborator_id,
-            email: row.email,
-            name: row.name ?? undefined,
-          })
-        );
-        setTeachers(list);
-      } else {
-        setTeachers([]);
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching teachers:', err);
-      setTeachers([]);
-    }
-  }, [classId]);
-
-  // Fetch class data
-  useEffect(() => {
-    if (isOpen && classId) {
-      fetchClassData();
-      fetchStudents();
-      fetchTeachers();
-    }
-  }, [isOpen, classId, fetchClassData, fetchStudents, fetchTeachers]);
-
-  const handleSaveInfo = async () => {
-    if (!isClassOwner) {
-      alert('Only the primary class owner can edit class information.');
-      return;
-    }
-    if (!className.trim()) {
-      alert('Please enter a class name.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await updateClassInfo({
-        classId,
-        name: className.trim(),
-        grade: grade.trim(),
-        icon: selectedIcon,
-      });
-
-      onRefresh();
-      onClose();
-    } catch (err) {
-      console.error('Unexpected error updating class:', err);
-      alert('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAddTeacher = async () => {
-    if (!isClassOwner) {
-      alert('Only the primary class owner can manage collaborators.');
-      return;
-    }
-    if (!newTeacherEmail.trim()) {
-      alert('Please enter an email address.');
-      return;
-    }
-
-    const email = newTeacherEmail.trim().toLowerCase();
-
-    if (!isKshcmNetEmail(email)) {
-      alert('Please enter a valid @kshcm.net email address.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const sessionUser = await getSessionUser();
-      const myEmail = sessionUser?.email?.trim().toLowerCase();
-      if (myEmail && myEmail === email) {
-        alert('You cannot add yourself as a collaborator.');
-        return;
-      }
-
-      const row = await lookupTeacherByEmail(email);
-      if (!row || !row.id) {
-        setShowNotFoundCollaborator(true);
-        return;
-      }
-
-      if (teachers.some((t) => t.collaboratorId === row.id)) {
-        alert('That teacher is already a collaborator on this class.');
-        return;
-      }
-
-      setPendingCollaborator({
-        id: row.id,
-        name: row.name,
-        email: row.email,
-      });
-      setShowConfirmAddCollaborator(true);
-    } catch (err) {
-      console.error('Unexpected error adding teacher:', err);
-      alert('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleConfirmAddCollaborator = async (pending: {
-    id: string;
-    name: string | null;
-    email: string;
-  }) => {
-    if (!isClassOwner) {
-      alert('Only the primary class owner can manage collaborators.');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      await addClassCollaborator(classId, pending.id);
-
-      const displayName = pending.name?.trim() || pending.email;
-      setCollaboratorSuccessName(displayName);
-      setNewTeacherEmail('');
-      await fetchTeachers();
-      setShowCollaboratorSuccess(true);
-      onRefresh();
-    } catch (err) {
-      console.error('Unexpected error confirming collaborator:', err);
-      if (typeof err === 'object' && err && 'code' in err && (err as { code?: string }).code === '23505') {
-        alert('That teacher is already a collaborator on this class.');
-      } else {
-        alert('An unexpected error occurred. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRemoveTeacher = async (collaboratorRowId: string, label: string) => {
-    if (!isClassOwner) {
-      alert('Only the primary class owner can manage collaborators.');
-      return;
-    }
-    if (!confirm(`Are you sure you want to remove ${label} from this class?`)) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await removeClassCollaborator(collaboratorRowId);
-
-      await fetchTeachers();
-      onRefresh();
-    } catch (err) {
-      console.error('Unexpected error removing teacher:', err);
-      alert('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGenderChange = (studentId: string, newGender: string | null) => {
-    // Update local state only, mark as changed
-    setStudents(prevStudents =>
-      prevStudents.map(student =>
-        student.id === studentId
-          ? { ...student, gender: newGender }
-          : student
-      )
-    );
-    setHasUnsavedChanges(true);
-  };
-
   const handleGenderToggle = (studentId: string, targetGender: 'Boy' | 'Girl') => {
     // Get current gender from state to ensure we have the latest value
     setStudents(prevStudents => {
@@ -356,71 +102,6 @@ export function EditClassModalRoot({ isOpen, onClose, classId, onRefresh }: Edit
       );
     });
     setHasUnsavedChanges(true);
-  };
-
-  const handleSaveAllChanges = async () => {
-    setIsLoading(true);
-    try {
-      // Validate all changes before saving - collect students without first names
-      const invalidStudents = students.filter(student => !student.first_name?.trim());
-      
-      if (invalidStudents.length > 0) {
-        setStudentsWithoutFirstName(invalidStudents);
-        setShowValidationWarning(true);
-        setIsLoading(false);
-        return;
-      }
-
-      const updates = students.flatMap((student) => {
-        const originalStudent = originalStudents.find(s => s.id === student.id);
-        if (!originalStudent) return [];
-
-        // Check if any field has changed
-        const hasChanged = 
-          student.first_name !== originalStudent.first_name ||
-          student.last_name !== originalStudent.last_name ||
-          student.student_number !== originalStudent.student_number ||
-          student.gender !== originalStudent.gender;
-
-        if (!hasChanged) return [];
-
-        // Prepare update data
-        const updateData: {
-          id: string;
-          first_name: string;
-          last_name: string | null;
-          student_number: number | null;
-          gender: string | null;
-        } = {
-          id: student.id,
-          first_name: student.first_name.trim(),
-          last_name: student.last_name?.trim() || null,
-          student_number: student.student_number,
-          gender: student.gender
-        };
-        return [updateData];
-      });
-      await bulkUpdateStudents(updates);
-      
-      // Refresh students and reset change tracking
-      await fetchStudents();
-      setHasUnsavedChanges(false);
-      
-      // Show confirmation popup instead of alert
-      setShowSaveConfirmation(true);
-    } catch (err) {
-      console.error('Error saving changes:', err);
-      alert('Failed to save some changes. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleReturnToDashboard = () => {
-    setShowSaveConfirmation(false);
-    onClose();
-    onRefresh();
-    router.push('/dashboard');
   };
 
   const handleContinueEditing = () => {
@@ -443,51 +124,6 @@ export function EditClassModalRoot({ isOpen, onClose, classId, onRefresh }: Edit
       }))
     );
     setHasUnsavedChanges(true);
-  };
-
-  // Handle reset points
-  const handleResetPoints = async (deleteEvents: boolean) => {
-    if (!isClassOwner) {
-      alert('Only the primary class owner can reset points.');
-      return;
-    }
-    if (isResettingPoints) return;
-    
-    setIsResettingPoints(true);
-    
-    try {
-      const studentIds = await fetchStudentIdsByClassIdForReset(classId);
-      
-      if (studentIds.length === 0) {
-        alert('No students found in this class.');
-        setIsResettingPoints(false);
-        return;
-      }
-      
-      // If deleteEvents is true, delete all point events for these students
-      if (deleteEvents) {
-        await deleteCustomPointEventsByStudentIds(studentIds);
-      }
-      
-      // Reset all students' points to 0
-      await resetPointsByStudentIds(studentIds);
-      
-      // Refresh data
-      await fetchStudents();
-      if (onRefresh) {
-        onRefresh();
-      }
-      
-      // Close popup and show success message
-      setShowResetPointsPopup(false);
-      alert(`Points have been reset successfully.${deleteEvents ? ' All point events have been deleted.' : ' Point events have been preserved.'}`);
-      
-    } catch (err) {
-      console.error('Unexpected error resetting points:', err);
-      alert('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsResettingPoints(false);
-    }
   };
 
   return (
@@ -1030,9 +666,11 @@ export function EditClassModalRoot({ isOpen, onClose, classId, onRefresh }: Edit
       <AddStudentsModal
         isOpen={isAddStudentModalOpen}
         onClose={() => setIsAddStudentModalOpen(false)}
-        classId={classId}
+        onSubmit={submitAddStudents}
+        isLoading={isAddingStudents}
+        error={addStudentsError}
+        nextStudentNumber={nextStudentNumber}
         onStudentAdded={async () => {
-          await fetchStudents(); // Refresh the students list
           setIsAddStudentModalOpen(false);
           setHasUnsavedChanges(false); // Reset change tracking after adding
         }}

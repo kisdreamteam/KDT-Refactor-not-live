@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { PointCategory } from '@/lib/types';
 import { useAvailablePositiveIcons, useAvailableNegativeIcons } from '@/hooks/useAvailableIcons';
-import { updateSkill } from '@/lib/api/skills';
+import { useSkillManagement } from '@/hooks/useSkillManagement';
 
 interface EditSkillFormProps {
   isOpen: boolean;
@@ -40,6 +40,8 @@ export default function EditSkillForm({ isOpen, onClose, skill, refreshCategorie
       setSelectedIcon(skill.icon || defaultIcon);
     }
   }, [isOpen, skill]);
+
+  const { updateSkill } = useSkillManagement();
 
   const handleUpdateSkill = async () => {
     if (!skill) return;

@@ -7,7 +7,6 @@ import { formatPointLogDateDDMMYYYY } from '@/hooks/useClassPointLog';
 export type ClassPointLogSlidePanelProps = {
   isOpen: boolean;
   position: 'fixed' | 'absolute';
-  /** Distance from right edge (px), e.g. 72 to clear the canvas toolbar */
   rightPx: number;
   topPx: number;
   bottomPx: number;
@@ -88,9 +87,7 @@ export default function ClassPointLogSlidePanel({
                   <div className="text-gray-900 truncate">{row.studentName}</div>
                   <div className="text-gray-700 truncate">{row.reason}</div>
                   <div className="text-gray-700">{formatPointLogDateDDMMYYYY(row.createdAt)}</div>
-                  <div
-                    className={`text-right font-semibold ${row.points >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                  >
+                  <div className={`text-right font-semibold ${row.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {row.points > 0 ? `+${row.points}` : row.points}
                   </div>
                 </div>
@@ -136,4 +133,3 @@ export default function ClassPointLogSlidePanel({
     </div>
   );
 }
-

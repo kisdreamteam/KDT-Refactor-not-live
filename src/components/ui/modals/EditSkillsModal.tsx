@@ -5,7 +5,7 @@ import Modal from '@/components/ui/modals/Modal';
 import EditSkillModal from '@/components/ui/modals/EditSkillModal';
 import EditSkillCard from '@/components/dashboard/cards/EditSkillCard';
 import { PointCategory } from '@/lib/types';
-import { archiveSkill } from '@/lib/api/skills';
+import { useSkillManagement } from '@/hooks/useSkillManagement';
 
 interface EditSkillsModalProps {
   isOpen: boolean;
@@ -26,7 +26,7 @@ export default function EditSkillsModal({
   refreshCategories,
   skillType,
 }: EditSkillsModalProps) {
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const { archiveSkill, deletingSkillId } = useSkillManagement();
   const [editingSkill, setEditingSkill] = useState<PointCategory | null>(null);
   const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null);
   const [skillToDelete, setSkillToDelete] = useState<PointCategory | null>(null);
@@ -62,14 +62,10 @@ export default function EditSkillsModal({
     if (!skillToDelete) return;
 
     const skillId = skillToDelete.id;
-    setIsDeleting(skillId);
     // Keep confirmation modal open during deletion to show loading state
 
     try {
-      await archiveSkill({
-        skillId,
-        classId,
-      });
+      await archiveSkill(skillId, classId);
 
       console.log('Skill successfully deleted:', skillId);
 
@@ -91,7 +87,6 @@ export default function EditSkillsModal({
       alert(errorMessage);
       setSkillToDelete(null); // Close confirmation modal
     } finally {
-      setIsDeleting(null);
     }
   };
 
@@ -142,7 +137,7 @@ export default function EditSkillsModal({
               <div className="grid grid-cols-4 gap-3">
                 {filteredSkills.map((category) => {
                   const pointsValue = getPointsValue(category);
-                  const isDeletingThis = isDeleting === category.id;
+                  const isDeletingThis = deletingSkillId === category.id;
                   const isHovered = hoveredSkillId === category.id;
 
                   return (
@@ -208,7 +203,7 @@ export default function EditSkillsModal({
             
             {/* Modal content */}
             <div className="p-6 text-center py-6">
-              {isDeleting && skillToDelete && isDeleting === skillToDelete.id ? (
+              {deletingSkillId && skillToDelete && deletingSkillId === skillToDelete.id ? (
                 // Show loading state during deletion
                 <div>
                   <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4">
@@ -252,7 +247,7 @@ export default function EditSkillsModal({
                     <button
                       type="button"
                       onClick={handleCancelDelete}
-                      disabled={isDeleting !== null}
+                      disabled={deletingSkillId !== null}
                       className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       No
@@ -260,7 +255,7 @@ export default function EditSkillsModal({
                     <button
                       type="button"
                       onClick={handleConfirmDelete}
-                      disabled={isDeleting !== null}
+                      disabled={deletingSkillId !== null}
                       className="px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Yes
