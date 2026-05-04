@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import Modal from '@/components/ui/modals/Modal';
-import AddSkillModal from '@/components/dashboard/AddSkillModal';
+import AddSkillModal from '@/components/dashboard/modals/AddSkillModal';
 import EditSkillsModal from '@/components/dashboard/modals/EditSkillsModal';
 import SkillCard from '@/components/dashboard/cards/SkillCard';
 import SkillActionCard from '@/components/dashboard/cards/SkillActionCard';

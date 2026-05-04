@@ -12,10 +12,10 @@ import {
 } from '@/lib/events/students';
 import { normalizeClassIconPath } from '@/lib/iconUtils';
 import AddStudentsModal from '@/components/dashboard/modals/AddStudentsModal';
-import AwardPointsModal from './AwardPointsModal';
+import AwardPointsModal from '@/components/dashboard/modals/AwardPointsModal';
 import EditStudentModal from '@/components/dashboard/modals/EditStudentModal';
 import type { EditStudentModalSubmitValues } from '@/components/dashboard/modals/EditStudentModal';
-import PointsAwardedConfirmationModal from './PointsAwardedConfirmationModal';
+import PointsAwardedConfirmationModal from '@/components/dashboard/modals/PointsAwardedConfirmationModal';
 import {
   getNextStartingStudentNumber,
   insertStudent,
