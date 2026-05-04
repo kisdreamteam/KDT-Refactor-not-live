@@ -5,7 +5,7 @@ You must strictly adhere to the established architecture. Do not blur the lines 
 
 ### The 3-Tier Visual Architecture
 * **Tier 1 (Scaffolding):** Layouts, Shells, Navbars (`TopNav`, `LeftNav`). These handle application layout and routing bounds, not complex business logic.
-* **Tier 2 (The Stage):** Main view containers (e.g., `DashboardMainStage`). Determines *which* Tier 3 components to display based on the current UI state.
+* **Tier 2 (View Switch):** Main view containers (e.g., `DashboardViewSwitch`). Determines *which* Tier 3 components to display based on the current UI state.
 * **Tier 3 (The Actors):** Pure UI components (`StudentCard`, `ActionButtons`, modals). They receive data, render UI, and trigger events, but rarely manage their own complex state.
 
 ### The 3-Layer Data Architecture

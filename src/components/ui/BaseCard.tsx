@@ -1,7 +1,7 @@
 "use client";
 
 import type { HTMLAttributes, ReactNode, MouseEvent, KeyboardEvent } from "react";
-import IconSettingsWheel from "@/components/iconsCustom/iconSettingsWheel";
+import IconSettingsWheel from "@/components/ui/icons/iconSettingsWheel";
 
 export type BaseCardVariant = "default" | "action";
 

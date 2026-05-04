@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { ViewPreference } from '@/api/auth';
+import type { ViewPreference } from '@/lib/api/auth';
 
 export type SortOption = 'number' | 'alphabetical' | 'points';
 

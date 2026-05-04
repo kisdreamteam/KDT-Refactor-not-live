@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchTeacherProfileById, getSessionUserId, type TeacherProfile, type ViewPreference } from '@/api/auth';
+import { fetchTeacherProfileById, getSessionUserId, type TeacherProfile, type ViewPreference } from '@/lib/api/auth';
 import { useUserStore } from '@/stores/useUserStore';
 import { usePreferenceStore } from '@/stores/usePreferenceStore';
 

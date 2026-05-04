@@ -1,0 +1,210 @@
+import { useCallback, useMemo, useState } from 'react';
+import type { PointCategory, Student } from '@/lib/types';
+import {
+  getAwardMode,
+  resolveAwardTargetStudentIds,
+  type AwardTargetContext,
+  type AwardMode,
+} from '@/lib/awardPointsService';
+import { awardCustomPointsToStudents, awardPointsToStudents, getAuthenticatedUserId } from '@/lib/api/points';
+import { syncStudentsByClassCacheFromStore } from '@/hooks/useDashboardStudentSync';
+import { useDashboardStore } from '@/stores/useDashboardStore';
+
+interface UseAwardPointsServiceParams {
+  context: AwardTargetContext;
+  student: Student | null;
+  className?: string;
+  classIcon?: string;
+  onRefresh?: () => void;
+  onPointsAwarded?: (awardInfo: {
+    studentAvatar: string;
+    studentFirstName: string;
+    points: number;
+    categoryName: string;
+    categoryIcon?: string;
+  }) => void;
+  onAwardComplete?: (selectedIds: string[], type: 'classes' | 'students') => void;
+  onClose: () => void;
+  /** When true, do not call `onRefresh` after a successful award (dashboard roster already updated optimistically). */
+  skipRefreshAfterAward?: boolean;
+}
+
+export function useAwardPointsService({
+  context,
+  student,
+  className,
+  classIcon,
+  onRefresh,
+  onPointsAwarded,
+  onAwardComplete,
+  onClose,
+  skipRefreshAfterAward = false,
+}: UseAwardPointsServiceParams) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const mode = useMemo<AwardMode>(() => getAwardMode(context), [context]);
+
+  const afterAwardSuccess = useCallback(
+    (pointsValue: number, categoryName: string, categoryIcon?: string) => {
+      if (mode === 'multiClass' && context.selectedClassIds && onAwardComplete) {
+        onAwardComplete(context.selectedClassIds, 'classes');
+      }
+      if (mode === 'multiStudent' && context.selectedStudentIds && onAwardComplete) {
+        onAwardComplete(context.selectedStudentIds, 'students');
+      }
+
+      if (onRefresh && !skipRefreshAfterAward) {
+        onRefresh();
+      }
+
+      if (onPointsAwarded) {
+        if (mode === 'multiStudent' && context.selectedStudentIds) {
+          onPointsAwarded({
+            studentAvatar: classIcon || '/images/dashboard/student-avatars/avatar-01.png',
+            studentFirstName: `${context.selectedStudentIds.length} ${
+              context.selectedStudentIds.length === 1 ? 'Student' : 'Students'
+            }`,
+            points: pointsValue,
+            categoryName,
+            categoryIcon,
+          });
+        } else if (mode === 'wholeClass') {
+          onPointsAwarded({
+            studentAvatar: classIcon || '/images/dashboard/student-avatars/avatar-01.png',
+            studentFirstName: className || 'Whole Class',
+            points: pointsValue,
+            categoryName,
+            categoryIcon,
+          });
+        } else if (student) {
+          onPointsAwarded({
+            studentAvatar: student.avatar || '/images/dashboard/student-avatars/avatar-01.png',
+            studentFirstName: student.first_name,
+            points: pointsValue,
+            categoryName,
+            categoryIcon,
+          });
+        }
+      }
+
+      onClose();
+    },
+    [
+      mode,
+      context.selectedClassIds,
+      context.selectedStudentIds,
+      onAwardComplete,
+      onRefresh,
+      onPointsAwarded,
+      classIcon,
+      className,
+      student,
+      onClose,
+      skipRefreshAfterAward,
+    ]
+  );
+
+  const awardSkill = useCallback(
+    async (category: PointCategory) => {
+      setIsSubmitting(true);
+      setError(null);
+      const points = category.points ?? category.default_points ?? 0;
+      try {
+        const studentIds = await resolveAwardTargetStudentIds(context);
+        if (studentIds.length === 0) {
+          alert('No students found for the current selection.');
+          return false;
+        }
+
+        const { applyPointsDelta } = useDashboardStore.getState();
+        applyPointsDelta(studentIds, points);
+        syncStudentsByClassCacheFromStore();
+
+        try {
+          await awardPointsToStudents({
+            studentIds,
+            categoryId: category.id,
+            points,
+            memo: '',
+          });
+        } catch (apiErr) {
+          applyPointsDelta(studentIds, -points);
+          syncStudentsByClassCacheFromStore();
+          throw apiErr;
+        }
+
+        afterAwardSuccess(points, category.name, category.icon);
+        return true;
+      } catch (err) {
+        console.error('Unexpected error awarding points:', err);
+        setError('Failed to award points. Please try again.');
+        alert('Failed to award points. Please try again.');
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [afterAwardSuccess, context]
+  );
+
+  const awardCustom = useCallback(
+    async (customPoints: number, customMemo: string) => {
+      if (customPoints === 0 || customPoints === null || customPoints === undefined || isNaN(customPoints)) {
+        alert('Please enter a valid point value (positive or negative, but not zero).');
+        return false;
+      }
+
+      setIsSubmitting(true);
+      setError(null);
+      try {
+        const teacherId = await getAuthenticatedUserId();
+        if (!teacherId) {
+          alert('You must be logged in to award custom points.');
+          return false;
+        }
+
+        const studentIds = await resolveAwardTargetStudentIds(context);
+        if (studentIds.length === 0) {
+          alert('No students found for the current selection.');
+          return false;
+        }
+
+        const { applyPointsDelta } = useDashboardStore.getState();
+        applyPointsDelta(studentIds, customPoints);
+        syncStudentsByClassCacheFromStore();
+
+        try {
+          await awardCustomPointsToStudents({
+            studentIds,
+            teacherId,
+            points: customPoints,
+            memo: customMemo,
+          });
+        } catch (apiErr) {
+          applyPointsDelta(studentIds, -customPoints);
+          syncStudentsByClassCacheFromStore();
+          throw apiErr;
+        }
+
+        afterAwardSuccess(customPoints, customMemo || 'Custom Points');
+        return true;
+      } catch (err) {
+        console.error('Unexpected error awarding custom points:', err);
+        setError('Failed to award custom points. Please try again.');
+        alert('Failed to award custom points. Please try again.');
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [afterAwardSuccess, context]
+  );
+
+  return {
+    isSubmitting,
+    error,
+    awardSkill,
+    awardCustom,
+  };
+}

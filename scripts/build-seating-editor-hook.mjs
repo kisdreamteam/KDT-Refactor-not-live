@@ -4,8 +4,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
-const editorPath = path.join(root, 'src/components/features/dashboard/SeatingChartEditorView.tsx');
-const outPath = path.join(root, 'src/features/seating/hooks/useSeatingChart.ts');
+const editorPath = path.join(root, 'src/components/dashboard/SeatingChartEditorView.tsx');
+const outPath = path.join(root, 'src/hooks/useSeatingChart.ts');
 
 const lines = fs.readFileSync(editorPath, 'utf8').split(/\r?\n/);
 
@@ -44,9 +44,9 @@ import {
   subscribeToSeatingChartRowUpdates,
   updateSeatingGroupFields,
   updateSeatingGroupsLayoutBatch,
-} from '@/api/seating';
-import type { GroupAssignment } from '@/api/seating';
-import { getCoordinates, getNextIndex, getSlotIndex } from '@/features/seating/services/seatingLogic';
+} from '@/lib/api/seating';
+import type { GroupAssignment } from '@/lib/api/seating';
+import { getCoordinates, getNextIndex, getSlotIndex } from '@/lib/seatingLogic';
 import { STUDENT_EVENTS, emitSeatingEditMode } from '@/lib/events/students';
 
 `;

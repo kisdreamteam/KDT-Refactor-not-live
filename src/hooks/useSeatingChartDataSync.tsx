@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useSeatingStore } from '@/stores/useSeatingStore';
-import { fetchSeatingGroupsWithAssignments, fetchSeatingLayoutsByClassId } from '@/api/seating';
+import { fetchSeatingGroupsWithAssignments, fetchSeatingLayoutsByClassId } from '@/lib/api/seating';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 
 export async function refreshSeatingLayoutsForClass(classId: string): Promise<void> {

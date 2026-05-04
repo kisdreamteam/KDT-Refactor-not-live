@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import IconEye from '@/components/iconsCustom/iconEye';
+import IconEye from '@/components/ui/icons/iconEye';
 import TextInput from '@/components/ui/TextInput';
 
 interface PasswordInputProps {

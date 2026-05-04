@@ -22,8 +22,8 @@ Assignment logic primarily lives in the **SeatingChartEditorView** and operates 
 - **Auto-Append:** Adding a student without a target uses `getNextSeatIndex`, which is `max(current_indices) + 1`. This does NOT fill holes automatically.
 - **Column Expansion:** The "Expand in Column" feature uses `getNextSeatIndexInColumn` to find the next vertical slot in a specific column rather than appending to the end of the reading order.
 - **Persistence:** Changes are saved in a batch call to the API.
-- **Renumbering:** Layer 3 exposes `renumberSeatIndicesForGroup` in `@/api/seating` (contiguous `seat_index` 1..N in reading order). `SeatingChartEditorView` wraps that API in a callback, but **nothing in the editor UI currently calls it**, so day-to-day edits do not auto-renumber. Treat this as **available plumbing / future use** unless you wire it into specific operations.
+- **Renumbering:** Layer 3 exposes `renumberSeatIndicesForGroup` in `@/lib/api/seating` (contiguous `seat_index` 1..N in reading order). `SeatingChartEditorView` wraps that API in a callback, but **nothing in the editor UI currently calls it**, so day-to-day edits do not auto-renumber. Treat this as **available plumbing / future use** unless you wire it into specific operations.
 
 ## 4. Architectural Implementation Note
 - **SeatingChartView (Tier 3):** Must remain "Dumb." It only reads `seat_index` and renders students at calculated coordinates.
-- **SeatingLogic Service (Layer 2):** All math above (Coordinate conversion, Next Index calculation) should be centralized in `src/features/seating/services/seatingLogic.ts`.
+- **Seating index math (pure helpers):** Coordinate conversion and next-index calculation live in `src/lib/seatingLogic.ts` (used by the seating editor hook and canvas).

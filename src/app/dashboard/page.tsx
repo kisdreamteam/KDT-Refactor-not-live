@@ -1,5 +1,10 @@
-import DashboardModule from '@/modules/dashboard/DashboardModule';
+import DashboardLayout from '@/layouts/dashboard/DashboardLayout';
+import DashboardViewSwitch from '@/components/dashboard/DashboardViewSwitch';
 
 export default function DashboardPage() {
-  return <DashboardModule />;
+  return (
+    <DashboardLayout>
+      <DashboardViewSwitch />
+    </DashboardLayout>
+  );
 }

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
-const srcPath = path.join(root, 'src/components/features/dashboard/SeatingChartEditorView.tsx');
+const srcPath = path.join(root, 'src/components/dashboard/SeatingChartEditorView.tsx');
 const lines = fs.readFileSync(srcPath, 'utf8').split(/\r?\n/);
 // JSX + effects tail: lines 1833-2499 (1-based) = indices 1832-2498
 const tail = lines.slice(1832, 2499).join('\n');
@@ -16,14 +16,14 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useShallow } from 'zustand/react/shallow';
 import { useSeatingStore } from '@/stores/useSeatingStore';
 import { Student } from '@/lib/types';
-import CreateLayoutModal from '@/components/modals/CreateLayoutModal';
-import EditGroupModal from '@/components/modals/EditGroupModal';
-import ConfirmationModal from '@/components/modals/ConfirmationModal';
-import SuccessNotificationModal from '@/components/modals/SuccessNotificationModal';
-import IconSettingsWheel from '@/components/iconsCustom/iconSettingsWheel';
-import IconEditPencil from '@/components/iconsCustom/iconEditPencil';
+import CreateLayoutModal from '@/components/ui/modals/CreateLayoutModal';
+import EditGroupModal from '@/components/ui/modals/EditGroupModal';
+import ConfirmationModal from '@/components/ui/modals/ConfirmationModal';
+import SuccessNotificationModal from '@/components/ui/modals/SuccessNotificationModal';
+import IconSettingsWheel from '@/components/ui/icons/iconSettingsWheel';
+import IconEditPencil from '@/components/ui/icons/iconEditPencil';
 import SeatingCanvasDecor from './seating/SeatingCanvasDecor';
-import { useSeatingChartEditor } from '@/features/seating/hooks/useSeatingChart';
+import { useSeatingChartEditor } from '@/hooks/useSeatingChart';
 
 interface SeatingChartEditorViewProps {
   classId: string;

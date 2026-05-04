@@ -17,4 +17,4 @@ This folder contains Next.js route entry points and top-level route shells.
 - Keep route concerns (segment structure, metadata, route-level wrappers) here.
 
 ## Typical Imports
-- Primarily imports from `src/modules` and route-level wrappers.
+- Primarily imports from `src/components/layout`, `src/components/dashboard`, `src/components/ui`, and route-level wrappers.

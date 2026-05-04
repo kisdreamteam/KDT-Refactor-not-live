@@ -6,20 +6,36 @@ interface LayoutStore {
   activeView: ViewState;
   isSidebarOpen: boolean;
   isMultiSelectMode: boolean;
+  isEditMode: boolean;
+  isTimerOpen: boolean;
+  isRandomOpen: boolean;
+  isEditClassModalOpen: boolean;
   setActiveView: (view: ViewState) => void;
+  setEditMode: (v: boolean) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (isOpen: boolean) => void;
   setMultiSelectMode: (v: boolean) => void;
   toggleMultiSelectMode: () => void;
+  setTimerOpen: (v: boolean) => void;
+  setRandomOpen: (v: boolean) => void;
+  setEditClassModalOpen: (v: boolean) => void;
 }
 
 export const useLayoutStore = create<LayoutStore>((set) => ({
   activeView: 'classes',
   isSidebarOpen: true,
   isMultiSelectMode: false,
+  isEditMode: false,
+  isTimerOpen: false,
+  isRandomOpen: false,
+  isEditClassModalOpen: false,
   setActiveView: (view) => set({ activeView: view }),
+  setEditMode: (isEditMode) => set({ isEditMode }),
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
   setMultiSelectMode: (isMultiSelectMode) => set({ isMultiSelectMode }),
   toggleMultiSelectMode: () => set((state) => ({ isMultiSelectMode: !state.isMultiSelectMode })),
+  setTimerOpen: (isTimerOpen) => set({ isTimerOpen }),
+  setRandomOpen: (isRandomOpen) => set({ isRandomOpen }),
+  setEditClassModalOpen: (isEditClassModalOpen) => set({ isEditClassModalOpen }),
 }));

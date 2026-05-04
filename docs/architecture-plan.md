@@ -15,7 +15,7 @@ This defines how React components are structured and rendered.
 
 ### Tier 2: The Main Stage (The Sets)
 * **Responsibility:** Layout containers that decide *what* gets rendered based on the active view.
-* **Components:** `DashboardMainStage`, `ClassView`, `StudentView`, `SeatingChart`.
+* **Components:** `DashboardViewSwitch`, `ClassView`, `StudentView`, `SeatingChart`.
 * **Rules:** Subscribes to Zustand UI state via strict selectors (e.g., `useDashboardUIStore(state => state.activeView)`). Acts as a grid or container for Tier 3 components.
 
 ### Tier 3: The Actors (Pure UI Components)

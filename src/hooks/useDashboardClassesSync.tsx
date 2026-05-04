@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSessionUserId } from '@/api/auth';
-import { fetchAccessibleClassesForUser } from '@/api/classes';
+import { getSessionUserId } from '@/lib/api/auth';
+import { fetchAccessibleClassesForUser } from '@/lib/api/classes';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 
 export type RefreshDashboardClassesOptions = {
