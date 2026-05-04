@@ -11,7 +11,7 @@ import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 
-export default function BottomNavMulti() {
+export default function MultiSelectBottomNav() {
   const [selectedCount, setSelectedCount] = useState(0);
   const [hasRecentlySelected, setHasRecentlySelected] = useState(false);
 

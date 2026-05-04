@@ -12,7 +12,7 @@ import IconSettingsWheel from '@/components/ui/icons/iconSettingsWheel';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
 
-interface BottomNavStudentsProps {
+interface StudentsBottomNavProps {
   currentClassName: string | null;
   onTimerClick: () => void;
   onRandomClick: () => void;
@@ -25,7 +25,7 @@ interface BottomNavStudentsProps {
   onToggleMultiSelect: () => void;
 }
 
-export default function BottomNavStudents({
+export default function StudentsBottomNav({
   currentClassName,
   onTimerClick,
   onRandomClick,
@@ -36,7 +36,7 @@ export default function BottomNavStudents({
   onSortChange,
   onLogout,
   onToggleMultiSelect,
-}: BottomNavStudentsProps) {
+}: StudentsBottomNavProps) {
   const [isSortPopupOpen, setIsSortPopupOpen] = useState(false);
   const sortButtonRef = useRef<HTMLDivElement>(null);
   const [isSettingsPopupOpen, setIsSettingsPopupOpen] = useState(false);

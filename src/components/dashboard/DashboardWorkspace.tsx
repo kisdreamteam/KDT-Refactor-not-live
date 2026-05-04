@@ -7,9 +7,9 @@ import IconEditPencil from '@/components/ui/icons/iconEditPencil';
 import IconPresentationBoard from '@/components/ui/icons/iconPresentationBoard';
 import IconDocumentClock from '@/components/ui/icons/iconDocumentClock';
 import TopNav from '@/components/layout/TopNav';
-import BottomNavStudents from '@/components/layout/BottomNavStudents';
-import BottomNavMulti from '@/components/layout/BottomNavMulti';
-import SeatingEditBottomNavBridge from '@/components/layout/SeatingEditBottomNavBridge';
+import StudentsBottomNav from '@/components/layout/StudentsBottomNav';
+import MultiSelectBottomNav from '@/components/layout/MultiSelectBottomNav';
+import SeatingEditorBottomNavBridge from '@/components/layout/SeatingEditorBottomNavBridge';
 import Timer from '@/components/dashboard/tools/Timer';
 import Random from '@/components/dashboard/tools/Random';
 import CanvasToolbar from '@/components/ui/CanvasToolbar';
@@ -216,15 +216,15 @@ export default function DashboardWorkspace({
       {showBottomNav && (
         <div className="col-start-1 col-span-2 row-start-3 overflow-visible relative z-20 w-full">
           {isSeatingView && isEditMode ? (
-            <SeatingEditBottomNavBridge
+            <SeatingEditorBottomNavBridge
               currentClassName={currentClassName}
               classId={classId}
               onEditClass={onEditClass}
             />
           ) : isMultiSelectMode ? (
-            <BottomNavMulti />
+            <MultiSelectBottomNav />
           ) : (
-            <BottomNavStudents
+            <StudentsBottomNav
               currentClassName={currentClassName}
               onTimerClick={onTimerClick}
               onRandomClick={onRandomClick}

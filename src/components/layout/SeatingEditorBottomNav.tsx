@@ -9,13 +9,13 @@ import IconAddPlus from '@/components/ui/icons/iconAddPlus';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
 
-interface BottomNavSeatingEditProps extends SeatingEditBottomNavViewProps {
+interface SeatingEditorBottomNavProps extends SeatingEditBottomNavViewProps {
   currentClassName: string | null;
   classId?: string | null;
   onEditClass?: () => void;
 }
 
-export default function BottomNavSeatingEdit({
+export default function SeatingEditorBottomNav({
   currentClassName,
   classId = null,
   onEditClass,
@@ -32,7 +32,7 @@ export default function BottomNavSeatingEdit({
   onDeleteAllGroups,
   onAddGroups,
   onAutoAssignSeats,
-}: BottomNavSeatingEditProps) {
+}: SeatingEditorBottomNavProps) {
   const [isViewSettingsMenuOpen, setIsViewSettingsMenuOpen] = useState(false);
   const viewSettingsButtonRef = useRef<HTMLDivElement>(null);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);

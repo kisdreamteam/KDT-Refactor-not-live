@@ -3,7 +3,7 @@
 import { useSeatingStore } from '@/stores/useSeatingStore';
 import { Student } from '@/lib/types';
 
-export default function LeftNavSeatingChartEdit() {
+export default function SeatingEditorLeftNav() {
   const unseatedStudents = useSeatingStore((s) => s.unseatedStudents);
   const setSelectedStudentForGroup = useSeatingStore((s) => s.setSelectedStudentForGroup);
 

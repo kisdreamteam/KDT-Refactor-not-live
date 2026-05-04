@@ -9,7 +9,7 @@ import { DashboardClassesFilterSync } from '@/hooks/useDashboardClassesFilterSyn
 import { refreshDashboardClassesForUserAction } from '@/hooks/useDashboardClassesSync';
 import { usePreferenceStore } from '@/stores/usePreferenceStore';
 import LeftNav from '@/components/layout/LeftNav';
-import LeftNavSeatingChartEdit from '@/components/layout/LeftNavSeatingChartEdit';
+import SeatingEditorLeftNav from '@/components/layout/SeatingEditorLeftNav';
 import DashboardWorkspace from '@/components/dashboard/DashboardWorkspace';
 import EditClassModal from '@/components/ui/modals/EditClassModal';
 import DashboardClassModalsHost from '@/components/dashboard/DashboardClassModalsHost';
@@ -96,7 +96,7 @@ function DashboardLayoutShell({
         >
           <div className="h-full overflow-hidden bg-white w-76 max-w-[19rem]">
             {isSeatingChartView && isEditMode ? (
-              <LeftNavSeatingChartEdit />
+              <SeatingEditorLeftNav />
             ) : (
               <LeftNav />
             )}

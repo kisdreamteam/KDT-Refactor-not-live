@@ -1,6 +1,6 @@
 'use client';
 
-import BottomNavSeatingEdit from '@/components/layout/BottomNavSeatingEdit';
+import SeatingEditorBottomNav from '@/components/layout/SeatingEditorBottomNav';
 import { useSeatingEditBottomNav } from '@/hooks/useSeatingEditBottomNav';
 
 type Props = {
@@ -10,10 +10,10 @@ type Props = {
 };
 
 /** Mount only when seating edit mode is active so `useSeatingEditBottomNav` satisfies Rules of Hooks. */
-export default function SeatingEditBottomNavBridge({ currentClassName, classId, onEditClass }: Props) {
+export default function SeatingEditorBottomNavBridge({ currentClassName, classId, onEditClass }: Props) {
   const seatingNav = useSeatingEditBottomNav();
   return (
-    <BottomNavSeatingEdit
+    <SeatingEditorBottomNav
       currentClassName={currentClassName}
       classId={classId}
       onEditClass={onEditClass}
