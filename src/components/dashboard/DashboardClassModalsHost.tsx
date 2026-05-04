@@ -11,10 +11,10 @@ import {
   emitSeatingStudentPointsDelta,
 } from '@/lib/events/students';
 import { normalizeClassIconPath } from '@/lib/iconUtils';
-import AddStudentsModal from '@/components/ui/modals/AddStudentsModal';
+import AddStudentsModal from '@/components/dashboard/modals/AddStudentsModal';
 import AwardPointsModal from './AwardPointsModal';
-import EditStudentModal from '@/components/ui/modals/EditStudentModal';
-import type { EditStudentModalSubmitValues } from '@/components/ui/modals/EditStudentModal';
+import EditStudentModal from '@/components/dashboard/modals/EditStudentModal';
+import type { EditStudentModalSubmitValues } from '@/components/dashboard/modals/EditStudentModal';
 import PointsAwardedConfirmationModal from './PointsAwardedConfirmationModal';
 import {
   getNextStartingStudentNumber,
@@ -22,7 +22,7 @@ import {
   insertStudentsBulk,
   updateStudentById,
 } from '@/lib/api/students';
-import type { AddStudentsFormSubmitValues } from '@/components/ui/forms/AddStudentsForm';
+import type { AddStudentsFormSubmitValues } from '@/components/dashboard/forms/AddStudentsForm';
 
 export default function DashboardClassModalsHost() {
   const pathname = usePathname();

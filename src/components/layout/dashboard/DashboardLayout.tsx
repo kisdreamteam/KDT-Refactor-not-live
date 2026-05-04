@@ -11,7 +11,7 @@ import { usePreferenceStore } from '@/stores/usePreferenceStore';
 import LeftNav from '@/components/layout/LeftNav';
 import SeatingEditorLeftNav from '@/components/layout/SeatingEditorLeftNav';
 import DashboardWorkspace from '@/components/dashboard/DashboardWorkspace';
-import EditClassModal from '@/components/ui/modals/EditClassModal';
+import EditClassModal from '@/components/dashboard/modals/EditClassModal';
 import DashboardClassModalsHost from '@/components/dashboard/DashboardClassModalsHost';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import type { ViewState } from '@/stores/useLayoutStore';

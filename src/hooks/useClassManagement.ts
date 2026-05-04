@@ -23,7 +23,7 @@ import {
   resetPointsByStudentIds,
 } from '@/lib/api/students';
 import type { Student } from '@/lib/types';
-import type { AddStudentsFormSubmitValues } from '@/components/ui/forms/AddStudentsForm';
+import type { AddStudentsFormSubmitValues } from '@/components/dashboard/forms/AddStudentsForm';
 
 export interface CollaboratorTeacher {
   collaboratorRowId: string;

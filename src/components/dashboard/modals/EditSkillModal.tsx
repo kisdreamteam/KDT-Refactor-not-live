@@ -14,13 +14,7 @@ interface EditSkillModalProps {
 export default function EditSkillModal({ isOpen, onClose, skill, refreshCategories }: EditSkillModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
-      <EditSkillForm
-        isOpen={isOpen}
-        onClose={onClose}
-        skill={skill}
-        refreshCategories={refreshCategories}
-      />
+      <EditSkillForm isOpen={isOpen} onClose={onClose} skill={skill} refreshCategories={refreshCategories} />
     </Modal>
   );
 }
-

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import ConfirmationModal from '@/components/ui/modals/ConfirmationModal';
-import CreateClassModal from '@/components/ui/modals/CreateClassModal';
-import EditClassModal from '@/components/ui/modals/EditClassModal';
-import type { CreateClassFormValues } from '@/components/ui/forms/CreateClassForm';
+import CreateClassModal from '@/components/dashboard/modals/CreateClassModal';
+import EditClassModal from '@/components/dashboard/modals/EditClassModal';
+import type { CreateClassFormValues } from '@/components/dashboard/forms/CreateClassForm';
 import { refreshDashboardClassesForUserAction } from '@/hooks/useDashboardClassesSync';
 import LoadingState from '@/components/ui/LoadingState';
 import EmptyState from '@/components/ui/EmptyState';

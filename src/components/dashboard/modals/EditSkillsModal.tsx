@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Modal from '@/components/ui/modals/Modal';
-import EditSkillModal from '@/components/ui/modals/EditSkillModal';
+import EditSkillModal from '@/components/dashboard/modals/EditSkillModal';
 import EditSkillCard from '@/components/dashboard/cards/EditSkillCard';
 import { PointCategory } from '@/lib/types';
 import { useSkillManagement } from '@/hooks/useSkillManagement';

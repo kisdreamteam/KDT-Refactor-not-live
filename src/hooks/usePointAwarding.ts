@@ -31,6 +31,7 @@ function normalizeCategoryIcons(data: PointCategory[]): PointCategory[] {
 
 type UsePointAwardingParams = {
   isOpen: boolean;
+  onClose: () => void;
   student: Student | null;
   classId: string;
   className?: string;
@@ -51,6 +52,7 @@ type UsePointAwardingParams = {
 
 export function usePointAwarding({
   isOpen,
+  onClose,
   student,
   classId,
   className,
@@ -84,7 +86,7 @@ export function usePointAwarding({
     onRefresh,
     onPointsAwarded,
     onAwardComplete,
-    onClose: () => undefined,
+    onClose,
     skipRefreshAfterAward,
   });
 

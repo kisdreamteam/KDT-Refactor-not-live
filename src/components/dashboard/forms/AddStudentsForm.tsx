@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export type AddStudentsFormSubmitValues =
   | {
@@ -25,7 +25,6 @@ interface AddStudentsFormProps {
 }
 
 export default function AddStudentsForm({
-  isOpen,
   onClose,
   onSubmit,
   isLoading,
@@ -66,19 +65,12 @@ export default function AddStudentsForm({
 
   return (
     <div className="relative">
-      {/* Single Student View */}
       {view === 'single' && (
         <div className="space-y-6">
-          {/* Title */}
           <h2 className="text-2xl font-bold text-gray-900">Add students</h2>
-
-          {/* Input Section */}
           <div className="space-y-4">
-            {/* Student Number Display */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Student Number
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Student Number</label>
               <input
                 type="text"
                 value={nextStudentNumber !== null ? nextStudentNumber : 'Calculating...'}
@@ -86,15 +78,9 @@ export default function AddStudentsForm({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
                 readOnly
               />
-              <p className="text-xs text-gray-500">
-                This number will be automatically assigned to the student
-              </p>
             </div>
-
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                add students by full name
-              </label>
+              <label className="block text-sm font-medium text-gray-700">add students by full name</label>
               <input
                 type="text"
                 value={studentName}
@@ -103,12 +89,8 @@ export default function AddStudentsForm({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
             </div>
-
-            {/* Gender Dropdown */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Gender
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Gender</label>
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
@@ -120,82 +102,33 @@ export default function AddStudentsForm({
               </select>
             </div>
           </div>
-
-          {/* Bottom Actions */}
           <div className="flex items-center justify-between pt-4">
-            <button
-              onClick={() => setView('bulk')}
-              className="text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors"
-            >
+            <button onClick={() => setView('bulk')} className="text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors">
               Or, copy and paste your student list
             </button>
-            <button
-              onClick={handleSaveStudent}
-              disabled={!studentName.trim() || isLoading}
-              className="px-6 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={handleSaveStudent} disabled={!studentName.trim() || isLoading} className="px-6 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Save
             </button>
           </div>
         </div>
       )}
 
-      {/* Bulk Add View */}
       {view === 'bulk' && (
         <div className="space-y-6">
-          {/* Title */}
           <h2 className="text-2xl font-bold text-gray-900">Copy/Paste Student List</h2>
-
-          {/* Import Type Toggle */}
           <div className="flex gap-2">
-            <button
-              onClick={() => setImportType('word')}
-              className={`flex-1 px-4 py-2 rounded-full font-medium transition-colors ${
-                importType === 'word'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-purple-600 border-2 border-purple-300'
-              }`}
-            >
-              Import from Word
-            </button>
-            <button
-              onClick={() => setImportType('excel')}
-              className={`flex-1 px-4 py-2 rounded-full font-medium transition-colors ${
-                importType === 'excel'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-purple-600 border-2 border-purple-300'
-              }`}
-            >
-              Import from Excel
-            </button>
+            <button onClick={() => setImportType('word')} className={`flex-1 px-4 py-2 rounded-full font-medium transition-colors ${importType === 'word' ? 'bg-purple-600 text-white' : 'bg-white text-purple-600 border-2 border-purple-300'}`}>Import from Word</button>
+            <button onClick={() => setImportType('excel')} className={`flex-1 px-4 py-2 rounded-full font-medium transition-colors ${importType === 'excel' ? 'bg-purple-600 text-white' : 'bg-white text-purple-600 border-2 border-purple-300'}`}>Import from Excel</button>
           </div>
-
-          {/* Instructions */}
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-gray-900">Paste your student list</h3>
-            <p className="text-sm text-gray-600">
-              We&apos;ll automatically import your list and clean duplicates.
-            </p>
-          </div>
-
-          {/* Textarea */}
-          <div className="space-y-2">
-            <textarea
-              value={studentList}
-              onChange={(e) => setStudentList(e.target.value)}
-              placeholder={`Copy/Paste your students names here. Put each name on a new line.\n\nExamples:\nFirst name Last Name\nFirst name Last Name\nFirst name Last Name\n\n— or —\n\nLast name, First name\nLast name, First name\nLast name, First name`}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y min-h-[200px] text-sm text-gray-500 placeholder-gray-400"
-              rows={12}
-            />
-          </div>
-
-          {/* Import Button */}
+          <textarea
+            value={studentList}
+            onChange={(e) => setStudentList(e.target.value)}
+            placeholder={`Copy/Paste your students names here. Put each name on a new line.\n\nExamples:\nFirst name Last Name\nFirst name Last Name\nFirst name Last Name\n\n— or —\n\nLast name, First name\nLast name, First name\nLast name, First name`}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y min-h-[200px] text-sm text-gray-500 placeholder-gray-400"
+            rows={12}
+          />
           <div className="flex justify-end pt-2">
-            <button
-              onClick={handleImportList}
-              disabled={!studentList.trim() || isLoading}
-              className="px-6 py-2 bg-purple-400 text-white rounded-lg font-medium hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={handleImportList} disabled={!studentList.trim() || isLoading} className="px-6 py-2 bg-purple-400 text-white rounded-lg font-medium hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               Import list
             </button>
           </div>

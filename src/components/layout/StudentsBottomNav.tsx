@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { SortOption } from '@/stores/usePreferenceStore';
-import ViewModeModal from '@/components/ui/modals/ViewModeModal';
+import ViewModeModal from '@/components/dashboard/modals/ViewModeModal';
 import IconViewDots from '@/components/ui/icons/iconViewDots';
 import IconRandomArrows from '@/components/ui/icons/iconRandomArrows';
 import IconTimerClock from '@/components/ui/icons/iconTimerClock';

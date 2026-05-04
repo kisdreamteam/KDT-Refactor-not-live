@@ -2,8 +2,8 @@
 
 import type { Dispatch, SetStateAction } from 'react';
 import ConfirmationModal from '@/components/ui/modals/ConfirmationModal';
-import CreateLayoutModal from '@/components/ui/modals/CreateLayoutModal';
-import EditLayoutModal from '@/components/ui/modals/EditLayoutModal';
+import CreateLayoutModal from '@/components/dashboard/modals/CreateLayoutModal';
+import EditLayoutModal from '@/components/dashboard/modals/EditLayoutModal';
 import ClassPointLogSlidePanel from '@/components/dashboard/ClassPointLogSlidePanel';
 import SeatingCanvasDecor from '@/components/dashboard/seating/SeatingCanvasDecor';
 import SeatingGroupsCanvas from '@/components/dashboard/seating/SeatingGroupsCanvas';

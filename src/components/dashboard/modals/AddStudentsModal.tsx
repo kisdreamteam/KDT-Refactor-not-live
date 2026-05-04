@@ -1,7 +1,7 @@
 'use client';
 
 import Modal from '@/components/ui/modals/Modal';
-import AddStudentsForm, { type AddStudentsFormSubmitValues } from '@/components/ui/forms/AddStudentsForm';
+import AddStudentsForm, { type AddStudentsFormSubmitValues } from '@/components/dashboard/forms/AddStudentsForm';
 
 interface AddStudentsModalProps {
   isOpen: boolean;
@@ -36,4 +36,3 @@ export default function AddStudentsModal({
     </Modal>
   );
 }
-

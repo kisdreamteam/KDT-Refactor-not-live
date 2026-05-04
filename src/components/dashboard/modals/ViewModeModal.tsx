@@ -9,7 +9,7 @@ interface ViewModeModalProps {
   onViewChange: (view: ViewMode) => void;
 }
 
-export default function ViewModeModal({ isOpen, onClose, currentView, onViewChange }: ViewModeModalProps) {
+export default function ViewModeModal({ isOpen, currentView, onViewChange }: ViewModeModalProps) {
   if (!isOpen) return null;
 
   return (
