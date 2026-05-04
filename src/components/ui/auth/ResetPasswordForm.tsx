@@ -1,17 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { getSessionUser, updateCurrentUserPassword } from '@/lib/api/auth';
 import FormLabel from '@/components/ui/FormLabel';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/AuthBackLink';
 import AuthCard from '@/components/ui/AuthCard';
-import AuthPageLayout from '@/layouts/auth/AuthPageLayout';
+
+type ResetPasswordFormProps = {
+  password: string;
+  confirmPassword: string;
+  isLoading: boolean;
+  error?: string;
+  success?: string;
+  isSessionChecked: boolean;
+  hasSession: boolean;
+  onPasswordChange: (value: string) => void;
+  onConfirmPasswordChange: (value: string) => void;
+  onSubmit: (data: { password: string; confirmPassword: string }) => void | Promise<void>;
+};
 
 function ResetHeader() {
   return (
@@ -39,31 +48,20 @@ function ResetHeader() {
   );
 }
 
-export default function ResetPasswordForm() {
-  const router = useRouter();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const session = await getSessionUser();
-      if (!cancelled) {
-        setHasSession(!!session);
-        setSessionChecked(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+export default function ResetPasswordForm({
+  password,
+  confirmPassword,
+  isLoading,
+  error,
+  success,
+  isSessionChecked,
+  hasSession,
+  onPasswordChange,
+  onConfirmPasswordChange,
+  onSubmit,
+}: ResetPasswordFormProps) {
   return (
-    <AuthPageLayout>
+    <>
       <AuthBackLink
         className="text-gray-300 flex-shrink-0"
         style={{
@@ -76,8 +74,8 @@ export default function ResetPasswordForm() {
       <AuthCard className="w-full max-w-[800px] px-8 py-10">
         <ResetHeader />
 
-        {!sessionChecked ? (
-          <p className="text-center text-brand-purple font-spartan">Checking your session…</p>
+        {!isSessionChecked ? (
+          <p className="text-center text-brand-purple font-spartan">Checking your session...</p>
         ) : !hasSession ? (
           <div className="grid gap-4 text-center">
             <p className="text-black/80 font-spartan">
@@ -93,30 +91,9 @@ export default function ResetPasswordForm() {
         ) : (
           <form
             className="grid gap-6"
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
-              setError('');
-              if (password !== confirmPassword) {
-                setError('Passwords do not match.');
-                return;
-              }
-              if (password.length < 6) {
-                setError('Password must be at least 6 characters.');
-                return;
-              }
-              setSubmitting(true);
-              let updateError: string | null = null;
-              try {
-                await updateCurrentUserPassword(password);
-              } catch (error) {
-                updateError = error instanceof Error ? error.message : 'Could not update password. Try again.';
-              }
-              setSubmitting(false);
-              if (updateError) {
-                setError(updateError);
-                return;
-              }
-              router.push('/login');
+              void onSubmit({ password, confirmPassword });
             }}
           >
             <div className="grid gap-2">
@@ -131,10 +108,11 @@ export default function ResetPasswordForm() {
                 name="password"
                 autoComplete="new-password"
                 required
-                className="h-12 w-full rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans"
+                disabled={isLoading}
+                className="h-12 w-full rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans disabled:opacity-60"
                 placeholder=""
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => onPasswordChange(e.target.value)}
               />
             </div>
 
@@ -150,29 +128,33 @@ export default function ResetPasswordForm() {
                 name="confirmPassword"
                 autoComplete="new-password"
                 required
-                className="h-12 w-full rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans"
+                disabled={isLoading}
+                className="h-12 w-full rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans disabled:opacity-60"
                 placeholder=""
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => onConfirmPasswordChange(e.target.value)}
               />
             </div>
 
             <div className="flex justify-center gap-3">
               <PrimaryButton
                 type="submit"
-                disabled={submitting}
+                disabled={isLoading}
                 className="h-12 w-full max-w-[750px] px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan disabled:opacity-60"
               >
-                {submitting ? 'Saving…' : 'Update password'}
+                {isLoading ? 'Saving…' : 'Update password'}
               </PrimaryButton>
             </div>
 
             {error && (
               <InlineErrorText className="text-sm text-red-600 text-center">{error}</InlineErrorText>
             )}
+            {success && (
+              <InlineErrorText className="text-sm text-green-600 text-center">{success}</InlineErrorText>
+            )}
           </form>
         )}
       </AuthCard>
-    </AuthPageLayout>
+    </>
   );
 }

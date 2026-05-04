@@ -12,6 +12,7 @@ interface PasswordInputProps {
   placeholder?: string;
   autoComplete?: string;
   required?: boolean;
+  disabled?: boolean;
   className?: string;
   toggleButtonClassName?: string;
 }
@@ -24,6 +25,7 @@ export default function PasswordInput({
   placeholder,
   autoComplete,
   required,
+  disabled,
   className = '',
   toggleButtonClassName = 'absolute right-3 top-1/2 -translate-y-1/2 text-black/50 hover:text-black/80',
 }: PasswordInputProps) {
@@ -40,12 +42,14 @@ export default function PasswordInput({
         placeholder={placeholder}
         autoComplete={autoComplete}
         required={required}
+        disabled={disabled}
         className={className}
       />
       <button
         type="button"
+        disabled={disabled}
         onClick={() => setVisible((v) => !v)}
-        className={toggleButtonClassName}
+        className={`${toggleButtonClassName} ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
         aria-label={visible ? 'Hide password' : 'Show password'}
       >
         <IconEye hidden={visible} />

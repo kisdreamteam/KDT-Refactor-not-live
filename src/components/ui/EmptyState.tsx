@@ -1,15 +1,15 @@
 interface EmptyStateProps {
-  onAddClick: () => void;
-  title?: string;
-  message?: string;
+  title: string;
+  message: string;
   buttonText?: string;
+  onAddClick?: () => void;
 }
 
 export default function EmptyState({
+  title,
+  message,
+  buttonText,
   onAddClick,
-  title = 'Welcome to your dashboard!',
-  message = "You haven't created any classes yet. Create your first class to get started with managing your students.",
-  buttonText = 'Create Your First Class',
 }: EmptyStateProps) {
   return (
     <div className="text-center py-16">
@@ -24,7 +24,7 @@ export default function EmptyState({
         {message}
       </p>
 
-      {buttonText && (
+      {buttonText && onAddClick && (
         <div
           className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer transform hover:scale-105"
           onClick={onAddClick}

@@ -1,8 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signUpWithEmailPassword } from '@/lib/api/auth';
 import TextInput from '@/components/ui/TextInput';
 import SelectInput from '@/components/ui/SelectInput';
 import PasswordInput from '@/components/ui/PasswordInput';
@@ -11,6 +8,35 @@ import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/AuthBackLink';
 import AuthCard from '@/components/ui/AuthCard';
 import Image from 'next/image';
+
+type SignupFormProps = {
+  title: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: string;
+  isLoading: boolean;
+  error?: string;
+  success?: string;
+  onTitleChange: (value: string) => void;
+  onFirstNameChange: (value: string) => void;
+  onLastNameChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onConfirmPasswordChange: (value: string) => void;
+  onRoleChange: (value: string) => void;
+  onSubmit: (data: {
+    title: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    role: string;
+  }) => void | Promise<void>;
+};
 
 function SignupHeader() {
   return (
@@ -52,8 +78,8 @@ function SignupAvatar() {
   return (
     <div className="hidden lg:flex items-center justify-center flex-1 relative translate-y-40">
       <div className="relative">
-        <div 
-          className="bg-[#cdd1d1] rounded-full p-8 w-[450px] h-[290px] relative shadow-xl" 
+        <div
+          className="bg-[#cdd1d1] rounded-full p-8 w-[450px] h-[290px] relative shadow-xl"
           style={{ borderRadius: '40% 30% 30% 30% / 40% 40% 40% 40%' }}
         >
           <Image
@@ -71,92 +97,55 @@ function SignupAvatar() {
   );
 }
 
-export default function SignupForm() {
-  const router = useRouter();
-  const [title, setTitle] = useState<string>('Ms.');
-  const [firstName, setFirstName] = useState<string>('');
-  const [lastName, setLastName] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [confirmPassword, setConfirmPassword] = useState<string>('');
-  const [role, setRole] = useState<string>('Teacher');
-
-  const [emailError, setEmailError] = useState<string>('');
-  const [roleError, setRoleError] = useState<string>('');
-  const [message, setMessage] = useState<string>('');
-
-  async function handleSignUp(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    let hasError = false;
-
-    setEmailError('');
-    setRoleError('');
-    setMessage('');
-
-    // Combine first and last name
-    const fullName = `${firstName} ${lastName}`.trim();
-
-    // Append @kshcm.net if not already present
-    const fullEmail = email.includes('@') ? email : `${email}@kshcm.net`;
-
-    if (!fullEmail.toLowerCase().endsWith('@kshcm.net')) {
-      setEmailError('Email must be a valid @kshcm.net address.');
-      hasError = true;
-    }
-
-    if (role === 'Parent' || role === 'Student') {
-      setRoleError(
-        `${role} is not available for sign-up yet. Please choose the correct option to continue.`
-      );
-      hasError = true;
-    }
-
-    if (password !== confirmPassword) {
-      setEmailError('Passwords do not match.');
-      hasError = true;
-    }
-
-    if (hasError) return;
-
-    try {
-      await signUpWithEmailPassword({
-        email: fullEmail,
-        password,
-        data: {
-          name: fullName,
-          title: title,
-          role: role,
-        },
-      });
-    } catch (error) {
-      console.error('Supabase signUp error:', error);
-      setMessage(error instanceof Error ? error.message : 'Failed to sign up. Please try again.');
-      return;
-    }
-
-    setMessage('Success! Redirecting you to the login page...');
-    setTimeout(() => {
-      router.push('/login');
-    }, 2000);
-  }
-
+export default function SignupForm({
+  title,
+  firstName,
+  lastName,
+  email,
+  password,
+  confirmPassword,
+  role,
+  isLoading,
+  error,
+  success,
+  onTitleChange,
+  onFirstNameChange,
+  onLastNameChange,
+  onEmailChange,
+  onPasswordChange,
+  onConfirmPasswordChange,
+  onRoleChange,
+  onSubmit,
+}: SignupFormProps) {
   return (
     <>
       <AuthBackLink className="top-6 left-6" />
       <div className="w-full max-w-7xl flex items-center gap-8">
         <SignupAvatar />
-        
-        {/* Form Card on Right */}
+
         <AuthCard className="w-full lg:w-[600px] p-8 sm:p-10">
           <SignupHeader />
 
-          <form onSubmit={handleSignUp} className="space-y-4">
-            {/* Title Dropdown */}
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void onSubmit({
+                title,
+                firstName,
+                lastName,
+                email,
+                password,
+                confirmPassword,
+                role,
+              });
+            }}
+            className="space-y-4"
+          >
             <div className="relative">
               <SelectInput
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => onTitleChange(e.target.value)}
                 className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-10 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30 appearance-none cursor-pointer"
               >
                 <option>Mr.</option>
@@ -169,83 +158,66 @@ export default function SignupForm() {
               </div>
             </div>
 
-            {/* First Name */}
-            <div>
+            <TextInput
+              id="firstName"
+              type="text"
+              value={firstName}
+              onChange={(e) => onFirstNameChange(e.target.value)}
+              placeholder="First Name"
+              disabled={isLoading}
+              className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30 disabled:opacity-60"
+            />
+
+            <TextInput
+              id="lastName"
+              type="text"
+              value={lastName}
+              onChange={(e) => onLastNameChange(e.target.value)}
+              placeholder="Last Name"
+              disabled={isLoading}
+              className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30 disabled:opacity-60"
+            />
+
+            <div className="relative">
               <TextInput
-                id="firstName"
+                id="email"
                 type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="First Name"
-                className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30"
+                value={email}
+                onChange={(e) => onEmailChange(e.target.value.replace(/@kshcm\.net/gi, ''))}
+                placeholder="Email address"
+                disabled={isLoading}
+                className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-24 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30 disabled:opacity-60"
               />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[16px] text-black/70 pointer-events-none">
+                @kshcm.net
+              </span>
             </div>
 
-            {/* Last Name */}
-            <div>
-              <TextInput
-                id="lastName"
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Last Name"
-                className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30"
-              />
-            </div>
+            <PasswordInput
+              id="password"
+              value={password}
+              onChange={(e) => onPasswordChange(e.target.value)}
+              placeholder="Password"
+              disabled={isLoading}
+              className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30 disabled:opacity-60"
+            />
 
-            {/* Email with @kshcm.net */}
-            <div>
-              <div className="relative">
-                <TextInput
-                  id="email"
-                  type="text"
-                  value={email}
-                  onChange={(e) => {
-                    // Remove @kshcm.net if user types it
-                    const value = e.target.value.replace(/@kshcm\.net/gi, '');
-                    setEmail(value);
-                  }}
-                  placeholder="Email address"
-                  className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-24 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[16px] text-black/70 pointer-events-none">
-                  @kshcm.net
-                </span>
-              </div>
-              {emailError && (
-                <InlineErrorText className="mt-2 text-sm text-red-600">{emailError}</InlineErrorText>
-              )}
-            </div>
+            <PasswordInput
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={(e) => onConfirmPasswordChange(e.target.value)}
+              placeholder="Confirm Password"
+              disabled={isLoading}
+              className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30 disabled:opacity-60"
+            />
 
-            {/* Password */}
-            <div>
-              <PasswordInput
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30"
-              />
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <PasswordInput
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm Password"
-                className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black placeholder:text-black/50 outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30"
-              />
-            </div>
-
-            {/* Role Dropdown */}
             <div className="relative">
               <SelectInput
                 id="role"
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-10 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30 appearance-none cursor-pointer"
+                onChange={(e) => onRoleChange(e.target.value)}
+                disabled={isLoading}
+                className="w-full h-12 rounded-[12px] border border-black/20 bg-white px-4 pr-10 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-[#3B47E0]/30 appearance-none cursor-pointer disabled:opacity-60"
               >
                 <option>Teacher</option>
                 <option>Parent</option>
@@ -256,21 +228,21 @@ export default function SignupForm() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
-              {roleError && <InlineErrorText className="mt-2 text-sm text-red-600">{roleError}</InlineErrorText>}
             </div>
 
-            {/* Submit Button */}
             <PrimaryButton
               type="submit"
-              className="w-full h-12 rounded-[24px] bg-[#DE8680] text-white font-bold text-lg tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-[#DE8680]/30 mt-6"
+              disabled={isLoading}
+              className="w-full h-12 rounded-[24px] bg-[#DE8680] text-white font-bold text-lg tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-[#DE8680]/30 mt-6 disabled:opacity-60"
             >
-              Create Account
+              {isLoading ? 'Creating Account…' : 'Create Account'}
             </PrimaryButton>
 
-            {message && (
-              <InlineErrorText className={`text-sm text-center ${message.startsWith('Success') ? 'text-green-600' : 'text-red-600'}`}>
-                {message}
-              </InlineErrorText>
+            {error && (
+              <InlineErrorText className="text-sm text-center text-red-600">{error}</InlineErrorText>
+            )}
+            {success && (
+              <InlineErrorText className="text-sm text-center text-green-600">{success}</InlineErrorText>
             )}
           </form>
 

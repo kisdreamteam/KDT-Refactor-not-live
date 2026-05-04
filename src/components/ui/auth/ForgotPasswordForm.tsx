@@ -1,19 +1,28 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { requestPasswordReset, verifyRecoveryOtp } from '@/lib/api/auth';
 import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/AuthBackLink';
 import AuthCard from '@/components/ui/AuthCard';
-import AuthPageLayout from '@/layouts/auth/AuthPageLayout';
+import type { ForgotPasswordStep } from '@/hooks/useAuthFlow';
 
-type Step = 'request' | 'verify';
+type ForgotPasswordFormProps = {
+  step: ForgotPasswordStep;
+  email: string;
+  otp: string;
+  isLoading: boolean;
+  error?: string;
+  success?: string;
+  onEmailChange: (value: string) => void;
+  onOtpChange: (value: string) => void;
+  onBackToRequest: () => void;
+  onRequestSubmit: (data: { email: string }) => void | Promise<void>;
+  onVerifySubmit: (data: { email: string; otp: string }) => void | Promise<void>;
+};
 
 function ForgotLogo() {
   return (
@@ -30,7 +39,7 @@ function ForgotLogo() {
   );
 }
 
-function ForgotHeader({ step }: { step: Step }) {
+function ForgotHeader({ step }: { step: ForgotPasswordStep }) {
   return (
     <>
       <ForgotLogo />
@@ -48,22 +57,21 @@ function ForgotHeader({ step }: { step: Step }) {
   );
 }
 
-export default function ForgotPasswordForm() {
-  const router = useRouter();
-  const [step, setStep] = useState<Step>('request');
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [error, setError] = useState('');
-  const [requestSubmitting, setRequestSubmitting] = useState(false);
-  const [verifySubmitting, setVerifySubmitting] = useState(false);
-
-  function handleOtpChange(value: string) {
-    const digits = value.replace(/\D/g, '').slice(0, 6);
-    setOtp(digits);
-  }
-
+export default function ForgotPasswordForm({
+  step,
+  email,
+  otp,
+  isLoading,
+  error,
+  success,
+  onEmailChange,
+  onOtpChange,
+  onBackToRequest,
+  onRequestSubmit,
+  onVerifySubmit,
+}: ForgotPasswordFormProps) {
   return (
-    <AuthPageLayout>
+    <>
       <AuthBackLink
         className="text-gray-300 flex-shrink-0"
         style={{
@@ -79,22 +87,9 @@ export default function ForgotPasswordForm() {
         {step === 'request' ? (
           <form
             className="grid gap-6"
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
-              setError('');
-              setRequestSubmitting(true);
-              let resetError: string | null = null;
-              try {
-                await requestPasswordReset(email);
-              } catch (error) {
-                resetError = error instanceof Error ? error.message : 'Could not send code. Try again.';
-              }
-              setRequestSubmitting(false);
-              if (resetError) {
-                setError(resetError);
-                return;
-              }
-              setStep('verify');
+              void onRequestSubmit({ email });
             }}
           >
             <div className="grid gap-2">
@@ -110,51 +105,30 @@ export default function ForgotPasswordForm() {
                 type="email"
                 autoComplete="email"
                 required
-                disabled={requestSubmitting}
+                disabled={isLoading}
                 className="h-12 rounded-[12px] border border-black/20 bg-white px-4 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans disabled:opacity-60"
                 placeholder=""
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => onEmailChange(e.target.value)}
               />
             </div>
 
             <div className="flex justify-center gap-3">
               <PrimaryButton
                 type="submit"
-                disabled={requestSubmitting}
+                disabled={isLoading}
                 className="h-12 w-full max-w-[750px] px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan disabled:opacity-60"
               >
-                {requestSubmitting ? 'Sending…' : 'Send code'}
+                {isLoading ? 'Sending…' : 'Send code'}
               </PrimaryButton>
             </div>
-
-            {error && (
-              <InlineErrorText className="text-sm text-red-600 text-center">{error}</InlineErrorText>
-            )}
           </form>
         ) : (
           <form
             className="grid gap-6"
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
-              setError('');
-              if (otp.length !== 6) {
-                setError('Enter the full 6-digit code.');
-                return;
-              }
-              setVerifySubmitting(true);
-              let verifyError: string | null = null;
-              try {
-                await verifyRecoveryOtp(email, otp);
-              } catch (error) {
-                verifyError = error instanceof Error ? error.message : 'Invalid code. Try again.';
-              }
-              setVerifySubmitting(false);
-              if (verifyError) {
-                setError(verifyError);
-                return;
-              }
-              router.push('/reset-password');
+              void onVerifySubmit({ email, otp });
             }}
           >
             <p className="text-center text-sm text-black/80 font-spartan">
@@ -176,40 +150,39 @@ export default function ForgotPasswordForm() {
                 autoComplete="one-time-code"
                 required
                 maxLength={6}
-                disabled={verifySubmitting}
+                disabled={isLoading}
                 className="h-14 rounded-[12px] border border-black/20 bg-white px-4 text-center text-2xl tracking-[0.5em] font-sans text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 disabled:opacity-60"
                 placeholder="000000"
                 value={otp}
-                onChange={(e) => handleOtpChange(e.target.value)}
+                onChange={(e) => onOtpChange(e.target.value)}
               />
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
               <button
                 type="button"
-                disabled={verifySubmitting}
-                onClick={() => {
-                  setStep('request');
-                  setError('');
-                  setOtp('');
-                }}
+                disabled={isLoading}
+                onClick={onBackToRequest}
                 className="h-12 w-full max-w-[750px] sm:max-w-[220px] rounded-[12px] border-2 border-brand-purple bg-white px-8 text-lg font-bold text-brand-purple transition hover:bg-brand-purple/10 focus:outline-none focus:ring-4 focus:ring-brand-purple/30 font-spartan disabled:opacity-60"
               >
                 Back
               </button>
               <PrimaryButton
                 type="submit"
-                disabled={verifySubmitting || otp.length !== 6}
+                disabled={isLoading || otp.length !== 6}
                 className="h-12 w-full max-w-[750px] flex-1 px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan disabled:opacity-60 sm:max-w-none"
               >
-                {verifySubmitting ? 'Verifying…' : 'Verify'}
+                {isLoading ? 'Verifying…' : 'Verify'}
               </PrimaryButton>
             </div>
-
-            {error && (
-              <InlineErrorText className="text-sm text-red-600 text-center">{error}</InlineErrorText>
-            )}
           </form>
+        )}
+
+        {error && (
+          <InlineErrorText className="mt-4 text-sm text-red-600 text-center">{error}</InlineErrorText>
+        )}
+        {success && (
+          <InlineErrorText className="mt-4 text-sm text-green-600 text-center">{success}</InlineErrorText>
         )}
 
         <div className="mt-6 text-center text-sm text-[18px]">
@@ -218,6 +191,6 @@ export default function ForgotPasswordForm() {
           </Link>
         </div>
       </AuthCard>
-    </AuthPageLayout>
+    </>
   );
 }

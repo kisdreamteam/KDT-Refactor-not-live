@@ -1,10 +1,33 @@
-import AuthPageLayout from '@/layouts/auth/AuthPageLayout';
+ 'use client';
+
+import AuthPageLayout from '@/components/layout/auth/AuthPageLayout';
 import LoginForm from '@/components/ui/auth/LoginForm';
+import { useAuthFlow } from '@/hooks/useAuthFlow';
 
 export default function LoginPage() {
+  const {
+    loginEmail,
+    setLoginEmail,
+    loginPassword,
+    setLoginPassword,
+    handleLogin,
+    isLoading,
+    error,
+    success,
+  } = useAuthFlow();
+
   return (
     <AuthPageLayout>
-      <LoginForm />
+      <LoginForm
+        email={loginEmail}
+        password={loginPassword}
+        onEmailChange={setLoginEmail}
+        onPasswordChange={setLoginPassword}
+        onSubmit={handleLogin}
+        isLoading={isLoading}
+        error={error}
+        success={success}
+      />
     </AuthPageLayout>
   );
 }

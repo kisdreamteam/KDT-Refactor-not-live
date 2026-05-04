@@ -1,10 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { signInWithEmailPassword } from '@/lib/api/auth';
 import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
 import PasswordInput from '@/components/ui/PasswordInput';
@@ -12,6 +9,17 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/AuthBackLink';
 import AuthCard from '@/components/ui/AuthCard';
+
+type LoginFormProps = {
+  email: string;
+  password: string;
+  isLoading: boolean;
+  error?: string;
+  success?: string;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onSubmit: (data: { email: string; password: string }) => void | Promise<void>;
+};
 
 function LoginHeader() {
   return (
@@ -47,12 +55,16 @@ function LoginFooter() {
   );
 }
 
-export default function LoginForm() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
+export default function LoginForm({
+  email,
+  password,
+  isLoading,
+  error,
+  success,
+  onEmailChange,
+  onPasswordChange,
+  onSubmit,
+}: LoginFormProps) {
   return (
     <>
       <AuthBackLink
@@ -65,20 +77,13 @@ export default function LoginForm() {
       />
       <AuthCard className="w-full max-w-[800px] px-8 py-10">
         <LoginHeader />
-        <form className="grid gap-6" onSubmit={async (e) => {
-          e.preventDefault();
-          setError('');
-          try {
-            await signInWithEmailPassword(email, password);
-          } catch (error) {
-            console.error('Login error:', error);
-            setError(error instanceof Error ? error.message : 'Failed to sign in. Please try again.');
-            return;
-          }
-          setError('');
-          router.push('/dashboard');
-        }}>
-          {/* Email Field */}
+        <form
+          className="grid gap-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void onSubmit({ email, password });
+          }}
+        >
           <div className="grid gap-2">
             <FormLabel htmlFor="email" className="text-base font-semibold text-[24px] text-black font-spartan">
               Email address
@@ -89,14 +94,14 @@ export default function LoginForm() {
               type="email"
               autoComplete="email"
               required
-              className="h-12 rounded-[12px] border border-black/20 bg-white px-4 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans"
+              disabled={isLoading}
+              className="h-12 rounded-[12px] border border-black/20 bg-white px-4 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans disabled:opacity-60"
               placeholder=""
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => onEmailChange(e.target.value)}
             />
           </div>
 
-          {/* Password Field */}
           <div className="grid gap-2">
             <FormLabel htmlFor="password" className="text-base font-semibold text-black text-[24px] font-spartan">
               Password
@@ -106,32 +111,35 @@ export default function LoginForm() {
               name="password"
               autoComplete="current-password"
               required
-              className="h-12 w-full rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans"
+              disabled={isLoading}
+              className="h-12 w-full rounded-[12px] border border-black/20 bg-white px-4 pr-12 text-[16px] text-black outline-none focus:border-black/40 focus:ring-2 focus:ring-brand-purple/30 font-sans disabled:opacity-60"
               placeholder=""
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => onPasswordChange(e.target.value)}
             />
           </div>
 
-          {/* Forgot Password Link - Left Aligned */}
           <div className="text-left">
             <Link href="/forgot-password" className="text-[18px] text-sm text-gray-600 hover:underline font-spartan">
               Forgot your password?
             </Link>
           </div>
 
-          {/* Login Button */}
           <div className="flex justify-center gap-3">
             <PrimaryButton
               type="submit"
-              className="h-12 w-[750px] px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan"
+              disabled={isLoading}
+              className="h-12 w-[750px] px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan disabled:opacity-60"
             >
-              Login
+              {isLoading ? 'Logging in…' : 'Login'}
             </PrimaryButton>
           </div>
 
           {error && (
             <InlineErrorText className="text-sm text-red-600 text-center">{error}</InlineErrorText>
+          )}
+          {success && (
+            <InlineErrorText className="text-sm text-green-600 text-center">{success}</InlineErrorText>
           )}
         </form>
         <LoginFooter />

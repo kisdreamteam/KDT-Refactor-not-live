@@ -180,10 +180,14 @@ export default function ClassesWorkspace({
 
       {!showInitialClassesLoading && classes.length === 0 ? (
         <EmptyState
-          onAddClick={() => !isArchivedView && setIsModalOpen(true)}
-          title={isArchivedView ? 'No Archived Classes' : undefined}
-          message={isArchivedView ? 'Classes you archive will appear here' : undefined}
-          buttonText={isArchivedView ? '' : undefined}
+          title={isArchivedView ? 'No Archived Classes' : 'Welcome to your dashboard!'}
+          message={
+            isArchivedView
+              ? 'Classes you archive will appear here'
+              : "You haven't created any classes yet. Create your first class to get started with managing your students."
+          }
+          buttonText={isArchivedView ? undefined : 'Create Your First Class'}
+          onAddClick={isArchivedView ? undefined : () => setIsModalOpen(true)}
         />
       ) : (
         <ClassCardsGrid
