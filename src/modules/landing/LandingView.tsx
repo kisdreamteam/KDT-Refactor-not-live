@@ -6,16 +6,15 @@ import LandingNavLink from "@/components/ui/landing/LandingNavLink";
 
 export default function LandingView() {
   return (
-    <>
+    <div className="flex flex-col h-screen w-full ">
       <LandingHeader>
         <LandingNavLink href="/login">Login</LandingNavLink>
         <LandingNavLink href="/signup">Signup</LandingNavLink>
       </LandingHeader>
 
       <section className="pt-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-center gap-0">
+        <div className="grid grid-cols-2">
           <LandingMascot />
-
           <div>
             <HeroTitle>
               Let&apos;s get
@@ -32,6 +31,6 @@ export default function LandingView() {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }
