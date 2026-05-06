@@ -1,10 +1,11 @@
-import type { InputHTMLAttributes } from 'react';
+import type { FC, InputHTMLAttributes } from 'react';
 
-interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
+type TextInputProps = InputHTMLAttributes<HTMLInputElement> & {
   className?: string;
-}
+};
 
-export default function TextInput({ className = '', ...props }: TextInputProps) {
+const TextInput: FC<TextInputProps> = ({ className = '', ...props }) => {
   return <input className={className} {...props} />;
-}
+};
 
+export default TextInput;

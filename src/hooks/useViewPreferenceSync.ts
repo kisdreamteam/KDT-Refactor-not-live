@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { emitSeatingEditMode } from '@/lib/events/students';
-import { getSessionUserId, updateTeacherPreferredView } from '@/lib/api/auth';
+import { getSessionUserId, updateTeacherPreferredView } from '@/lib/api/auth.service';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { usePreferenceStore } from '@/stores/usePreferenceStore';
 import { useUserStore } from '@/stores/useUserStore';

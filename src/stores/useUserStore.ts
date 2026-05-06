@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { TeacherProfile } from '@/lib/api/auth';
+import type { TeacherProfile } from '@/lib/api/auth.service';
 
 interface UserStore {
   teacherProfile: TeacherProfile | null;

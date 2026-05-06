@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSessionUser } from '@/lib/api/auth';
+import { getSessionUser } from '@/lib/api/auth.service';
 import {
   addClassCollaborator,
   fetchClassById,

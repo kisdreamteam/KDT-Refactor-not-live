@@ -1,6 +1,6 @@
 'use client';
 
-import AuthPageLayout from '@/components/layout/auth/AuthPageLayout';
+import AuthLayout from '@/components/layout/AuthLayout';
 import ForgotPasswordForm from '@/components/ui/auth/ForgotPasswordForm';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 
@@ -21,7 +21,7 @@ export default function ForgotPasswordPageModule() {
   } = useAuthFlow();
 
   return (
-    <AuthPageLayout>
+    <AuthLayout>
       <ForgotPasswordForm
         step={forgotStep}
         email={forgotEmail}
@@ -39,6 +39,6 @@ export default function ForgotPasswordPageModule() {
         error={error}
         success={success}
       />
-    </AuthPageLayout>
+    </AuthLayout>
   );
 }

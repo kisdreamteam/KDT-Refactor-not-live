@@ -1,6 +1,6 @@
 'use client';
 
-import AuthPageLayout from '@/components/layout/auth/AuthPageLayout';
+import AuthLayout from '@/components/layout/AuthLayout';
 import SignupForm from '@/components/ui/auth/SignupForm';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 
@@ -27,7 +27,7 @@ export default function SignupPageModule() {
   } = useAuthFlow();
 
   return (
-    <AuthPageLayout>
+    <AuthLayout>
       <SignupForm
         title={signupTitle}
         firstName={signupFirstName}
@@ -48,6 +48,6 @@ export default function SignupPageModule() {
         error={error}
         success={success}
       />
-    </AuthPageLayout>
+    </AuthLayout>
   );
 }

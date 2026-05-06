@@ -1,9 +1,12 @@
-interface InlineErrorTextProps {
-  children: React.ReactNode;
+import type { FC, ReactNode } from 'react';
+
+type InlineErrorTextProps = {
+  children: ReactNode;
   className?: string;
-}
+};
 
-export default function InlineErrorText({ children, className = '' }: InlineErrorTextProps) {
+const InlineErrorText: FC<InlineErrorTextProps> = ({ children, className = '' }) => {
   return <p className={className}>{children}</p>;
-}
+};
 
+export default InlineErrorText;

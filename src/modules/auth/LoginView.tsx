@@ -1,10 +1,12 @@
 'use client';
 
-import AuthPageLayout from '@/components/layout/auth/AuthPageLayout';
+import type { FC } from 'react';
+
+import AuthLayout from '@/components/layout/AuthLayout';
 import LoginForm from '@/components/ui/auth/LoginForm';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 
-export default function LoginPageModule() {
+const LoginView: FC = () => {
   const {
     loginEmail,
     setLoginEmail,
@@ -17,7 +19,7 @@ export default function LoginPageModule() {
   } = useAuthFlow();
 
   return (
-    <AuthPageLayout>
+    <AuthLayout>
       <LoginForm
         email={loginEmail}
         password={loginPassword}
@@ -28,6 +30,8 @@ export default function LoginPageModule() {
         error={error}
         success={success}
       />
-    </AuthPageLayout>
+    </AuthLayout>
   );
-}
+};
+
+export default LoginView;

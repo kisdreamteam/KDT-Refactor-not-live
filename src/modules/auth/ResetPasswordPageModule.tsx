@@ -1,6 +1,6 @@
 'use client';
 
-import AuthPageLayout from '@/components/layout/auth/AuthPageLayout';
+import AuthLayout from '@/components/layout/AuthLayout';
 import ResetPasswordForm from '@/components/ui/auth/ResetPasswordForm';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 
@@ -19,7 +19,7 @@ export default function ResetPasswordPageModule() {
   } = useAuthFlow();
 
   return (
-    <AuthPageLayout>
+    <AuthLayout>
       <ResetPasswordForm
         password={resetPassword}
         confirmPassword={resetConfirmPassword}
@@ -32,6 +32,6 @@ export default function ResetPasswordPageModule() {
         error={error}
         success={success}
       />
-    </AuthPageLayout>
+    </AuthLayout>
   );
 }

@@ -1,23 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ChangeEvent, type FC } from 'react';
+
 import IconEye from '@/components/ui/icons/iconEye';
 import TextInput from '@/components/ui/TextInput';
 
-interface PasswordInputProps {
+type PasswordInputProps = {
   id: string;
   name?: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   autoComplete?: string;
   required?: boolean;
   disabled?: boolean;
   className?: string;
   toggleButtonClassName?: string;
-}
+};
 
-export default function PasswordInput({
+const PasswordInput: FC<PasswordInputProps> = ({
   id,
   name,
   value,
@@ -28,7 +29,7 @@ export default function PasswordInput({
   disabled,
   className = '',
   toggleButtonClassName = 'absolute right-3 top-1/2 -translate-y-1/2 text-black/50 hover:text-black/80',
-}: PasswordInputProps) {
+}) => {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -56,5 +57,6 @@ export default function PasswordInput({
       </button>
     </div>
   );
-}
+};
 
+export default PasswordInput;

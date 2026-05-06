@@ -2,12 +2,14 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import type { FC } from 'react';
+
 import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
-import AuthBackLink from '@/components/ui/AuthBackLink';
-import AuthCard from '@/components/ui/AuthCard';
+import AuthBackLink from '@/components/ui/auth/AuthBackLink';
+import AuthCard from '@/components/ui/auth/AuthCard';
 import type { ForgotPasswordStep } from '@/hooks/useAuthFlow';
 
 type ForgotPasswordFormProps = {
@@ -24,40 +26,49 @@ type ForgotPasswordFormProps = {
   onVerifySubmit: (data: { email: string; otp: string }) => void | Promise<void>;
 };
 
-function ForgotLogo() {
-  return (
+const ForgotLogo: FC = () => (
+  <>
     <div className="absolute top-0 right-7">
       <Image
-        src="/images/login/login-logo.png"
-        alt="Kis points logo"
+        src="/images/auth/auth-login-kis-logo.png"
+        alt="KIS Points logo"
         width={180}
         height={180}
         priority
         className="h-auto w-auto max-w-[180px]"
       />
     </div>
-  );
-}
+    <div className="pointer-events-none absolute bottom-2 left-2 hidden lg:block">
+      <Image
+        src="/images/auth/auth-login-mascot.png"
+        alt="Auth mascot character"
+        width={200}
+        height={200}
+        className="h-auto w-auto max-w-[160px]"
+      />
+    </div>
+  </>
+);
 
-function ForgotHeader({ step }: { step: ForgotPasswordStep }) {
-  return (
-    <>
-      <ForgotLogo />
-      <div className="mb-8 mt-2">
-        <h1 className="text-6xl font-extrabold text-brand-purple font-spartan">
-          Forgot password
-        </h1>
-        <p className="mt-4 text-lg text-black/70 font-spartan">
-          {step === 'request'
-            ? "Enter your email and we'll send a 6-digit code to reset your password."
-            : 'Enter the code from your email to continue.'}
-        </p>
-      </div>
-    </>
-  );
-}
+type ForgotHeaderProps = { step: ForgotPasswordStep };
 
-export default function ForgotPasswordForm({
+const ForgotHeader: FC<ForgotHeaderProps> = ({ step }) => (
+  <>
+    <ForgotLogo />
+    <div className="mb-8 mt-2">
+      <h1 className="text-6xl font-extrabold text-brand-purple font-spartan">
+        Forgot password
+      </h1>
+      <p className="mt-4 text-lg text-black/70 font-spartan">
+        {step === 'request'
+          ? "Enter your email and we'll send a 6-digit code to reset your password."
+          : 'Enter the code from your email to continue.'}
+      </p>
+    </div>
+  </>
+);
+
+const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
   step,
   email,
   otp,
@@ -69,7 +80,7 @@ export default function ForgotPasswordForm({
   onBackToRequest,
   onRequestSubmit,
   onVerifySubmit,
-}: ForgotPasswordFormProps) {
+}) => {
   return (
     <>
       <AuthBackLink
@@ -193,4 +204,6 @@ export default function ForgotPasswordForm({
       </AuthCard>
     </>
   );
-}
+};
+
+export default ForgotPasswordForm;

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSessionUserId } from '@/lib/api/auth';
+import { getSessionUserId } from '@/lib/api/auth.service';
 import { fetchAccessibleClassesForUser } from '@/lib/api/classes';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 

@@ -1,18 +1,19 @@
 import Link from 'next/link';
+import type { CSSProperties, FC } from 'react';
 
-interface AuthBackLinkProps {
+type AuthBackLinkProps = {
   href?: string;
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
   strokeWidth?: number;
-}
+};
 
-export default function AuthBackLink({
+const AuthBackLink: FC<AuthBackLinkProps> = ({
   href = '/',
   className = '',
   style,
   strokeWidth = 2,
-}: AuthBackLinkProps) {
+}) => {
   return (
     <Link
       href={href}
@@ -36,4 +37,6 @@ export default function AuthBackLink({
       </svg>
     </Link>
   );
-}
+};
+
+export default AuthBackLink;

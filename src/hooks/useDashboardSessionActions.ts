@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { signOutCurrentUser } from '@/lib/api/auth';
+import { signOutCurrentUser } from '@/lib/api/auth.service';
 
 export function useDashboardSessionActions() {
   const router = useRouter();

@@ -1,5 +1,5 @@
-import LoginPageModule from '../../modules/auth/LoginPageModule';
+import LoginView from '@/modules/auth/LoginView';
 
 export default function LoginPage() {
-  return <LoginPageModule />;
+  return <LoginView />;
 }

@@ -2,13 +2,15 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import type { FC } from 'react';
+
 import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
-import AuthBackLink from '@/components/ui/AuthBackLink';
-import AuthCard from '@/components/ui/AuthCard';
+import AuthBackLink from '@/components/ui/auth/AuthBackLink';
+import AuthCard from '@/components/ui/auth/AuthCard';
 
 type LoginFormProps = {
   email: string;
@@ -21,41 +23,37 @@ type LoginFormProps = {
   onSubmit: (data: { email: string; password: string }) => void | Promise<void>;
 };
 
-function LoginHeader() {
-  return (
-    <>
-      <div className="absolute top-0 right-7">
-        <Image
-          src="/images/login/login-logo.png"
-          alt="Kis points logo"
-          width={180}
-          height={180}
-          priority
-          className="h-auto w-auto max-w-[180px]"
-        />
-      </div>
-
-      <div className="mb-8 mt-2">
-        <h1 className="text-6xl font-extrabold text-brand-purple font-spartan">
-          Login
-        </h1>
-      </div>
-    </>
-  );
-}
-
-function LoginFooter() {
-  return (
-    <div className="mt-6 text-center text-sm text-[18px]">
-      <span className="text-gray-600 font-spartan">Don&apos;t have an account? </span>
-      <Link href="/signup" className="text-brand-pink text-[18px] font-semibold font-spartan hover:underline">
-        Sign up
-      </Link>
+const LoginHeader: FC = () => (
+  <>
+    <div className="absolute top-0 right-7">
+      <Image
+        src="/images/auth/auth-login-kis-logo.png"
+        alt="KIS Points logo"
+        width={180}
+        height={180}
+        priority
+        className="h-auto w-auto max-w-[180px]"
+      />
     </div>
-  );
-}
 
-export default function LoginForm({
+    <div className="mb-8 mt-2">
+      <h1 className="text-6xl font-extrabold text-brand-purple font-spartan">
+        Login
+      </h1>
+    </div>
+  </>
+);
+
+const LoginFooter: FC = () => (
+  <div className="mt-6 text-center text-sm text-[18px]">
+    <span className="text-gray-600 font-spartan">Don&apos;t have an account? </span>
+    <Link href="/signup" className="text-brand-pink text-[18px] font-semibold font-spartan hover:underline">
+      Sign up
+    </Link>
+  </div>
+);
+
+const LoginForm: FC<LoginFormProps> = ({
   email,
   password,
   isLoading,
@@ -64,7 +62,7 @@ export default function LoginForm({
   onEmailChange,
   onPasswordChange,
   onSubmit,
-}: LoginFormProps) {
+}) => {
   return (
     <>
       <AuthBackLink
@@ -146,4 +144,6 @@ export default function LoginForm({
       </AuthCard>
     </>
   );
-}
+};
+
+export default LoginForm;

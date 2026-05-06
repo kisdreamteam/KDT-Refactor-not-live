@@ -2,12 +2,14 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import type { FC } from 'react';
+
 import FormLabel from '@/components/ui/FormLabel';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
-import AuthBackLink from '@/components/ui/AuthBackLink';
-import AuthCard from '@/components/ui/AuthCard';
+import AuthBackLink from '@/components/ui/auth/AuthBackLink';
+import AuthCard from '@/components/ui/auth/AuthCard';
 
 type ResetPasswordFormProps = {
   password: string;
@@ -22,33 +24,40 @@ type ResetPasswordFormProps = {
   onSubmit: (data: { password: string; confirmPassword: string }) => void | Promise<void>;
 };
 
-function ResetHeader() {
-  return (
-    <>
-      <div className="absolute top-0 right-7">
-        <Image
-          src="/images/login/login-logo.png"
-          alt="Kis points logo"
-          width={180}
-          height={180}
-          priority
-          className="h-auto w-auto max-w-[180px]"
-        />
-      </div>
+const ResetHeader: FC = () => (
+  <>
+    <div className="absolute top-0 right-7">
+      <Image
+        src="/images/auth/auth-login-kis-logo.png"
+        alt="KIS Points logo"
+        width={180}
+        height={180}
+        priority
+        className="h-auto w-auto max-w-[180px]"
+      />
+    </div>
+    <div className="pointer-events-none absolute bottom-2 left-2 hidden lg:block">
+      <Image
+        src="/images/auth/auth-login-mascot.png"
+        alt="Auth mascot character"
+        width={200}
+        height={200}
+        className="h-auto w-auto max-w-[160px]"
+      />
+    </div>
 
-      <div className="mb-8 mt-2">
-        <h1 className="text-6xl font-extrabold text-brand-purple font-spartan">
-          Reset password
-        </h1>
-        <p className="mt-4 text-lg text-black/70 font-spartan">
-          Choose a new password for your account.
-        </p>
-      </div>
-    </>
-  );
-}
+    <div className="mb-8 mt-2">
+      <h1 className="text-6xl font-extrabold text-brand-purple font-spartan">
+        Reset password
+      </h1>
+      <p className="mt-4 text-lg text-black/70 font-spartan">
+        Choose a new password for your account.
+      </p>
+    </div>
+  </>
+);
 
-export default function ResetPasswordForm({
+const ResetPasswordForm: FC<ResetPasswordFormProps> = ({
   password,
   confirmPassword,
   isLoading,
@@ -59,7 +68,7 @@ export default function ResetPasswordForm({
   onPasswordChange,
   onConfirmPasswordChange,
   onSubmit,
-}: ResetPasswordFormProps) {
+}) => {
   return (
     <>
       <AuthBackLink
@@ -157,4 +166,6 @@ export default function ResetPasswordForm({
       </AuthCard>
     </>
   );
-}
+};
+
+export default ResetPasswordForm;

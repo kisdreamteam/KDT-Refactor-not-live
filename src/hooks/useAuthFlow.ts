@@ -9,7 +9,7 @@ import {
   signUpWithEmailPassword,
   updateCurrentUserPassword,
   verifyRecoveryOtp,
-} from '@/lib/api/auth';
+} from '@/lib/api/auth.service';
 
 export type ForgotPasswordStep = 'request' | 'verify';
 

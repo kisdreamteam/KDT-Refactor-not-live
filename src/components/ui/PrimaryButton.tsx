@@ -1,15 +1,16 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, FC, ReactNode } from 'react';
 
-interface PrimaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+type PrimaryButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   className?: string;
-  children: React.ReactNode;
-}
+  children: ReactNode;
+};
 
-export default function PrimaryButton({ className = '', children, ...props }: PrimaryButtonProps) {
+const PrimaryButton: FC<PrimaryButtonProps> = ({ className = '', children, ...props }) => {
   return (
     <button className={className} {...props}>
       {children}
     </button>
   );
-}
+};
 
+export default PrimaryButton;
