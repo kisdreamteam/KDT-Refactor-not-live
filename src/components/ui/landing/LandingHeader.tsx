@@ -7,8 +7,8 @@ type LandingHeaderProps = {
 
 export default function LandingHeader({ children }: LandingHeaderProps) {
   return (
-    <header className="w-full h-38 bg-brand-purple  relative">
-      <div className="absolute flex items-center bottom-3 right-2 gap-9 mr-90 font-spartan">
+    <header className="absolute w-full h-20 md:h-38 bg-brand-purple">
+      <div className="absolute flex items-center bottom-3 right-2 gap-4 md:gap-9 md:mr-90 mr-45 font-spartan">
         {children}
       </div>
       <LandingLogo />

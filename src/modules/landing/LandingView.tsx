@@ -6,14 +6,14 @@ import LandingNavLink from '@/components/ui/landing/LandingNavLink'
 
 export default function LandingView() {
   return (
-    <div className="flex h-screen w-full flex-col rounded-lg">
+    <div className="flex-col-1 md:flex-col-2 h-screen w-full">
       <LandingHeader>
         <LandingNavLink href="/login">Login</LandingNavLink>
         <LandingNavLink href="/signup">Signup</LandingNavLink>
       </LandingHeader>
 
-      <section className="pt-20">
-        <div className="grid grid-cols-2">
+      <section>
+        <div className="grid grid-cols-1 md:grid-cols-2 pt-40 md:pt-60 gap-20">
           <LandingMascot />
           <div>
             <HeroTitle>

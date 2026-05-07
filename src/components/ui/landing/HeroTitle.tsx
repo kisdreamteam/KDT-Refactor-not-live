@@ -6,7 +6,7 @@ type HeroTitleProps = {
 
 const HeroTitle: FC<HeroTitleProps> = ({ children }) => {
   return (
-    <h1 className="text-9xl leading-27.25 font-spartan font-bold mb-20 text-brand-purple">
+    <h1 className="text-4xl md:text-9xl leading-27.25 font-spartan font-bold mb-20 md:mb-20 text-brand-purple">
       {children}
     </h1>
   );
