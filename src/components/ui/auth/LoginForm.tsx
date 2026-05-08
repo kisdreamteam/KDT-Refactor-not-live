@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import type { FC } from 'react';
 
@@ -11,6 +10,7 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/auth/AuthBackLink';
 import AuthCard from '@/components/ui/auth/AuthCard';
+import AuthFormHeader from '@/components/ui/auth/AuthFormHeader';
 
 type LoginFormProps = {
   email: string;
@@ -22,30 +22,6 @@ type LoginFormProps = {
   onPasswordChange: (value: string) => void;
   onSubmit: (data: { email: string; password: string }) => void | Promise<void>;
 };
-
-const LoginHeader: FC = () => (
-  <>
-    <div className="flex flex-row gap-1 px-2 md:px-0">
-      <div className="flex md:flex-row justify-start items-center w-150 md:w-1/2">
-        <h1 className="text-3xl md:text-6xl font-extrabold text-brand-purple font-spartan">
-          Login
-        </h1>
-      </div>
-      <div className="flex justify-end w-50 md:w-1/2 items-center">
-        <Image
-          src="/images/auth/auth-login-kis-logo.png"
-          alt="KIS Points logo"
-          width={180}
-          height={180}
-          priority
-          className="h-auto w-20 md:w-45"
-        />
-      </div>
-
-
-    </div>
-  </>
-);
 
 const LoginFooter: FC = () => (
   <div className="mt-6 text-center text-sm text-[18px]">
@@ -79,7 +55,7 @@ const LoginForm: FC<LoginFormProps> = ({
       /> */}
 
       <AuthCard className="w-9/10 md:w-1/3 pb-2 px-2 md:px-6">
-        <LoginHeader />
+        <AuthFormHeader title="Login" />
         <form
           className="grid gap-6"
           onSubmit={(e) => {

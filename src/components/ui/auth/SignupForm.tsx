@@ -10,6 +10,7 @@ import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/auth/AuthBackLink';
 import AuthCard from '@/components/ui/auth/AuthCard';
+import AuthFormHeader from '@/components/ui/auth/AuthFormHeader';
 
 type SignupFormProps = {
   title: string;
@@ -40,17 +41,6 @@ type SignupFormProps = {
   }) => void | Promise<void>;
 };
 
-const SignupHeader: FC = () => (
-  <div className="mb-8">
-    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-black mb-2">
-      Create your account
-    </h1>
-    <p className="text-base text-black/70">
-      Enter your information to create a new account
-    </p>
-  </div>
-);
-
 const SignupFooter: FC = () => (
   <div className="mt-6 text-center text-sm text-black/70 flex items-center justify-center gap-2">
     <svg
@@ -73,13 +63,12 @@ const SignupFooter: FC = () => (
 );
 
 const SignupAvatar: FC = () => (
-  <div className="hidden md:unhidden flex-1 md:flex w-full md:w-full items-center justify-center">
+  <div className="hidden md:flex flex-1 w-full items-center justify-center">
     <div className="relative flex items-center justify-center bg-brand-purple w-200 h-200">
       <div
         className="bg-brand-cream rounded-full w-120 h-100 translate-y-25 translate-x-10 shadow-xl"
         style={{ borderRadius: '40% 30% 30% 30% / 40% 40% 40% 40%' }}
-      >
-      </div>
+      />
       <Image
         src="/images/auth/auth-signup-mascot.png"
         alt="Signup avatar character"
@@ -87,8 +76,6 @@ const SignupAvatar: FC = () => (
         height={600}
         priority
         className="absolute w-190 h-auto object-cover"
-      // style={{ top: 'calc(-20% + 10px)' }}
-      // -translate-x-10/25 -translate-y-10/28 scale-170
       />
     </div>
   </div>
@@ -117,17 +104,15 @@ const SignupForm: FC<SignupFormProps> = ({
   return (
     <>
       <div className="flex flex-row">
-        {/* not in a flex - not needed */}
         <AuthBackLink className="top-6 left-6" />
-        {/* <div className="flex items-center justify-center"> */}
-        {/* 1st child of the authlayout component */}
         <SignupAvatar />
       </div>
       <div className="flex flex-row items-center justify-center p-2 md:p-0">
-        {/* w-9/10 md:w-1/3 pb-4 px-2 md:px-0 */}
-        {/* 2nd child of the authlayout component */}
         <AuthCard className="w-full md:w-200 p-6 md:p-10 bg-brand-cream">
-          <SignupHeader />
+          <AuthFormHeader
+            title="Create your account"
+            subtitle="Enter your information to create a new account."
+          />
 
           <form
             onSubmit={(event) => {
@@ -251,7 +236,6 @@ const SignupForm: FC<SignupFormProps> = ({
 
           <SignupFooter />
         </AuthCard>
-        {/* </div> */}
       </div>
     </>
   );
