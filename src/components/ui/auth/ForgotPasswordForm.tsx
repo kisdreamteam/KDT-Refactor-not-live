@@ -5,11 +5,11 @@ import type { FC } from 'react';
 
 import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
-import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/auth/AuthBackLink';
 import AuthCard from '@/components/ui/auth/AuthCard';
 import AuthFormHeader from '@/components/ui/auth/AuthFormHeader';
+import AuthPrimaryButton from '@/components/ui/auth/AuthPrimaryButton';
 import type { ForgotPasswordStep } from '@/hooks/useAuthFlow';
 
 type ForgotPasswordFormProps = {
@@ -55,13 +55,14 @@ const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
   return (
     <>
       <AuthBackLink
-        className="text-gray-300 flex-shrink-0"
-        style={{
-          left: 'max(calc(50% - 400px - 48px), 24px)',
-          top: 'calc(50% - 220px)',
-        }}
+        className="top-6 left-6"
+        // style={{
+        //   // left: 'max(calc(50% - 400px - 48px), 24px)',
+        //   // top: 'calc(50% - 220px)',
+        // }}
         href="/login"
-        strokeWidth={3}
+      // strokeWidth={3}
+      // <AuthBackLink className="top-6 left-6" />
       />
       <AuthCard className="w-full max-w-[800px] px-8 py-10">
         <ForgotHeader step={step} />
@@ -96,13 +97,13 @@ const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
             </div>
 
             <div className="flex justify-center gap-3">
-              <PrimaryButton
+              <AuthPrimaryButton
                 type="submit"
                 disabled={isLoading}
-                className="h-12 w-full max-w-[750px] px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan disabled:opacity-60"
+                className="max-w-[750px]"
               >
                 {isLoading ? 'Sending…' : 'Send code'}
-              </PrimaryButton>
+              </AuthPrimaryButton>
             </div>
           </form>
         ) : (
@@ -149,13 +150,13 @@ const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
               >
                 Back
               </button>
-              <PrimaryButton
+              <AuthPrimaryButton
                 type="submit"
                 disabled={isLoading || otp.length !== 6}
-                className="h-12 w-full max-w-[750px] flex-1 px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan disabled:opacity-60 sm:max-w-none"
+              // className="max-w-[750px] flex-1 sm:max-w-none"
               >
                 {isLoading ? 'Verifying…' : 'Verify'}
-              </PrimaryButton>
+              </AuthPrimaryButton>
             </div>
           </form>
         )}

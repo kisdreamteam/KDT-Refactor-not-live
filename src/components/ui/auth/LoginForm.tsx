@@ -6,11 +6,12 @@ import type { FC } from 'react';
 import FormLabel from '@/components/ui/FormLabel';
 import TextInput from '@/components/ui/TextInput';
 import PasswordInput from '@/components/ui/PasswordInput';
-import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/auth/AuthBackLink';
 import AuthCard from '@/components/ui/auth/AuthCard';
 import AuthFormHeader from '@/components/ui/auth/AuthFormHeader';
+import AuthFormFooter from '@/components/ui/auth/AuthFormFooter';
+import AuthPrimaryButton from '@/components/ui/auth/AuthPrimaryButton';
 
 type LoginFormProps = {
   email: string;
@@ -22,15 +23,6 @@ type LoginFormProps = {
   onPasswordChange: (value: string) => void;
   onSubmit: (data: { email: string; password: string }) => void | Promise<void>;
 };
-
-const LoginFooter: FC = () => (
-  <div className="mt-6 text-center text-sm text-[18px]">
-    <span className="text-gray-600 font-spartan">Don&apos;t have an account? </span>
-    <Link href="/signup" className="text-brand-pink text-[18px] font-semibold font-spartan hover:underline">
-      Sign up
-    </Link>
-  </div>
-);
 
 const LoginForm: FC<LoginFormProps> = ({
   email,
@@ -45,19 +37,10 @@ const LoginForm: FC<LoginFormProps> = ({
   return (
     <>
       <AuthBackLink className="top-6 left-6" />
-      {/* <AuthBackLink
-        className="text-gray-300 flex-shrink-0"
-        style={{
-          left: 'max(calc(50% - 400px - 48px), 24px)',
-          top: 'calc(50% - 220px)',
-        }}
-        strokeWidth={3}
-      /> */}
-
       <AuthCard className="w-9/10 md:w-1/3 pb-2 px-2 md:px-6">
         <AuthFormHeader title="Login" />
         <form
-          className="grid gap-6"
+          className="grid gap-2"
           onSubmit={(e) => {
             e.preventDefault();
             void onSubmit({ email, password });
@@ -106,13 +89,12 @@ const LoginForm: FC<LoginFormProps> = ({
             </div>
 
             <div className="flex justify-center gap-3">
-              <PrimaryButton
+              <AuthPrimaryButton
                 type="submit"
                 disabled={isLoading}
-                className="h-12 w-full px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan disabled:opacity-60"
               >
                 {isLoading ? 'Logging in…' : 'Login'}
-              </PrimaryButton>
+              </AuthPrimaryButton>
             </div>
 
             {error && (
@@ -123,7 +105,11 @@ const LoginForm: FC<LoginFormProps> = ({
             )}
           </div>
         </form>
-        <LoginFooter />
+        <AuthFormFooter
+          promptText="Don&apos;t have an account?"
+          linkText="Sign up"
+          linkHref="/signup"
+        />
       </AuthCard>
     </>
   );

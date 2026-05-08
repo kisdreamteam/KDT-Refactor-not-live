@@ -6,11 +6,11 @@ import type { FC } from 'react';
 import TextInput from '@/components/ui/TextInput';
 import SelectInput from '@/components/ui/SelectInput';
 import PasswordInput from '@/components/ui/PasswordInput';
-import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/auth/AuthBackLink';
 import AuthCard from '@/components/ui/auth/AuthCard';
 import AuthFormHeader from '@/components/ui/auth/AuthFormHeader';
+import AuthPrimaryButton from '@/components/ui/auth/AuthPrimaryButton';
 
 type SignupFormProps = {
   title: string;
@@ -63,10 +63,10 @@ const SignupFooter: FC = () => (
 );
 
 const SignupAvatar: FC = () => (
-  <div className="hidden md:flex flex-1 w-full items-center justify-center">
+  <div className="hidden md:flex lg:flex flex-1 w-full items-center justify-center">
     <div className="relative flex items-center justify-center bg-brand-purple w-200 h-200">
       <div
-        className="bg-brand-cream rounded-full w-120 h-100 translate-y-25 translate-x-10 shadow-xl"
+        className="bg-brand-cream rounded-full md:w-80 md:h-80 lg:w-120 lg:h-120 translate-y-25 translate-x-10 shadow-xl"
         style={{ borderRadius: '40% 30% 30% 30% / 40% 40% 40% 40%' }}
       />
       <Image
@@ -75,7 +75,7 @@ const SignupAvatar: FC = () => (
         width={600}
         height={600}
         priority
-        className="absolute w-190 h-auto object-cover"
+        className="absolute md:w-140 md:h-auto lg:w-190 lg:h-auto object-cover"
       />
     </div>
   </div>
@@ -103,12 +103,12 @@ const SignupForm: FC<SignupFormProps> = ({
 }) => {
   return (
     <>
-      <div className="flex flex-row">
+      <div className="flex flex-row lg:w-full md:w-1/2">
         <AuthBackLink className="top-6 left-6" />
         <SignupAvatar />
       </div>
-      <div className="flex flex-row items-center justify-center p-2 md:p-0">
-        <AuthCard className="w-full md:w-200 p-6 md:p-10 bg-brand-cream">
+      <div className="flex flex-row w-full items-center justify-center p-2 md:p-0">
+        <AuthCard className="w-9/10 md:w-3/4 p-6 md:p-10 bg-brand-cream">
           <AuthFormHeader
             title="Create your account"
             subtitle="Enter your information to create a new account."
@@ -218,13 +218,13 @@ const SignupForm: FC<SignupFormProps> = ({
               </div>
             </div>
 
-            <PrimaryButton
+            <AuthPrimaryButton
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 rounded-[24px] bg-[#DE8680] text-white font-bold text-lg tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-[#DE8680]/30 mt-6 disabled:opacity-60"
+            // className="rounded-[18px] bg-brand-pink text-lg focus:ring-brand-pink/30 mt-6"
             >
               {isLoading ? 'Creating Account…' : 'Create Account'}
-            </PrimaryButton>
+            </AuthPrimaryButton>
 
             {error && (
               <InlineErrorText className="text-sm text-center text-red-600">{error}</InlineErrorText>

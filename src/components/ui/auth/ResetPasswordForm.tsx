@@ -5,11 +5,11 @@ import type { FC } from 'react';
 
 import FormLabel from '@/components/ui/FormLabel';
 import PasswordInput from '@/components/ui/PasswordInput';
-import PrimaryButton from '@/components/ui/PrimaryButton';
 import InlineErrorText from '@/components/ui/InlineErrorText';
 import AuthBackLink from '@/components/ui/auth/AuthBackLink';
 import AuthCard from '@/components/ui/auth/AuthCard';
 import AuthFormHeader from '@/components/ui/auth/AuthFormHeader';
+import AuthPrimaryButton from '@/components/ui/auth/AuthPrimaryButton';
 
 type ResetPasswordFormProps = {
   password: string;
@@ -116,13 +116,13 @@ const ResetPasswordForm: FC<ResetPasswordFormProps> = ({
             </div>
 
             <div className="flex justify-center gap-3">
-              <PrimaryButton
+              <AuthPrimaryButton
                 type="submit"
                 disabled={isLoading}
-                className="h-12 w-full max-w-[750px] px-8 rounded-[12px] bg-brand-pink text-white font-bold text-2xl tracking-tight hover:brightness-95 transition focus:outline-none focus:ring-4 focus:ring-brand-pink/30 font-spartan disabled:opacity-60"
+                className="max-w-[750px]"
               >
                 {isLoading ? 'Saving…' : 'Update password'}
-              </PrimaryButton>
+              </AuthPrimaryButton>
             </div>
 
             {error && (
