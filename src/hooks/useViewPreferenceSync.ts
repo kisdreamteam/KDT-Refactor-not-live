@@ -7,7 +7,7 @@ import { getSessionUserId, updateTeacherPreferredView } from '@/lib/api/auth.ser
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { usePreferenceStore } from '@/stores/usePreferenceStore';
 import { useUserStore } from '@/stores/useUserStore';
-import { syncProfileCacheViewPreference } from '@/hooks/useDashboardProfileSync';
+import { syncProfileCacheViewPreference } from '@/hooks/sync/useDashboardProfileSync';
 
 export function useViewPreferenceSync() {
   const router = useRouter();

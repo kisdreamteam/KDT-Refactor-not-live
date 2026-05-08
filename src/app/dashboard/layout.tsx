@@ -1,4 +1,4 @@
-import { DashboardClassesSync } from '@/hooks/useDashboardClassesSync';
+import { DashboardClassesSync } from '@/hooks/sync/useDashboardClassesSync';
 
 export default function DashboardLayoutWrapper({
   children,

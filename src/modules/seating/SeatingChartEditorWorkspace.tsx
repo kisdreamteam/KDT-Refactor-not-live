@@ -170,7 +170,7 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex h-full min-h-0 items-center justify-center">
         <p className="text-white text-xl">Loading seating charts...</p>
       </div>
     );
@@ -178,7 +178,7 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4">
         <p className="text-white text-xl">{error}</p>
         <button
           onClick={fetchLayouts}
@@ -192,8 +192,8 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
 
   if (layouts.length === 0) {
     return (
-      <div className="p-6 sm:p-8 md:p-10">
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+      <div className="h-full min-h-0 p-6 sm:p-8 md:p-10">
+        <div className="flex h-full min-h-0 flex-col items-center justify-center gap-6">
           <div className="text-center">
             <h2 className="text-white text-2xl font-semibold mb-2">No seating charts yet</h2>
             <p className="text-white/80 text-lg">
@@ -217,14 +217,13 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
   }
 
   return (
-    <div className="font-spartan relative w-full h-full min-h-0 bg-brand-purple">
-      <div className="w-full h-full min-h-0 bg-brand-purple relative overflow-visible">
+    <div className="font-spartan relative w-full h-full min-h-0 bg-brand-purple flex flex-col">
+      <div className="w-full h-full min-h-0 bg-brand-purple relative overflow-hidden flex-1">
         <div className="h-full min-h-0 relative" style={{ zIndex: 1 }}>
           <div className="h-full min-h-0 flex flex-col relative">
             <div
-              className="bg-brand-cream border-2 border-black rounded-lg pt-2 h-full w-full relative"
+              className="bg-brand-cream border-2 border-black rounded-lg pt-2 h-full w-full min-h-0 relative flex-1 overflow-auto"
               style={{
-                overflow: 'auto',
                 zIndex: 1
               }}
             >
@@ -458,13 +457,12 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                             <IconSettingsWheel className="w-5 h-5 text-gray-600" />
                           </button>
 
-                          {openSettingsMenuId === group.id && settingsMenuPosition && (
+                          {openSettingsMenuId === group.id && (
                             <div
                               data-settings-menu
-                              className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-[100] min-w-[140px]"
+                              className="absolute top-[calc(100%+4px)] right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] min-w-[140px]"
                               style={{
-                                top: `${settingsMenuPosition.top}px`,
-                                right: `${settingsMenuPosition.right}px`,
+                                maxWidth: 'min(90vw, 16rem)',
                               }}
                               onClick={(e) => e.stopPropagation()}
                               onMouseDown={(e) => e.stopPropagation()}

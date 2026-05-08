@@ -89,45 +89,49 @@ export default function SeatingChartView({
   });
 
   return (
-    <SeatingChartWorkspace
-      showGrid={showGrid}
-      showObjects={showObjects}
-      layoutOrientation={layoutOrientation}
-      isTeacherView={isTeacherView}
-      isLoadingLayouts={isLoadingLayouts}
-      layoutsError={layoutsError}
-      hasLayouts={layouts.length > 0}
-      isMultiSelectMode={isMultiSelectMode}
-      selectedStudentIds={selectedStudentIds}
-      onSelectStudent={onSelectStudent}
-      isPointLogOpen={isPointLogOpen}
-      setLogPage={setLogPage}
-      setRowsPerPage={setRowsPerPage}
-      rowsPerPage={rowsPerPage}
-      logTotalCount={logTotalCount}
-      pointLogError={pointLogError}
-      isPointLogLoading={isPointLogLoading}
-      pagedPointLogRows={pagedPointLogRows}
-      safeLogPage={safeLogPage}
-      totalPages={totalPages}
-      isDeleteModalOpen={isDeleteModalOpen}
-      layoutToDelete={layoutToDelete}
-      isCreateModalOpen={isCreateModalOpen}
-      isEditLayoutModalOpen={isEditLayoutModalOpen}
-      layoutToEdit={layoutToEdit}
-      onRetryLayouts={retryLayouts}
-      onCloseDeleteModal={() => {
-        setIsDeleteModalOpen(false);
-        setLayoutToDelete(null);
-      }}
-      onConfirmDelete={handleDeleteConfirmed}
-      onCloseCreateModal={() => setIsCreateModalOpen(false)}
-      onCreateLayout={handleCreateLayout}
-      onCloseEditModal={() => {
-        setIsEditLayoutModalOpen(false);
-        setLayoutToEdit(null);
-      }}
-      onSaveLayoutEdit={handleEditLayoutSave}
-    />
+    <div className="h-full w-full min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <SeatingChartWorkspace
+          showGrid={showGrid}
+          showObjects={showObjects}
+          layoutOrientation={layoutOrientation}
+          isTeacherView={isTeacherView}
+          isLoadingLayouts={isLoadingLayouts}
+          layoutsError={layoutsError}
+          hasLayouts={layouts.length > 0}
+          isMultiSelectMode={isMultiSelectMode}
+          selectedStudentIds={selectedStudentIds}
+          onSelectStudent={onSelectStudent}
+          isPointLogOpen={isPointLogOpen}
+          setLogPage={setLogPage}
+          setRowsPerPage={setRowsPerPage}
+          rowsPerPage={rowsPerPage}
+          logTotalCount={logTotalCount}
+          pointLogError={pointLogError}
+          isPointLogLoading={isPointLogLoading}
+          pagedPointLogRows={pagedPointLogRows}
+          safeLogPage={safeLogPage}
+          totalPages={totalPages}
+          isDeleteModalOpen={isDeleteModalOpen}
+          layoutToDelete={layoutToDelete}
+          isCreateModalOpen={isCreateModalOpen}
+          isEditLayoutModalOpen={isEditLayoutModalOpen}
+          layoutToEdit={layoutToEdit}
+          onRetryLayouts={retryLayouts}
+          onCloseDeleteModal={() => {
+            setIsDeleteModalOpen(false);
+            setLayoutToDelete(null);
+          }}
+          onConfirmDelete={handleDeleteConfirmed}
+          onCloseCreateModal={() => setIsCreateModalOpen(false)}
+          onCreateLayout={handleCreateLayout}
+          onCloseEditModal={() => {
+            setIsEditLayoutModalOpen(false);
+            setLayoutToEdit(null);
+          }}
+          onSaveLayoutEdit={handleEditLayoutSave}
+        />
+      </div>
+    </div>
   );
 }

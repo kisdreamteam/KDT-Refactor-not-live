@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import ConfirmationModal from '@/components/ui/modals/ConfirmationModal';
 import CreateClassModal from '@/components/dashboard/modals/CreateClassModal';
 import EditClassModal from '@/components/dashboard/modals/EditClassModal';
-import { refreshDashboardClassesForUserAction } from '@/hooks/useDashboardClassesSync';
+import { refreshDashboardClassesForUserAction } from '@/hooks/sync/useDashboardClassesSync';
 import { useClassesWorkspaceActions } from '@/hooks/useClassesWorkspaceActions';
 import LoadingState from '@/components/ui/LoadingState';
 import EmptyState from '@/components/ui/EmptyState';

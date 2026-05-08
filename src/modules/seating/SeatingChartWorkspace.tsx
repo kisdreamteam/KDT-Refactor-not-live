@@ -81,7 +81,7 @@ export default function SeatingChartWorkspace({
   const showGroupsLayer = hasLayouts && !isLoadingLayouts && !layoutsError;
 
   return (
-    <div className="font-spartan w-full h-full min-h-0 bg-brand-purple relative">
+    <div className="font-spartan w-full h-full min-h-0 bg-brand-purple relative flex flex-col">
       <ClassPointLogSlidePanel
         isOpen={isPointLogOpen}
         position="absolute"
@@ -101,7 +101,7 @@ export default function SeatingChartWorkspace({
       />
 
       <div
-        className="bg-brand-cream border-2 border-black rounded-lg pt-2 overflow-hidden min-h-0 h-full w-full relative"
+        className="bg-brand-cream border-2 border-black rounded-lg pt-2 overflow-hidden min-h-0 h-full w-full relative flex-1"
         style={{ zIndex: 1 }}
       >
         {isLoadingLayouts && (
@@ -137,7 +137,7 @@ export default function SeatingChartWorkspace({
 
         {showGroupsLayer && (
           <div
-            className="absolute inset-0"
+            className="relative h-full min-h-0"
             style={{
               transform: isTeacherView ? 'rotate(180deg)' : undefined,
               transformOrigin: 'center center',

@@ -37,11 +37,8 @@ export default function SeatingCanvasDecor({
 
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <div
-          className={`absolute bg-gray-700 border-2 ${borderClassName} rounded-lg flex items-center justify-center`}
+          className={`sticky top-0 left-1/2 -translate-x-1/2 bg-gray-700 border-2 ${borderClassName} rounded-lg flex items-center justify-center`}
           style={{
-            top: '0px',
-            left: '50%',
-            transform: 'translateX(-50%)',
             width: '800px',
             height: '30px',
             zIndex: 0,

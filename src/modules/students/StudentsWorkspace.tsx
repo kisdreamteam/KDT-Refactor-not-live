@@ -9,7 +9,7 @@ import StudentCardsGrid from './StudentCardsGrid';
 import LoadingState from '@/components/ui/LoadingState';
 import ErrorState from '@/components/ui/ErrorState';
 import EmptyState from '@/components/ui/EmptyState';
-import { refreshDashboardStudents } from '@/hooks/useDashboardStudentSync';
+import { refreshDashboardStudents } from '@/hooks/sync/useDashboardStudentSync';
 import { useClassPointLog } from '@/hooks/useClassPointLog';
 import { useDashboardToolbarInset } from '@/hooks/useDashboardToolbarInset';
 import { useStudentsModalsState } from '@/hooks/useStudentsModalsState';

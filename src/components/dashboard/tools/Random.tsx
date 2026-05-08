@@ -10,8 +10,8 @@ import { normalizeAvatarPath } from '@/lib/iconUtils';
 import { emitSeatingStudentPointsDelta } from '@/lib/events/students';
 import { useAwardPointsFlow } from '@/hooks/useAwardPointsFlow';
 import { useRandomStudentFlow } from '@/hooks/useRandomStudentFlow';
-import { refreshDashboardStudents } from '@/hooks/useDashboardStudentSync';
-import { refreshSeatingGroupsForLayout } from '@/hooks/useSeatingChartDataSync';
+import { refreshDashboardStudents } from '@/hooks/sync/useDashboardStudentSync';
+import { refreshSeatingGroupsForLayout } from '@/hooks/sync/useSeatingChartDataSync';
 import { useSeatingStore } from '@/stores/useSeatingStore';
 
 interface RandomProps {
