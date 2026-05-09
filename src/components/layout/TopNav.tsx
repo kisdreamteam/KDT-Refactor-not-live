@@ -115,14 +115,15 @@ export default function TopNav({ currentClassName, suppressTeacherFallback = fal
         </div>
       </div>
       <div className="flex items-center w-40 justify-end">
-        <Image
-          src="/images/shared/profile-avatar-dashboard.png"
-          alt="KIS Points"
-          width={160}
-          height={80}
-          className="object-contain"
-          style={{ width: 'auto', height: 'auto' }}
-        />
+        <div className="absolute h-40 w-40 shrink-0">
+          <Image
+            src="/images/shared/profile-avatar-dashboard.png"
+            alt="KIS Points"
+            fill
+            sizes="160px"
+            className="object-contain object-right"
+          />
+        </div>
       </div>
     </div>
   );
