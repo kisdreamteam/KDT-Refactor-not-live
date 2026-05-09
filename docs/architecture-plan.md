@@ -63,10 +63,11 @@ During the migration, old Context files will remain until fully deprecated. The 
 ```text
 /src
   /components
-    /layout       # Tier 1 (Navbars, Shells)
-    /dashboard    # Tier 2 (Main Stage, Views)
+    /dashboard    # Tier 2 views + workspace; Tier 1 shell nested here
+      /shell      # Navbars, DashboardLayout, AuthLayout
     /ui           # Tier 3 (StudentCards, Buttons, Modals)
   /hooks          # Layer 1 (Business Logic & Orchestration)
+    /sync         # Route + store sync (DashboardLayout children)
   /stores         # Layer 2 (Zustand - Global State)
       useDashboardUIStore.ts
       useDashboardDataStore.ts

@@ -27,9 +27,6 @@
       "@/assets/*": [
         "./src/assets/*"
       ],
-      "@/layouts/*": [
-        "./src/components/layout/*"
-      ],
       "@/styles/*": [
         "./src/styles/*"
       ],

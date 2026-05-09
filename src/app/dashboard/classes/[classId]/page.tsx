@@ -1,4 +1,4 @@
-import DashboardLayout from '@/layouts/dashboard/DashboardLayout';
+import DashboardLayout from '@/components/dashboard/shell/DashboardLayout';
 import DashboardViewSwitch from '../../../../modules/dashboard/DashboardViewSwitch';
 
 type ClassRosterPageProps = {

@@ -154,7 +154,7 @@ Status: Finished
 ### Create
 
 - `src/hooks/useDashboardSessionActions.ts` (logout)
-- `src/hooks/useViewPreferenceSync.ts` (view URL + preference persistence)
+- `src/hooks/sync/useViewPreferenceSync.ts` (view URL + preference persistence)
 
 ### Move into hooks
 
@@ -182,12 +182,12 @@ Status: Finished
 
 Status: Finished
 
-**File:** `src/components/layout/dashboard/DashboardLayout.tsx`  
+**File:** `src/components/dashboard/shell/DashboardLayout.tsx`  
 **Issue:** layout shell contains route-state business orchestration.
 
 ### Create
 
-- `src/hooks/useDashboardRouteStateSync.ts`
+- `src/hooks/sync/useDashboardRouteStateSync.ts`
 
 ### Move into hook
 
@@ -223,7 +223,7 @@ Status: Finished
 ### Move out (if safe)
 
 - transformation-heavy logic (e.g., groups fetch shaping) into:
-  - `src/hooks/useSeatingChartDataSync.tsx`, and/or
+  - `src/hooks/sync/useSeatingChartDataSync.tsx`, and/or
   - `src/lib/seatingLogic.ts`
 
 ### Keep in store

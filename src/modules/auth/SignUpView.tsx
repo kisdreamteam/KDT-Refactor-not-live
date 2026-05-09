@@ -1,6 +1,6 @@
 'use client';
 
-import AuthLayout from '@/components/layout/AuthLayout';
+import AuthLayout from '@/components/dashboard/shell/AuthLayout';
 import SignupForm from '@/components/ui/auth/SignupForm';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 
