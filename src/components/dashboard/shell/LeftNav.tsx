@@ -5,10 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { normalizeClassIconPath } from '@/lib/iconUtils';
 import IconTimerClock from '@/components/ui/icons/iconTimerClock';
-import IconEditPencil from '@/components/ui/icons/iconEditPencil';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
-import { useSeatingStore } from '@/stores/useSeatingStore';
 import { usePreferenceStore } from '@/stores/usePreferenceStore';
 
 /** Set to `true` to show the Archived Classes row in the sidebar again. */
@@ -24,10 +22,6 @@ export default function LeftNav() {
   const activeClassId = useDashboardStore((s) => s.activeClassId);
   const viewMode = usePreferenceStore((s) => s.viewMode);
   const setViewMode = usePreferenceStore((s) => s.setViewMode);
-  const layouts = useSeatingStore((s) => s.layouts);
-  const isLoadingLayouts = useSeatingStore((s) => s.isLoadingLayouts);
-  const selectedLayoutId = useSeatingStore((s) => s.selectedLayoutId);
-  const showClassesBootstrapSpinner = isLoadingClasses && allAccessibleClasses.length === 0;
 
   const handleAllClassesClick = () => {
     useLayoutStore.getState().setActiveView('classes');
@@ -44,8 +38,6 @@ export default function LeftNav() {
     setViewMode('archived');
     router.push('/dashboard');
   };
-
-  const showSeatingLayouts = currentView === 'seating';
 
   return (
     <div className="p-4 flex flex-col h-full max-h-screen">
@@ -144,75 +136,6 @@ export default function LeftNav() {
             </>
           )}
         </div>
-
-        {showSeatingLayouts && (
-          <>
-            <div className="w-full p-2 mb-2 flex-shrink-0">
-              <h2 className="text-center font-semibold text-gray-800">Layouts</h2>
-            </div>
-            <div className="space-y-2 mb-4 max-h-90 bg-brand-cream rounded-xl overflow-y-auto flex-shrink-0">
-              {isLoadingLayouts ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                  <span className="ml-2 text-sm text-gray-600">Loading layouts...</span>
-                </div>
-              ) : layouts.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-sm text-gray-500">No layouts yet</p>
-                </div>
-              ) : (
-                layouts.map((layout) => (
-                  <div key={layout.id} className="relative">
-                    <button
-                      type="button"
-                      onClick={() => useSeatingStore.getState().layoutNavHandlers?.onSelectLayout(layout.id)}
-                      className={`w-full flex items-center justify-between space-x-3 p-2 rounded cursor-pointer transition-colors ${
-                        selectedLayoutId === layout.id
-                          ? 'bg-purple-400 text-white hover:bg-purple-500'
-                          : 'hover:bg-blue-200'
-                      }`}
-                    >
-                      <span
-                        className={`text-xl font-medium block truncate flex-1 min-w-0 text-left ${
-                          selectedLayoutId === layout.id ? 'text-white' : 'text-gray-800'
-                        }`}
-                      >
-                        Layout: {layout.name}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) =>
-                        useSeatingStore.getState().layoutNavHandlers?.onEditLayout(layout.id, layout.name, e)
-                      }
-                      className="absolute top-2.5 right-9 w-6 h-6 bg-gray-400 hover:bg-gray-500 text-white rounded-full flex items-center justify-center transition-colors z-10"
-                      title={`Edit name: ${layout.name}`}
-                    >
-                      <IconEditPencil className="w-4 h-4 text-white" strokeWidth={2} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) =>
-                        useSeatingStore.getState().layoutNavHandlers?.onDeleteLayout(layout.id, layout.name, e)
-                      }
-                      className="absolute top-2.5 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors z-10"
-                      title={`Delete ${layout.name}`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </>
-        )}
       </div>
 
       <div className="flex-shrink-0 mt-auto">
