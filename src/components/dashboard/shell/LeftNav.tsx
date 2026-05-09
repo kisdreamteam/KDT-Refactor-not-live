@@ -15,13 +15,21 @@ const SHOW_ARCHIVED_CLASSES_IN_NAV = false;
 export default function LeftNav() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentView = searchParams?.get('view') || 'grid';
-  const classLinkSuffix = currentView === 'seating' ? '?view=seating' : '?view=grid';
   const allAccessibleClasses = useDashboardStore((s) => s.allAccessibleClasses);
   const isLoadingClasses = useDashboardStore((s) => s.isLoadingClasses);
   const activeClassId = useDashboardStore((s) => s.activeClassId);
+  const viewPreference = usePreferenceStore((s) => s.viewPreference);
   const viewMode = usePreferenceStore((s) => s.viewMode);
   const setViewMode = usePreferenceStore((s) => s.setViewMode);
+  const viewFromUrl = searchParams?.get('view');
+  const smartDiveView =
+    viewFromUrl === 'seating'
+      ? 'seating'
+      : viewFromUrl === 'grid'
+        ? 'grid'
+        : viewPreference === 'seating'
+          ? 'seating'
+          : 'grid';
 
   const handleAllClassesClick = () => {
     useLayoutStore.getState().setActiveView('classes');
@@ -83,7 +91,11 @@ export default function LeftNav() {
                 return (
                   <Link
                     key={cls.id}
-                    href={`/dashboard/classes/${cls.id}${classLinkSuffix}`}
+                    href={
+                      smartDiveView === 'seating'
+                        ? `/dashboard/classes/${cls.id}?view=seating`
+                        : `/dashboard/classes/${cls.id}`
+                    }
                     className="block"
                     onClick={() => {
                       useDashboardStore.getState().setActiveClassId(cls.id);
