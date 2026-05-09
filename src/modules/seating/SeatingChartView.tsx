@@ -62,6 +62,7 @@ export default function SeatingChartView({
   } = useClassPointLog(classId);
 
   const {
+    isLayoutManagerOpen,
     isTeacherView,
     isDeleteModalOpen,
     isEditLayoutModalOpen,
@@ -73,6 +74,9 @@ export default function SeatingChartView({
     setIsCreateModalOpen,
     setLayoutToDelete,
     setLayoutToEdit,
+    handleDeleteLayoutFromDrawer,
+    handleInlineRenameLayout,
+    handleSelectLayoutFromDrawer,
     handleDeleteConfirmed,
     handleCreateLayout,
     handleEditLayoutSave,
@@ -103,6 +107,9 @@ export default function SeatingChartView({
           selectedStudentIds={selectedStudentIds}
           onSelectStudent={onSelectStudent}
           isPointLogOpen={isPointLogOpen}
+          isLayoutManagerOpen={isLayoutManagerOpen}
+          layouts={layouts}
+          selectedLayoutId={selectedLayoutId}
           setLogPage={setLogPage}
           setRowsPerPage={setRowsPerPage}
           rowsPerPage={rowsPerPage}
@@ -130,6 +137,9 @@ export default function SeatingChartView({
             setLayoutToEdit(null);
           }}
           onSaveLayoutEdit={handleEditLayoutSave}
+          onSelectLayout={handleSelectLayoutFromDrawer}
+          onRenameLayoutInline={handleInlineRenameLayout}
+          onDeleteLayoutInline={handleDeleteLayoutFromDrawer}
         />
       </div>
     </div>

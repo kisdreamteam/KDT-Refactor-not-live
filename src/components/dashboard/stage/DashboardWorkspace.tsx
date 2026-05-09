@@ -17,6 +17,7 @@ import { STUDENT_EVENTS } from '@/lib/events/students';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { usePreferenceStore } from '@/stores/usePreferenceStore';
+import { useSeatingStore } from '@/stores/useSeatingStore';
 import { useDashboardSessionActions } from '@/hooks/useDashboardSessionActions';
 import { useViewPreferenceSync } from '@/hooks/sync/useViewPreferenceSync';
 
@@ -40,6 +41,7 @@ export default function DashboardWorkspace({
   const isEditMode = useLayoutStore((s) => s.isEditMode);
   const isTimerOpen = useLayoutStore((s) => s.isTimerOpen);
   const isRandomOpen = useLayoutStore((s) => s.isRandomOpen);
+  const seatingLayoutsCount = useSeatingStore((s) => s.layouts.length);
   const setTimerOpen = useLayoutStore((s) => s.setTimerOpen);
   const setRandomOpen = useLayoutStore((s) => s.setRandomOpen);
   const setEditClassModalOpen = useLayoutStore((s) => s.setEditClassModalOpen);
@@ -99,6 +101,17 @@ export default function DashboardWorkspace({
                 title: 'Seating Editor View',
                 onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_OPEN_SEATING_EDITOR)),
                 icon: <IconEditPencil className="w-6 h-6 text-black" strokeWidth={2} />,
+              },
+              {
+                id: 'layout-manager',
+                title: 'Layout manager',
+                disabled: seatingLayoutsCount === 0,
+                onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_TOGGLE_LAYOUT_MANAGER)),
+                icon: (
+                  <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" />
+                  </svg>
+                ),
               },
             ],
         bottomActions: isEditMode

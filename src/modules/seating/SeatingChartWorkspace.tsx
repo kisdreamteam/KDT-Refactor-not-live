@@ -5,9 +5,11 @@ import ConfirmationModal from '@/components/ui/modals/ConfirmationModal';
 import CreateLayoutModal from '@/components/dashboard/modals/CreateLayoutModal';
 import EditLayoutModal from '@/components/dashboard/modals/EditLayoutModal';
 import ClassPointLogSlidePanel from '@/components/dashboard/ClassPointLogSlidePanel';
+import LayoutManagerDrawer from '@/components/dashboard/seating/LayoutManagerDrawer';
 import SeatingCanvasDecor from '@/components/dashboard/seating/SeatingCanvasDecor';
 import SeatingGroupsCanvas from '@/components/dashboard/seating/SeatingGroupsCanvas';
 import type { PointLogRow } from '@/hooks/useClassPointLog';
+import type { SeatingChartRecord } from '@/lib/api/seating';
 
 type SeatingChartWorkspaceProps = {
   showGrid: boolean;
@@ -21,6 +23,9 @@ type SeatingChartWorkspaceProps = {
   selectedStudentIds: string[];
   onSelectStudent?: (studentId: string) => void;
   isPointLogOpen: boolean;
+  isLayoutManagerOpen: boolean;
+  layouts: SeatingChartRecord[];
+  selectedLayoutId: string | null;
   setLogPage: Dispatch<SetStateAction<number>>;
   setRowsPerPage: Dispatch<SetStateAction<number>>;
   rowsPerPage: number;
@@ -42,6 +47,9 @@ type SeatingChartWorkspaceProps = {
   onCreateLayout: (layoutName: string) => Promise<void>;
   onCloseEditModal: () => void;
   onSaveLayoutEdit: (newName: string) => Promise<void>;
+  onSelectLayout: (layoutId: string) => void;
+  onRenameLayoutInline: (layoutId: string, newName: string) => Promise<void>;
+  onDeleteLayoutInline: (layoutId: string, layoutName: string) => void;
 };
 
 export default function SeatingChartWorkspace({
@@ -56,6 +64,9 @@ export default function SeatingChartWorkspace({
   selectedStudentIds,
   onSelectStudent,
   isPointLogOpen,
+  isLayoutManagerOpen,
+  layouts,
+  selectedLayoutId,
   setLogPage,
   setRowsPerPage,
   rowsPerPage,
@@ -77,6 +88,9 @@ export default function SeatingChartWorkspace({
   onCreateLayout,
   onCloseEditModal,
   onSaveLayoutEdit,
+  onSelectLayout,
+  onRenameLayoutInline,
+  onDeleteLayoutInline,
 }: SeatingChartWorkspaceProps) {
   const showGroupsLayer = hasLayouts && !isLoadingLayouts && !layoutsError;
 
@@ -84,10 +98,10 @@ export default function SeatingChartWorkspace({
     <div className="font-spartan w-full h-full min-h-0 bg-brand-purple relative flex flex-col">
       <ClassPointLogSlidePanel
         isOpen={isPointLogOpen}
-        position="absolute"
-        rightPx={72}
-        topPx={8}
-        bottomPx={8}
+        position="fixed"
+        rightPx={65}
+        topPx={14}
+        bottomPx={70}
         zIndex={40}
         logTotalCount={logTotalCount}
         pointLogError={pointLogError}
@@ -98,6 +112,19 @@ export default function SeatingChartWorkspace({
         rowsPerPage={rowsPerPage}
         setLogPage={setLogPage}
         setRowsPerPage={setRowsPerPage}
+      />
+      <LayoutManagerDrawer
+        isOpen={isLayoutManagerOpen}
+        position="fixed"
+        rightPx={65}
+        topPx={14}
+        bottomPx={70}
+        zIndex={35}
+        layouts={layouts}
+        selectedLayoutId={selectedLayoutId}
+        onSelectLayout={onSelectLayout}
+        onRenameLayout={onRenameLayoutInline}
+        onDeleteLayout={onDeleteLayoutInline}
       />
 
       <div

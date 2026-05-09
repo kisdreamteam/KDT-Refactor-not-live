@@ -50,9 +50,15 @@ export function useSeatingLayoutManager({
   const [isEditLayoutModalOpen, setIsEditLayoutModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isTeacherView, setIsTeacherView] = useState(false);
+  const [isLayoutManagerOpen, setIsLayoutManagerOpen] = useState(false);
 
   const handleDeleteLayout = useCallback((layoutId: string, layoutName: string, e: MouseEvent) => {
     e.stopPropagation();
+    setLayoutToDelete({ id: layoutId, name: layoutName });
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const handleDeleteLayoutFromDrawer = useCallback((layoutId: string, layoutName: string) => {
     setLayoutToDelete({ id: layoutId, name: layoutName });
     setIsDeleteModalOpen(true);
   }, []);
@@ -62,6 +68,29 @@ export function useSeatingLayoutManager({
     setLayoutToEdit({ id: layoutId, name: layoutName });
     setIsEditLayoutModalOpen(true);
   }, []);
+
+  const handleInlineRenameLayout = useCallback(
+    async (layoutId: string, newName: string) => {
+      const trimmedName = newName.trim();
+      if (!trimmedName) return;
+      try {
+        await updateSeatingLayoutName(layoutId, trimmedName);
+      } catch (error) {
+        console.error('Error updating layout name:', error);
+        throw new Error('Failed to update layout name.');
+      }
+      await refreshSeatingLayoutsForClass(classId);
+    },
+    [classId]
+  );
+
+  const handleSelectLayoutFromDrawer = useCallback(
+    (layoutId: string) => {
+      setSelectedLayoutId(layoutId);
+      setIsLayoutManagerOpen(false);
+    },
+    [setSelectedLayoutId]
+  );
 
   useEffect(() => {
     if (!classId) return;
@@ -205,16 +234,22 @@ export function useSeatingLayoutManager({
       if (currentView !== 'seating') return;
       setIsPointLogOpen((v) => !v);
     };
+    const onToggleLayoutManagerEvent = () => {
+      if (currentView !== 'seating') return;
+      setIsLayoutManagerOpen((v) => !v);
+    };
 
     window.addEventListener(STUDENT_EVENTS.STAGE_CREATE_LAYOUT, onCreateLayoutEvent);
     window.addEventListener(STUDENT_EVENTS.STAGE_OPEN_SEATING_EDITOR, onOpenEditorEvent);
     window.addEventListener(STUDENT_EVENTS.STAGE_TOGGLE_TEACHER_VIEW, onToggleTeacherViewEvent);
     window.addEventListener(STUDENT_EVENTS.STAGE_TOGGLE_POINT_LOG, onTogglePointLogEvent);
+    window.addEventListener(STUDENT_EVENTS.STAGE_TOGGLE_LAYOUT_MANAGER, onToggleLayoutManagerEvent);
     return () => {
       window.removeEventListener(STUDENT_EVENTS.STAGE_CREATE_LAYOUT, onCreateLayoutEvent);
       window.removeEventListener(STUDENT_EVENTS.STAGE_OPEN_SEATING_EDITOR, onOpenEditorEvent);
       window.removeEventListener(STUDENT_EVENTS.STAGE_TOGGLE_TEACHER_VIEW, onToggleTeacherViewEvent);
       window.removeEventListener(STUDENT_EVENTS.STAGE_TOGGLE_POINT_LOG, onTogglePointLogEvent);
+      window.removeEventListener(STUDENT_EVENTS.STAGE_TOGGLE_LAYOUT_MANAGER, onToggleLayoutManagerEvent);
     };
   }, [classId, currentView, handleOpenSeatingEditor, layouts.length, setIsPointLogOpen]);
 
@@ -273,6 +308,7 @@ export function useSeatingLayoutManager({
   }, [classId]);
 
   return {
+    isLayoutManagerOpen,
     isTeacherView,
     isDeleteModalOpen,
     isEditLayoutModalOpen,
@@ -282,8 +318,12 @@ export function useSeatingLayoutManager({
     setIsDeleteModalOpen,
     setIsEditLayoutModalOpen,
     setIsCreateModalOpen,
+    setIsLayoutManagerOpen,
     setLayoutToDelete,
     setLayoutToEdit,
+    handleDeleteLayoutFromDrawer,
+    handleInlineRenameLayout,
+    handleSelectLayoutFromDrawer,
     handleDeleteConfirmed,
     handleCreateLayout,
     handleEditLayoutSave,
