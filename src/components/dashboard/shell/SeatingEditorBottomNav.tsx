@@ -8,7 +8,6 @@ import IconAutoAssign from '@/components/ui/icons/iconAutoAssign';
 import IconAddPlus from '@/components/ui/icons/iconAddPlus';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
-import DashboardBottomNavGrid from '@/components/dashboard/shell/DashboardBottomNavGrid';
 import BottomNavRandomTimerCenter from '@/components/dashboard/shell/BottomNavRandomTimerCenter';
 
 interface SeatingEditorBottomNavProps extends SeatingEditBottomNavViewProps {
@@ -93,11 +92,9 @@ export default function SeatingEditorBottomNav({
 
   return (
     <BaseBottomNav className="overflow-visible">
-      <DashboardBottomNavGrid
-        zone5={
-          <>
-            {currentClassName && (
-              <div className="relative flex-shrink-0" ref={viewSettingsButtonRef}>
+      <div className="flex w-full min-w-0 items-center gap-4 overflow-visible">
+        {currentClassName && (
+          <div className="relative flex-shrink-0" ref={viewSettingsButtonRef}>
                 <BotNavGrayButton
                   icon={<IconSettingsWheel />}
                   label="View Settings"
@@ -208,11 +205,11 @@ export default function SeatingEditorBottomNav({
                     </div>
                   </div>
                 )}
-              </div>
-            )}
+          </div>
+        )}
 
-            {currentClassName && (
-              <div className="relative flex-shrink-0" ref={addGroupsButtonRef}>
+        {currentClassName && (
+          <div className="relative flex-shrink-0" ref={addGroupsButtonRef}>
                 <BotNavGrayButton
                   icon={<IconAddPlus />}
                   label="Add Groups"
@@ -246,17 +243,17 @@ export default function SeatingEditorBottomNav({
                     ))}
                   </div>
                 )}
-              </div>
-            )}
+          </div>
+        )}
 
-            {currentClassName && (
-              <BotNavGrayButton icon={<IconAutoAssign />} label="Auto Assign Seats" onClick={onAutoAssignSeats} />
-            )}
+        {currentClassName && (
+          <BotNavGrayButton icon={<IconAutoAssign />} label="Auto Assign Seats" onClick={onAutoAssignSeats} />
+        )}
 
-            <BotNavGrayButton icon={<IconRandomArrows />} label="Randomize Seats" onClick={onRandomize} />
+        <BotNavGrayButton icon={<IconRandomArrows />} label="Randomize Seats" onClick={onRandomize} />
 
-            {currentClassName && (
-              <div className="relative flex-shrink-0" ref={settingsButtonRef}>
+        {currentClassName && (
+          <div className="relative flex-shrink-0" ref={settingsButtonRef}>
                 <BotNavGrayButton
                   icon={<IconSettingsWheel />}
                   label="Settings"
@@ -311,22 +308,18 @@ export default function SeatingEditorBottomNav({
                     </button>
                   </div>
                 )}
-              </div>
-            )}
-          </>
-        }
-        zone6={
-          <BottomNavRandomTimerCenter interactive={false} onRandomClick={() => {}} onTimerClick={() => {}} />
-        }
-        zone7={
-          <BotNavGrayButton
-            variant="danger"
-            icon={<IconAddPlus />}
-            label="Add group"
-            onClick={() => handleAddGroups(1)}
-          />
-        }
-      />
+          </div>
+        )}
+
+        <BottomNavRandomTimerCenter interactive={false} onRandomClick={() => {}} onTimerClick={() => {}} />
+
+        <BotNavGrayButton
+          variant="danger"
+          icon={<IconAddPlus />}
+          label="Add group"
+          onClick={() => handleAddGroups(1)}
+        />
+      </div>
     </BaseBottomNav>
   );
 }

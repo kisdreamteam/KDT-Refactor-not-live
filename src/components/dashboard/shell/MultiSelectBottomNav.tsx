@@ -9,7 +9,6 @@ import IconNoCircleX from '@/components/ui/icons/iconNoCircleX';
 import IconStarTrophy from '@/components/ui/icons/iconStarTrophy';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
-import DashboardBottomNavGrid from '@/components/dashboard/shell/DashboardBottomNavGrid';
 import BottomNavRandomTimerCenter from '@/components/dashboard/shell/BottomNavRandomTimerCenter';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 
@@ -82,53 +81,45 @@ export default function MultiSelectBottomNav() {
 
   return (
     <BaseBottomNav className="overflow-visible">
-      <DashboardBottomNavGrid
-        zone5={
-          <>
-            <BotNavGrayButton icon={<IconCheckCircle />} label="Select All" onClick={handleSelectAll} />
+      <div className="flex w-full min-w-0 items-center gap-4 overflow-visible">
+        <BotNavGrayButton icon={<IconCheckCircle />} label="Select All" onClick={handleSelectAll} />
 
-            <BotNavGrayButton
-              icon={<IconCircleX />}
-              label="Select None"
-              onClick={handleSelectNone}
-              enabled={selectedCount > 0}
-            />
+        <BotNavGrayButton
+          icon={<IconCircleX />}
+          label="Select None"
+          onClick={handleSelectNone}
+          enabled={selectedCount > 0}
+        />
 
-            <BotNavGrayButton
-              icon={<IconTimerClock />}
-              label="Recently Selected"
-              onClick={handleRecentlySelect}
-              enabled={hasRecentlySelected}
-            />
+        <BotNavGrayButton
+          icon={<IconTimerClock />}
+          label="Recently Selected"
+          onClick={handleRecentlySelect}
+          enabled={hasRecentlySelected}
+        />
 
-            <BotNavGrayButton
-              icon={<IconRandomArrows />}
-              label="Inverse Select"
-              onClick={handleInverseSelect}
-              enabled={selectedCount > 0}
-            />
-          </>
-        }
-        zone6={
-          <BottomNavRandomTimerCenter interactive={false} onRandomClick={() => {}} onTimerClick={() => {}} />
-        }
-        zone7={
-          <>
-            <BotNavGrayButton
-              variant="danger"
-              icon={<IconNoCircleX />}
-              label="Cancel"
-              onClick={handleCancel}
-            />
-            <BotNavGrayButton
-              variant="primary"
-              icon={<IconStarTrophy />}
-              label="Award Points"
-              onClick={handleAwardPoints}
-            />
-          </>
-        }
-      />
+        <BotNavGrayButton
+          icon={<IconRandomArrows />}
+          label="Inverse Select"
+          onClick={handleInverseSelect}
+          enabled={selectedCount > 0}
+        />
+
+        <BottomNavRandomTimerCenter interactive={false} onRandomClick={() => {}} onTimerClick={() => {}} />
+
+        <BotNavGrayButton
+          variant="danger"
+          icon={<IconNoCircleX />}
+          label="Cancel"
+          onClick={handleCancel}
+        />
+        <BotNavGrayButton
+          variant="primary"
+          icon={<IconStarTrophy />}
+          label="Award Points"
+          onClick={handleAwardPoints}
+        />
+      </div>
     </BaseBottomNav>
   );
 }
