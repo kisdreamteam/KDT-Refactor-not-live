@@ -1,7 +1,7 @@
 'use client';
 
 import Modal from '@/components/ui/modals/Modal';
-import AddSkillForm, { type AddSkillFormSubmitValues } from '@/components/dashboard/AddSkillForm';
+import AddSkillForm, { type AddSkillFormSubmitValues } from '@/components/dashboard/forms/AddSkillForm';
 
 interface AddSkillModalProps {
   isOpen: boolean;

@@ -295,9 +295,8 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                           key={student.id}
                           onClick={(e) => handleStudentClick(e, student.id, group.id)}
                           onMouseDown={(e) => e.stopPropagation()}
-                          className={`flex items-center gap-1 p-1.5 rounded border transition-colors min-w-0 overflow-hidden ${
-                            isRandomizing ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
-                          } ${bgColor}`}
+                          className={`flex items-center gap-1 p-1.5 rounded border transition-colors min-w-0 overflow-hidden ${isRandomizing ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+                            } ${bgColor}`}
                           style={{
                             width: '100%',
                             height: `${studentCardHeight}px`
@@ -328,11 +327,10 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                                 removeStudentFromGroup(student.id, group.id);
                               }
                             }}
-                            className={`p-0.5 flex-shrink-0 ${
-                              isRandomizing
+                            className={`p-0.5 flex-shrink-0 ${isRandomizing
                                 ? 'text-gray-400 cursor-not-allowed'
                                 : 'text-red-500 hover:text-red-700'
-                            }`}
+                              }`}
                             style={{ width: '16px', height: '16px' }}
                             title={isRandomizing ? 'Cannot remove during animation' : 'Remove from group'}
                             disabled={isRandomizing}
@@ -355,13 +353,12 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                         onDragStart={(e) => handleDragStart(e, group.id)}
                         onDragEnd={handleDragEnd}
                         onClick={() => handleGroupClick(group.id)}
-                        className={`bg-white rounded-lg border-2 shadow-lg flex flex-col ${
-                          draggedGroupId === group.id ? 'shadow-2xl border-purple-600 opacity-50' :
+                        className={`bg-white rounded-lg border-2 shadow-lg flex flex-col ${draggedGroupId === group.id ? 'shadow-2xl border-purple-600 opacity-50' :
                             isTarget ? 'border-purple-500 ring-4 ring-purple-300' :
-                          isTargetForMove ? 'border-green-400 hover:border-green-500 cursor-pointer ring-2 ring-green-200' :
-                            selectedStudentForGroup ? 'border-purple-400 hover:border-purple-500 cursor-pointer' :
-                            'border-gray-300'
-                        }`}
+                              isTargetForMove ? 'border-green-400 hover:border-green-500 cursor-pointer ring-2 ring-green-200' :
+                                selectedStudentForGroup ? 'border-purple-400 hover:border-purple-500 cursor-pointer' :
+                                  'border-gray-300'
+                          }`}
                         style={{
                           position: 'absolute',
                           left: `${groupX}px`,
@@ -377,9 +374,8 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                         }}
                       >
                         <div
-                          className={`border-b border-gray-200 bg-purple-50 rounded-t-lg relative ${
-                            isEditingName ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
-                          }`}
+                          className={`border-b border-gray-200 bg-purple-50 rounded-t-lg relative ${isEditingName ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
+                            }`}
                           style={{
                             height: '50px',
                             minHeight: '50px',
@@ -530,9 +526,8 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                                   key={slotIndex}
                                   onClick={handleSlotClick(group.id, slotIndex)}
                                   onMouseDown={(e) => e.stopPropagation()}
-                                  className={`rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs ${
-                                    selectedStudentForGroup || isTargetForMove ? 'cursor-pointer hover:border-purple-400 hover:bg-purple-50' : 'cursor-default'
-                                  }`}
+                                  className={`rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs ${selectedStudentForGroup || isTargetForMove ? 'cursor-pointer hover:border-purple-400 hover:bg-purple-50' : 'cursor-default'
+                                    }`}
                                   style={{ height: `${studentCardHeight}px` }}
                                 >
                                   {selectedStudentForGroup || isTargetForMove ? 'Drop here' : 'Empty'}
@@ -559,9 +554,8 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                               key={`expand-${colIndex}`}
                               onClick={handleExpandInColumn(group.id, colIndex, validColumns)}
                               onMouseDown={(e) => e.stopPropagation()}
-                              className={`flex items-center justify-center text-gray-500 text-xs rounded border border-dashed border-gray-300 min-h-[28px] ${
-                                selectedStudentForGroup || isTargetForMove ? 'cursor-pointer hover:border-purple-400 hover:bg-purple-50' : 'cursor-default'
-                              }`}
+                              className={`flex items-center justify-center text-gray-500 text-xs rounded border border-dashed border-gray-300 min-h-[28px] ${selectedStudentForGroup || isTargetForMove ? 'cursor-pointer hover:border-purple-400 hover:bg-purple-50' : 'cursor-default'
+                                }`}
                             >
                               + Add
                             </div>

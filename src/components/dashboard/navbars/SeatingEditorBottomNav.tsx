@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { SeatingEditBottomNavViewProps } from '@/hooks/useSeatingEditBottomNav';
+import SeatingViewSettingsMenu from '@/components/dashboard/menus/SeatingViewSettingsMenu';
+import SeatingSettingsMenu from '@/components/dashboard/menus/SeatingSettingsMenu';
 import IconRandomArrows from '@/components/ui/icons/iconRandomArrows';
 import IconSettingsWheel from '@/components/ui/icons/iconSettingsWheel';
 import IconAutoAssign from '@/components/ui/icons/iconAutoAssign';
@@ -15,9 +17,6 @@ interface SeatingEditorBottomNavProps extends SeatingEditBottomNavViewProps {
   classId?: string | null;
   onEditClass?: () => void;
 }
-
-const toggleTrackOn = 'bg-brand-purple';
-const toggleTrackOff = 'bg-gray-300';
 
 export default function SeatingEditorBottomNav({
   currentClassName,
@@ -95,154 +94,66 @@ export default function SeatingEditorBottomNav({
       <div className="flex w-full min-w-0 items-center gap-4 overflow-visible">
         {currentClassName && (
           <div className="relative flex-shrink-0" ref={viewSettingsButtonRef}>
-                <BotNavGrayButton
-                  icon={<IconSettingsWheel />}
-                  label="View Settings"
-                  active={isViewSettingsMenuOpen}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsViewSettingsMenuOpen(!isViewSettingsMenuOpen);
-                  }}
-                  stopPropagation={true}
-                />
+            <BotNavGrayButton
+              icon={<IconSettingsWheel />}
+              label="View Settings"
+              active={isViewSettingsMenuOpen}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsViewSettingsMenuOpen(!isViewSettingsMenuOpen);
+              }}
+              stopPropagation={true}
+            />
 
-                {isViewSettingsMenuOpen && (
-                  <div
-                    data-view-settings-menu
-                    className="absolute bottom-full left-0 z-[100] mb-2 min-w-[220px] rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50">
-                      <span className="text-sm font-medium text-gray-700">Show Grid</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void onToggleShowGrid(!showGrid);
-                        }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          showGrid ? toggleTrackOn : toggleTrackOff
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            showGrid ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50">
-                      <span className="text-sm font-medium text-gray-700">Show Furniture</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void onToggleShowFurniture(!showFurniture);
-                        }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          showFurniture ? toggleTrackOn : toggleTrackOff
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            showFurniture ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50">
-                      <span className="text-sm font-medium text-gray-700">Teacher&apos;s Desk Left</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void onToggleTeachersDeskLeft(!teachersDeskLeft);
-                        }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          teachersDeskLeft ? toggleTrackOn : toggleTrackOff
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            teachersDeskLeft ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50">
-                      <span className="text-sm font-medium text-gray-700">Color by Gender</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleColorByGender();
-                        }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          colorByGender ? toggleTrackOn : toggleTrackOff
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            colorByGender ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between px-4 py-2 opacity-50 hover:bg-gray-50">
-                      <span className="text-sm font-medium text-gray-700">Color by Level</span>
-                      <button
-                        type="button"
-                        disabled
-                        className="relative inline-flex h-6 w-11 cursor-not-allowed items-center rounded-full bg-gray-300 transition-colors"
-                      >
-                        <span className="inline-block h-4 w-4 translate-x-1 transform rounded-full bg-white transition-transform" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+            <SeatingViewSettingsMenu
+              isOpen={isViewSettingsMenuOpen}
+              showGrid={showGrid}
+              showFurniture={showFurniture}
+              teachersDeskLeft={teachersDeskLeft}
+              colorByGender={colorByGender}
+              onToggleShowGrid={onToggleShowGrid}
+              onToggleShowFurniture={onToggleShowFurniture}
+              onToggleTeachersDeskLeft={onToggleTeachersDeskLeft}
+              onToggleColorByGender={onToggleColorByGender}
+            />
           </div>
         )}
 
         {currentClassName && (
           <div className="relative flex-shrink-0" ref={addGroupsButtonRef}>
-                <BotNavGrayButton
-                  icon={<IconAddPlus />}
-                  label="Add Groups"
-                  active={isAddGroupsMenuOpen}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsAddGroupsMenuOpen(!isAddGroupsMenuOpen);
-                  }}
-                  stopPropagation={true}
-                />
+            <BotNavGrayButton
+              icon={<IconAddPlus />}
+              label="Add Groups"
+              active={isAddGroupsMenuOpen}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAddGroupsMenuOpen(!isAddGroupsMenuOpen);
+              }}
+              stopPropagation={true}
+            />
 
-                {isAddGroupsMenuOpen && (
-                  <div
-                    data-add-groups-menu
-                    className="absolute bottom-full left-0 z-[100] mb-2 min-w-[160px] rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
+            {isAddGroupsMenuOpen && (
+              <div
+                data-add-groups-menu
+                className="absolute bottom-full left-0 z-[100] mb-2 min-w-[160px] rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                  <button
+                    type="button"
+                    key={num}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddGroups(num);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100"
                   >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                      <button
-                        type="button"
-                        key={num}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddGroups(num);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100"
-                      >
-                        {num} Groups
-                      </button>
-                    ))}
-                  </div>
-                )}
+                    {num} Groups
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -254,60 +165,25 @@ export default function SeatingEditorBottomNav({
 
         {currentClassName && (
           <div className="relative flex-shrink-0" ref={settingsButtonRef}>
-                <BotNavGrayButton
-                  icon={<IconSettingsWheel />}
-                  label="Settings"
-                  active={isSettingsMenuOpen}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsSettingsMenuOpen(!isSettingsMenuOpen);
-                  }}
-                  stopPropagation={true}
-                />
+            <BotNavGrayButton
+              icon={<IconSettingsWheel />}
+              label="Settings"
+              active={isSettingsMenuOpen}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSettingsMenuOpen(!isSettingsMenuOpen);
+              }}
+              stopPropagation={true}
+            />
 
-                {isSettingsMenuOpen && (
-                  <div
-                    data-settings-menu
-                    className="absolute bottom-full left-0 z-[100] mb-2 min-w-[220px] rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    {classId && onEditClass && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditClass();
-                          setIsSettingsMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors first:rounded-t-lg hover:bg-gray-50"
-                      >
-                        Edit Class
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleClearAllGroups();
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors first:rounded-t-lg hover:bg-gray-50"
-                    >
-                      Clear All Groups
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteAllGroups();
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 transition-colors last:rounded-b-lg hover:bg-red-50"
-                    >
-                      Delete All Groups
-                    </button>
-                  </div>
-                )}
+            <SeatingSettingsMenu
+              isOpen={isSettingsMenuOpen}
+              classId={classId}
+              onEditClass={onEditClass}
+              onCloseMenu={() => setIsSettingsMenuOpen(false)}
+              onClearAllGroups={handleClearAllGroups}
+              onDeleteAllGroups={handleDeleteAllGroups}
+            />
           </div>
         )}
 

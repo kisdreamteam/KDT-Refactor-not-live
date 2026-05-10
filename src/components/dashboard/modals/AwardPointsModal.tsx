@@ -7,7 +7,7 @@ import EditSkillsModal from '@/components/dashboard/modals/EditSkillsModal';
 import SkillCard from '@/components/dashboard/cards/SkillCard';
 import SkillActionCard from '@/components/dashboard/cards/SkillActionCard';
 import { PointCategory, Student } from '@/lib/types';
-import type { AddSkillFormSubmitValues } from '@/components/dashboard/AddSkillForm';
+import type { AddSkillFormSubmitValues } from '@/components/dashboard/forms/AddSkillForm';
 import { usePointAwarding } from '@/hooks/usePointAwarding';
 import { useSkillManagement } from '@/hooks/useSkillManagement';
 

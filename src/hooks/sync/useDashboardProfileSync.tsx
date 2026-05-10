@@ -15,7 +15,7 @@ let cachedTeacherProfile: TeacherProfile | null = null;
 let cachedViewPreference: ViewPreference | null = null;
 let teacherProfileFetchPromise: Promise<void> | null = null;
 
-/** Keeps module cache aligned when the user changes preferred view from the UI (see `ViewModeModal`). */
+/** Keeps module cache aligned when the user changes preferred view from the UI (see `StudentsViewMenu`). */
 export function syncProfileCacheViewPreference(pref: ViewPreference) {
   cachedViewPreference = pref;
 }

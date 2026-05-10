@@ -99,8 +99,8 @@ export default function SeatingChartWorkspace({
       <ClassPointLogSlidePanel
         isOpen={isPointLogOpen}
         position="fixed"
-        rightPx={65}
-        topPx={14}
+        rightPx={60}
+        topPx={9}
         bottomPx={70}
         zIndex={40}
         logTotalCount={logTotalCount}
@@ -116,8 +116,8 @@ export default function SeatingChartWorkspace({
       <LayoutManagerDrawer
         isOpen={isLayoutManagerOpen}
         position="fixed"
-        rightPx={65}
-        topPx={14}
+        rightPx={60}
+        topPx={9}
         bottomPx={70}
         zIndex={35}
         layouts={layouts}

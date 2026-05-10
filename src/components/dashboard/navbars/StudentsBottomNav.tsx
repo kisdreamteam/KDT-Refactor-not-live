@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { SortOption } from '@/stores/usePreferenceStore';
-import ViewModeModal from '@/components/dashboard/modals/ViewModeModal';
+import StudentsViewMenu from '@/components/dashboard/menus/StudentsViewMenu';
+import StudentsSortingMenu from '@/components/dashboard/menus/StudentsSortingMenu';
+import StudentsSettingsMenu from '@/components/dashboard/menus/StudentsSettingsMenu';
 import IconViewDots from '@/components/ui/icons/iconViewDots';
 import IconSortingArrows from '@/components/ui/icons/iconSortingArrows';
 import IconCheckBox from '@/components/ui/icons/iconCheckBox';
@@ -83,7 +85,7 @@ export default function StudentsBottomNav({
               }}
               stopPropagation={true}
             />
-            <ViewModeModal
+            <StudentsViewMenu
               isOpen={isViewPopupOpen}
               onClose={() => setIsViewPopupOpen(false)}
               currentView={currentView}
@@ -108,49 +110,14 @@ export default function StudentsBottomNav({
               stopPropagation={true}
               enabled={!sortingDisabled}
             />
-            {isSortPopupOpen && (
-              <div className="absolute bottom-full left-0 z-[100] mb-2 min-w-[200px] rounded-lg border-4 border-brand-purple bg-blue-100 py-2 shadow-lg">
-                <div className="border-b border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700">
-                  Sort by:
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSortChange('number');
-                    setIsSortPopupOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 ${
-                    sortBy === 'number' ? 'bg-purple-50 font-medium text-brand-purple' : 'text-gray-700'
-                  }`}
-                >
-                  Student Number
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSortChange('alphabetical');
-                    setIsSortPopupOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 ${
-                    sortBy === 'alphabetical' ? 'bg-purple-50 font-medium text-brand-purple' : 'text-gray-700'
-                  }`}
-                >
-                  Alphabetical
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSortChange('points');
-                    setIsSortPopupOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 ${
-                    sortBy === 'points' ? 'bg-purple-50 font-medium text-brand-purple' : 'text-gray-700'
-                  }`}
-                >
-                  Points
-                </button>
-              </div>
-            )}
+            <StudentsSortingMenu
+              isOpen={isSortPopupOpen}
+              sortBy={sortBy}
+              onPick={(next) => {
+                onSortChange(next);
+                setIsSortPopupOpen(false);
+              }}
+            />
           </div>
         )}
 
@@ -174,29 +141,13 @@ export default function StudentsBottomNav({
             stopPropagation={true}
           />
 
-          {isSettingsPopupOpen && (
-            <div className="absolute bottom-full right-0 z-[100] mb-2 min-w-[200px] rounded-lg border-4 border-brand-purple bg-blue-100 py-2 shadow-lg">
-              {classId && onEditClass && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onEditClass();
-                    setIsSettingsPopupOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
-                >
-                  Edit Class
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={onLogout}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
-              >
-                Log out
-              </button>
-            </div>
-          )}
+          <StudentsSettingsMenu
+            isOpen={isSettingsPopupOpen}
+            classId={classId}
+            onEditClass={onEditClass}
+            onCloseMenu={() => setIsSettingsPopupOpen(false)}
+            onLogout={onLogout}
+          />
         </div>
       </div>
     </BaseBottomNav>
