@@ -47,7 +47,7 @@ function DashboardLayoutShell({
             )}
           </div>
         </aside>
-        <main className="h-full overflow-hidden pl-1 pr-1">
+        <main className="h-full overflow-hidden pl-1 pr-1 pt-1">
           <DashboardWorkspace showCanvasToolbar={!isClassesRootView}>
             {children}
           </DashboardWorkspace>

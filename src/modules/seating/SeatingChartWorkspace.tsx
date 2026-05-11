@@ -128,7 +128,7 @@ export default function SeatingChartWorkspace({
       />
 
       <div
-        className="bg-brand-cream border-2 border-black rounded-lg pt-2 overflow-hidden min-h-0 h-full w-full relative flex-1"
+        className="bg-brand-cream pt-1 overflow-hidden min-h-0 h-full w-full relative flex-1"
         style={{ zIndex: 1 }}
       >
         {isLoadingLayouts && (

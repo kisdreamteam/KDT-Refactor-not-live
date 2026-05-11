@@ -1,6 +1,6 @@
 import type { ViewState } from '@/stores/useLayoutStore';
 
-type ToolbarActionId = 'close-editor' | 'add' | 'edit' | 'layout-manager' | 'teacher-view' | 'point-log';
+export type ToolbarActionId = 'close-editor' | 'add' | 'edit' | 'layout-manager' | 'teacher-view' | 'point-log';
 
 export type ToolbarActionDef = {
   id: ToolbarActionId;
@@ -72,6 +72,7 @@ export function getWorkspaceZoneConfig({
         topActions: [
           { id: 'add', title: 'Create layout (seating view only)', disabled: true },
           { id: 'edit', title: 'Seating Editor (seating view only)', disabled: true },
+          { id: 'layout-manager', title: 'Layout manager', disabled: true },
         ],
         bottomActions: [
           { id: 'teacher-view', title: "Teacher's view (seating view only)", disabled: true },

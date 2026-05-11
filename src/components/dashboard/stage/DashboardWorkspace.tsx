@@ -2,18 +2,13 @@
 
 import { useCallback, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import IconAddPlus from '@/components/ui/icons/iconAddPlus';
-import IconEditPencil from '@/components/ui/icons/iconEditPencil';
-import IconPresentationBoard from '@/components/ui/icons/iconPresentationBoard';
-import IconDocumentClock from '@/components/ui/icons/iconDocumentClock';
 import TopNav from '@/components/dashboard/navbars/TopNav';
 import StudentsBottomNav from '@/components/dashboard/navbars/StudentsBottomNav';
 import MultiSelectBottomNav from '@/components/dashboard/navbars/MultiSelectBottomNav';
 import SeatingEditorBottomNavBridge from '@/components/dashboard/navbars/SeatingEditorBottomNavBridge';
 import Timer from '@/components/dashboard/tools/Timer';
 import Random from '@/components/dashboard/tools/Random';
-import CanvasToolbar from '@/components/ui/CanvasToolbar';
-import type { CanvasToolbarAction } from '@/components/ui/CanvasToolbar';
+import DashboardCanvasToolbar from '@/components/dashboard/stage/DashboardCanvasToolbar';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 import { useLayoutStore } from '@/stores/useLayoutStore';
 import { useDashboardStore } from '@/stores/useDashboardStore';
@@ -23,7 +18,6 @@ import { useDashboardSessionActions } from '@/hooks/useDashboardSessionActions';
 import { useViewPreferenceSync } from '@/hooks/sync/useViewPreferenceSync';
 import {
   getWorkspaceZoneConfig,
-  type ToolbarActionDef,
   type DashboardToolbarDef,
 } from '@/components/dashboard/shell/dashboardZoneConfig';
 
@@ -84,70 +78,11 @@ export default function DashboardWorkspace({
     setRandomOpen(true);
   }, [setRandomOpen]);
 
-  const toCanvasAction = useCallback((action: ToolbarActionDef): CanvasToolbarAction => {
-    switch (action.id) {
-      case 'close-editor':
-        return {
-          ...action,
-          onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_CLOSE_EDITOR)),
-          icon: (
-            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ),
-        };
-      case 'add':
-        return {
-          ...action,
-          onClick: action.disabled ? undefined : () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_CREATE_LAYOUT)),
-          icon: <IconAddPlus className={action.disabled ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'} />,
-        };
-      case 'edit':
-        return {
-          ...action,
-          onClick: action.disabled ? undefined : () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_OPEN_SEATING_EDITOR)),
-          icon: <IconEditPencil className={action.disabled ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'} strokeWidth={2} />,
-        };
-      case 'layout-manager':
-        return {
-          ...action,
-          onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_TOGGLE_LAYOUT_MANAGER)),
-          icon: (
-            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" />
-            </svg>
-          ),
-        };
-      case 'teacher-view':
-        return {
-          ...action,
-          onClick: action.disabled ? undefined : () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_TOGGLE_TEACHER_VIEW)),
-          icon: (
-            <IconPresentationBoard
-              className={action.disabled ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'}
-              strokeWidth={2}
-            />
-          ),
-        };
-      case 'point-log':
-        return {
-          ...action,
-          onClick: () => window.dispatchEvent(new CustomEvent(STUDENT_EVENTS.STAGE_TOGGLE_POINT_LOG)),
-          icon: <IconDocumentClock className="w-6 h-6 text-black" strokeWidth={2} />,
-        };
-      default:
-        throw new Error(`Unhandled toolbar action id: ${String(action.id)}`);
-    }
-  }, []);
-
   const toolbarConfig: DashboardToolbarDef = {
     className: zoneConfig.toolbarConfig.className,
     topActions: zoneConfig.toolbarConfig.topActions,
     bottomActions: zoneConfig.toolbarConfig.bottomActions,
   };
-
-  const canvasToolbarTopActions = toolbarConfig.topActions.map(toCanvasAction);
-  const canvasToolbarBottomActions = toolbarConfig.bottomActions.map(toCanvasAction);
 
   return (
     <div
@@ -178,15 +113,7 @@ export default function DashboardWorkspace({
             )}
           </div>
 
-          {showCanvasToolbar && (
-            <div data-stage-toolbar-slot className="h-full min-h-0 overflow-hidden">
-              <CanvasToolbar
-                className={`h-full ${toolbarConfig.className ?? ''}`}
-                topActions={canvasToolbarTopActions}
-                bottomActions={canvasToolbarBottomActions}
-              />
-            </div>
-          )}
+          {showCanvasToolbar && <DashboardCanvasToolbar toolbarConfig={toolbarConfig} />}
         </div>
       </section>
 

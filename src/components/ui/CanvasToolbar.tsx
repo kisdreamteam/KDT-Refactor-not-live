@@ -10,6 +10,8 @@ export type CanvasToolbarAction = {
   disabled?: boolean;
   /** When true, uses active (e.g. purple) button styling */
   active?: boolean;
+  /** When muted and inactive, uses gray inactive styling */
+  variant?: 'default' | 'muted';
 };
 
 export type CanvasToolbarProps = {
@@ -32,7 +34,7 @@ function buttonClass(action: CanvasToolbarAction): string {
   if (action.active) {
     return `${base} bg-purple-100 hover:bg-purple-200`;
   }
-  if (action.id === 'teacher-view' && !action.active) {
+  if (action.variant === 'muted' && !action.active) {
     return `${base} bg-gray-200 hover:bg-gray-300 opacity-75`;
   }
   return `${base} bg-white/90 hover:bg-white`;
