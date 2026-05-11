@@ -1,5 +1,7 @@
 'use client';
 
+import MenuSurface from '@/components/ui/menu/MenuSurface';
+
 const toggleTrackOn = 'bg-brand-purple';
 const toggleTrackOff = 'bg-gray-300';
 
@@ -29,10 +31,9 @@ export default function SeatingViewSettingsMenu({
   if (!isOpen) return null;
 
   return (
-    <div
+    <MenuSurface
       data-view-settings-menu
-      // absolute bottom-full right-0 z-[100] mb-2 min-w-[200px] rounded-lg border-4 border-brand-purple bg-blue-100 py-2 shadow-lg
-      className="absolute bottom-full left-0 z-[100] mb-2 min-w-[220px] rounded-lg border-4 border-brand-purple bg-blue-100 py-2 shadow-lg"
+      className="absolute bottom-full left-0 z-[100] mb-2 min-w-[220px]"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -118,6 +119,6 @@ export default function SeatingViewSettingsMenu({
           <span className="inline-block h-4 w-4 translate-x-1 transform rounded-full bg-white transition-transform" />
         </button>
       </div>
-    </div>
+    </MenuSurface>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { normalizeAvatarPath } from '@/lib/iconUtils';
 import IconSettingsWheel from '@/components/ui/icons/iconSettingsWheel';
@@ -29,6 +30,7 @@ export default function StudentCard({
   isSelected = false,
   onSelectStudent,
 }: StudentCardProps) {
+  const menuAnchorRef = useRef<HTMLButtonElement | null>(null);
   const isMultiSelectMode = useLayoutStore((s) => s.isMultiSelectMode);
   const student = useDashboardStore(
     useShallow((s) => s.students.find((x) => x.id === studentId) ?? null)
@@ -48,8 +50,8 @@ export default function StudentCard({
 
   const cardClassName =
     isMultiSelectMode && isSelected
-      ? 'z-[1] overflow-hidden hover:shadow-md'
-      : 'z-[1] overflow-hidden hover:shadow-md hover:!bg-blue-100';
+      ? 'z-[1] hover:shadow-md'
+      : 'z-[1] hover:shadow-md hover:!bg-blue-100';
 
   return (
     <BaseCard
@@ -82,6 +84,7 @@ export default function StudentCard({
             </div>
           ) : null}
           <button
+            ref={menuAnchorRef}
             type="button"
             onClick={(e) => onToggleDropdown(student.id, e)}
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
@@ -92,6 +95,7 @@ export default function StudentCard({
 
           <StudentCardActionsMenu
             isOpen={openDropdownId === student.id}
+            anchorRef={menuAnchorRef}
             studentId={student.id}
             studentName={`${student.first_name} ${student.last_name}`}
             onEdit={onEdit}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRef } from "react";
 import { normalizeClassIconPath } from "@/lib/iconUtils";
 import IconSettingsWheel from "@/components/ui/icons/iconSettingsWheel";
 import BaseCard from "@/components/ui/BaseCard";
@@ -35,6 +36,7 @@ export default function ClassCard({
   onDelete,
   showDelete = false,
 }: ClassCardProps) {
+  const menuAnchorRef = useRef<HTMLButtonElement | null>(null);
   const isOwner = classItem.is_owner !== false;
   const viewPreference = usePreferenceStore((s) => s.viewPreference);
   const classHref =
@@ -42,7 +44,7 @@ export default function ClassCard({
       ? `/dashboard/classes/${classItem.id}?view=seating`
       : `/dashboard/classes/${classItem.id}`;
   return (
-    <Link href={classHref} className="block aspect-square w-full min-h-0">
+    <Link href={classHref} className="block aspect-square w-full min-h-0 translate-">
       <BaseCard
         className="!aspect-auto h-full min-h-0 hover:shadow-md hover:!bg-blue-100"
         variant="default"
@@ -66,6 +68,7 @@ export default function ClassCard({
         topRightSlot={
           <div className="relative z-10">
             <button
+              ref={menuAnchorRef}
               type="button"
               onClick={(e) => {
                 e.preventDefault();
@@ -80,6 +83,7 @@ export default function ClassCard({
 
             <ClassCardActionsMenu
               isOpen={openDropdownId === classItem.id}
+              anchorRef={menuAnchorRef}
               classId={classItem.id}
               className={classItem.name}
               isOwner={isOwner}

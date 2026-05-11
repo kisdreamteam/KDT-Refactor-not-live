@@ -1,5 +1,8 @@
 'use client';
 
+import MenuItem from '@/components/ui/menu/MenuItem';
+import MenuSurface from '@/components/ui/menu/MenuSurface';
+
 interface StudentsSettingsMenuProps {
   isOpen: boolean;
   classId?: string | null;
@@ -12,26 +15,20 @@ export default function StudentsSettingsMenu({ isOpen, classId, onEditClass, onC
   if (!isOpen) return null;
 
   return (
-    <div className="absolute bottom-full right-0 z-[100] mb-2 min-w-[200px] rounded-lg border-4 border-brand-purple bg-blue-100 py-2 shadow-lg">
+    <MenuSurface className="absolute bottom-full right-0 z-[100] mb-2">
       {classId && onEditClass && (
-        <button
-          type="button"
+        <MenuItem
           onClick={() => {
             onEditClass();
             onCloseMenu();
           }}
-          className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
         >
           Edit Class
-        </button>
+        </MenuItem>
       )}
-      <button
-        type="button"
-        onClick={onLogout}
-        className="w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
-      >
+      <MenuItem onClick={onLogout}>
         Log out
-      </button>
-    </div>
+      </MenuItem>
+    </MenuSurface>
   );
 }
