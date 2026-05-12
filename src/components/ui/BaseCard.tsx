@@ -83,9 +83,8 @@ export default function BaseCard({
     >
       {isSelected && (
         <div
-          className={`absolute top-2 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-white shadow ${
-            topRightSlot ? "left-2" : "right-2"
-          }`}
+          className={`absolute top-2 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-blue-500 text-white shadow ${topRightSlot ? "left-2" : "right-2"
+            }`}
           aria-hidden
         >
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">

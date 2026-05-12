@@ -44,7 +44,7 @@ export default function ClassCard({
       ? `/dashboard/classes/${classItem.id}?view=seating`
       : `/dashboard/classes/${classItem.id}`;
   return (
-    <Link href={classHref} className="block aspect-square w-full min-h-0 translate-">
+    <Link href={classHref} className="block aspect-square w-full min-h-0">
       <BaseCard
         className="!aspect-auto h-full min-h-0 hover:shadow-md hover:!bg-blue-100"
         variant="default"
@@ -96,7 +96,7 @@ export default function ClassCard({
           </div>
         }
         titleClassName="!mb-2 flex-1 min-h-0 flex items-center justify-center px-2"
-        iconWrapperClassName="!mb-2 flex-shrink-0"
+        iconWrapperClassName="!mb-2 flex-shrink-0 "
         icon={
           <img
             src={normalizeClassIconPath(classItem.icon)}

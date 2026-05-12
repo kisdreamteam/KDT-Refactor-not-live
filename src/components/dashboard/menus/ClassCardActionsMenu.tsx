@@ -6,6 +6,7 @@ import { useAnchoredDropdownPortal } from '@/components/dashboard/menus/useAncho
 import MenuSurface from '@/components/ui/menu/MenuSurface';
 import MenuItem from '@/components/ui/menu/MenuItem';
 import MenuDivider from '@/components/ui/menu/MenuDivider';
+import MenuLabel from '@/components/ui/menu/MenuLabel';
 
 interface ClassCardActionsMenuProps {
   isOpen: boolean;
@@ -72,7 +73,7 @@ export default function ClassCardActionsMenu({
   return createPortal(
     <MenuSurface
       style={portalStyle}
-      className="w-56"
+      className="w-56 absolute bottom-top z-[100] -translate-y-4 bg-brand-cream rounded-lg shadow-lg"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -82,6 +83,7 @@ export default function ClassCardActionsMenu({
         e.stopPropagation();
       }}
     >
+      <MenuLabel className="border-b border-gray-200"> Class Options:</MenuLabel>
       <MenuItem
         icon={editIcon}
         onClick={(e) => {

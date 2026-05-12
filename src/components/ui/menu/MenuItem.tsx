@@ -22,10 +22,10 @@ export default function MenuItem({
 }: MenuItemProps) {
   const colorClass =
     intent === 'danger'
-      ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
+      ? 'text-red-600 hover:bg-brand-cream hover:text-red-700 font-semibold'
       : active
         ? 'bg-purple-50 font-medium text-brand-purple'
-        : 'text-gray-700 hover:bg-gray-100';
+        : 'text-gray-700 hover:bg-gray-100 font-semibold';
 
   const iconClass = intent === 'danger' ? 'text-red-400 group-hover:text-red-600' : 'text-gray-400 group-hover:text-blue-600';
 

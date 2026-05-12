@@ -12,8 +12,27 @@ import SeatingEditorLeftNav from '@/components/dashboard/navbars/SeatingEditorLe
 import DashboardWorkspace from '@/components/dashboard/stage/DashboardWorkspace';
 import EditClassModal from '@/components/dashboard/modals/EditClassModal';
 import DashboardClassModalsHost from '@/components/dashboard/DashboardClassModalsHost';
-import { useLayoutStore } from '@/stores/useLayoutStore';
-import { getShellZoneConfig } from '@/components/dashboard/shell/dashboardZoneConfig';
+import { useLayoutStore, type ViewState } from '@/stores/useLayoutStore';
+
+type ShellZoneInputs = {
+  isSidebarOpen: boolean;
+  activeView: ViewState;
+  isEditMode: boolean;
+};
+
+function getShellZoneConfig({
+  isSidebarOpen,
+  activeView,
+  isEditMode,
+}: ShellZoneInputs) {
+  const isSeatingChartView = activeView === 'seating_chart';
+  return {
+    shellGridColsClass: isSidebarOpen
+      ? 'grid-cols-[0px_1fr] md:grid-cols-[19rem_1fr]'
+      : 'grid-cols-[0px_1fr]',
+    useSeatingEditorLeftNav: isSeatingChartView && isEditMode,
+  };
+}
 
 function DashboardLayoutShell({
   children,
@@ -38,7 +57,7 @@ function DashboardLayoutShell({
           shellZones.shellGridColsClass,
         ].join(' ')}
       >
-        <aside className="h-full overflow-hidden">
+        <aside className="h-full overflow-hidden pl-1">
           <div className="h-full overflow-hidden bg-white max-w-[19rem] ml-1">
             {shellZones.useSeatingEditorLeftNav ? (
               <SeatingEditorLeftNav />
@@ -77,7 +96,12 @@ export default function DashboardLayout({
       <SeatingChartDataSync />
       <DashboardProfileSync />
       <DashboardClassesFilterSync />
-      <DashboardLayoutShell>{children}</DashboardLayoutShell>
+      {/* DashboardLayoutShell is the main layout component that handles the sidebar and main content */}
+      {/* It uses the getShellZoneConfig function to determine the layout based on the current state */}
+      {/* It also uses the useSeatingEditorLeftNav function to determine if the seating editor left nav or normal left nav should be used */}
+      <DashboardLayoutShell>
+        {children}
+      </DashboardLayoutShell>
     </Suspense>
   );
 }

@@ -109,7 +109,7 @@ export default function StudentCard({
           alt={`${student.first_name} ${student.last_name} avatar`}
           width={100}
           height={100}
-          className="rounded-xl bg-[#FDF2F0]"
+          className="mb-0 mx-auto"
           decoding="async"
         />
       }

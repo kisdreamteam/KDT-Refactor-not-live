@@ -33,7 +33,7 @@ const ForgotHeader: FC<ForgotHeaderProps> = ({ step }) => (
     title="Forgot password"
     subtitle={
       step === 'request'
-        ? "Enter your email and we'll send a 6-digit code to reset your password."
+        ? "Enter email and receive a 6-digit code"
         : 'Enter the code from your email to continue.'
     }
   />
@@ -56,15 +56,13 @@ const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
     <>
       <AuthBackLink
         className="top-6 left-6"
-        // style={{
-        //   // left: 'max(calc(50% - 400px - 48px), 24px)',
-        //   // top: 'calc(50% - 220px)',
-        // }}
         href="/login"
-      // strokeWidth={3}
-      // <AuthBackLink className="top-6 left-6" />
       />
-      <AuthCard className="w-full max-w-[800px] px-8 py-10">
+      {/* w-9/10 md:w-1/3 pb-2 px-2 md:px-6 */}
+      <AuthCard
+        className="w-9/10 md:w-1/3 overflow-hidden
+        pb-2 px-2 md:px-6">
+        {/* ForgotHeader is used to display the title and subtitle of the form */}
         <ForgotHeader step={step} />
 
         {step === 'request' ? (
@@ -78,7 +76,7 @@ const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
             <div className="grid gap-2">
               <FormLabel
                 htmlFor="forgot-email"
-                className="text-base font-semibold text-[24px] text-black font-spartan"
+                className="text-base w-fullfont-semibold text-[24px] text-black font-spartan"
               >
                 Email address
               </FormLabel>
@@ -100,7 +98,7 @@ const ForgotPasswordForm: FC<ForgotPasswordFormProps> = ({
               <AuthPrimaryButton
                 type="submit"
                 disabled={isLoading}
-                className="max-w-[750px]"
+                className="w-full"
               >
                 {isLoading ? 'Sending…' : 'Send code'}
               </AuthPrimaryButton>

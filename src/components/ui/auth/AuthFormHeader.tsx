@@ -22,7 +22,7 @@ const AuthFormHeader: FC<AuthFormHeaderProps> = ({ title, subtitle, className = 
           ) : null}
         </div>
       </div>
-      <div className="flex justify-end w-50 md:w-full items-center">
+      <div className="flex justify-end w-50 md:w-full items-start">
         <Image
           src="/images/auth/auth-login-kis-logo.png"
           alt="KIS Points logo"

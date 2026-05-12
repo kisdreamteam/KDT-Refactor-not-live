@@ -28,7 +28,7 @@ export default function WholeClassCard({
             alt="Whole Class icon"
             width={80}
             height={80}
-            className="rounded-xl bg-[#FDF2F0]"
+            className="mb-0 mx-auto"
             decoding="async"
           />
         ) : (
