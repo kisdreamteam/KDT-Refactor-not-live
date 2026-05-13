@@ -50,8 +50,49 @@ export default function StudentCard({
 
   const cardClassName =
     isMultiSelectMode && isSelected
-      ? 'z-[1] hover:shadow-md'
+      ? 'z-[1] hover:shadow-md ring-4 ring-blue-500'
       : 'z-[1] hover:shadow-md hover:!bg-blue-100';
+
+  const topRightSlot = isMultiSelectMode ? (
+    <div className="pointer-events-none flex h-8 w-8 flex-shrink-0 items-center justify-center" aria-hidden>
+      <span
+        className={[
+          'relative inline-flex h-5 w-5 items-center justify-center rounded-full border-[3px] bg-white shadow-sm ring-1',
+          isSelected ? 'border-blue-500 ring-blue-200/80' : 'border-gray-400 ring-gray-200/80',
+        ].join(' ')}
+      >
+        {isSelected ? <span className="h-2.5 w-2.5 rounded-full bg-blue-500" /> : null}
+      </span>
+    </div>
+  ) : (
+    <div
+      className="relative flex items-center gap-0.5"
+      data-dropdown-container
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
+      <button
+        ref={menuAnchorRef}
+        type="button"
+        onClick={(e) => onToggleDropdown(student.id, e)}
+        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+        data-dropdown-button
+      >
+        <IconSettingsWheel className="h-10 w-10" />
+      </button>
+
+      <StudentCardActionsMenu
+        isOpen={openDropdownId === student.id}
+        anchorRef={menuAnchorRef}
+        studentId={student.id}
+        studentName={`${student.first_name} ${student.last_name}`}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    </div>
+  );
 
   return (
     <BaseCard
@@ -59,50 +100,13 @@ export default function StudentCard({
       className={cardClassName}
       variant="default"
       contentLayout="space-between"
-      isSelected={isMultiSelectMode ? isSelected : false}
+      isSelected={false}
       aria-pressed={isMultiSelectMode ? isSelected : undefined}
       title={student.first_name}
       titleClassName="pointer-events-none text-gray-900"
       iconWrapperClassName="pointer-events-none"
       onClick={handleCardClick}
-      topRightSlot={
-        <div
-          className="relative flex items-center gap-0.5"
-          data-dropdown-container
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-        >
-          {isMultiSelectMode && !isSelected ? (
-            <div
-              className="pointer-events-none flex h-8 w-8 flex-shrink-0 items-center justify-center"
-              title="Select"
-              aria-hidden
-            >
-              <span className="inline-block h-5 w-5 rounded-full border-[3px] border-gray-400 bg-white shadow-sm ring-1 ring-gray-200/80" />
-            </div>
-          ) : null}
-          <button
-            ref={menuAnchorRef}
-            type="button"
-            onClick={(e) => onToggleDropdown(student.id, e)}
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            data-dropdown-button
-          >
-            <IconSettingsWheel className="h-10 w-10" />
-          </button>
-
-          <StudentCardActionsMenu
-            isOpen={openDropdownId === student.id}
-            anchorRef={menuAnchorRef}
-            studentId={student.id}
-            studentName={`${student.first_name} ${student.last_name}`}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        </div>
-      }
+      topRightSlot={topRightSlot}
       icon={
         <img
           src={normalizeAvatarPath(student.avatar)}
