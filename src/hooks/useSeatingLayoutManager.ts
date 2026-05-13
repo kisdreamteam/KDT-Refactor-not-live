@@ -6,12 +6,12 @@ import { useRouter } from 'next/navigation';
 import {
   createSeatingLayout,
   deleteSeatingLayoutCascade,
-  fetchLayoutViewSettings,
   subscribeToSeatingChartRowUpdates,
   updateSeatingLayoutName,
   type SeatingChartRecord,
 } from '@/lib/api/seating';
 import {
+  refreshLayoutViewSettings,
   refreshSeatingGroupsForLayout,
   refreshSeatingLayoutsForClass,
 } from '@/hooks/sync/useSeatingChartDataSync';
@@ -135,13 +135,7 @@ export function useSeatingLayoutManager({
 
     const handleViewSettingsUpdate = async () => {
       if (document.visibilityState !== 'visible') return;
-      try {
-        const data = await fetchLayoutViewSettings(selectedLayoutId);
-        if (!data) return;
-        useSeatingStore.getState().applyLayoutViewSettings(data);
-      } catch {
-        // intentionally swallow transient realtime/network errors
-      }
+      await refreshLayoutViewSettings(selectedLayoutId);
     };
 
     const handleLocalSettingsEvent = (event: Event) => {
@@ -153,7 +147,7 @@ export function useSeatingLayoutManager({
       }>;
       const detail = customEvent.detail;
       if (!detail || detail.layoutId !== selectedLayoutId) return;
-      useSeatingStore.getState().applyLayoutViewSettings(detail);
+      useSeatingStore.getState().syncLayoutViewSettings(selectedLayoutId, detail);
     };
 
     const handleVisibilityChange = () => {
@@ -162,13 +156,15 @@ export function useSeatingLayoutManager({
       }
     };
 
+    void refreshLayoutViewSettings(selectedLayoutId);
+
     window.addEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleLocalSettingsEvent as EventListener);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const { unsubscribe } = subscribeToSeatingChartRowUpdates(
       selectedLayoutId,
       (nextRow) => {
-        useSeatingStore.getState().applyLayoutViewSettings(nextRow);
+        useSeatingStore.getState().syncLayoutViewSettings(selectedLayoutId, nextRow);
       },
       {
         onRefresh: (payload) => {

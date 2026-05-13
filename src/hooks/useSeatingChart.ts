@@ -274,9 +274,15 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
       show_objects?: boolean | null;
       layout_orientation?: string | null;
     }) => {
-      setShowGrid(data.show_grid ?? true);
-      setShowObjects(data.show_objects ?? true);
-      setLayoutOrientation(data.layout_orientation ?? 'Left');
+      if (data.show_grid !== undefined) {
+        setShowGrid(data.show_grid ?? true);
+      }
+      if (data.show_objects !== undefined) {
+        setShowObjects(data.show_objects ?? true);
+      }
+      if (data.layout_orientation !== undefined) {
+        setLayoutOrientation(data.layout_orientation ?? 'Left');
+      }
     }, []);
     
     // Helper function to show success notification

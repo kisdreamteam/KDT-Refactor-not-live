@@ -4,12 +4,13 @@ import { useEffect, useRef } from 'react';
 import { useDashboardStore } from '@/stores/useDashboardStore';
 import { useSeatingStore } from '@/stores/useSeatingStore';
 import {
+  fetchLayoutViewSettings,
   fetchSeatingGroupsWithAssignments,
   fetchSeatingLayoutsByClassId,
   type GroupAssignment,
   type SeatingGroupRecord,
 } from '@/lib/api/seating';
-import { STUDENT_EVENTS } from '@/lib/events/students';
+import { STUDENT_EVENTS, type SeatingViewSettingsChangedDetail } from '@/lib/events/students';
 
 function mapAssignmentsToRecord(map: Map<string, GroupAssignment[]>): Record<string, GroupAssignment[]> {
   const out: Record<string, GroupAssignment[]> = {};
@@ -63,6 +64,16 @@ export async function refreshSeatingLayoutsForClass(classId: string): Promise<vo
     st.setLayoutsError('An unexpected error occurred.');
   } finally {
     useSeatingStore.getState().setLayoutLoading(false);
+  }
+}
+
+export async function refreshLayoutViewSettings(layoutId: string): Promise<void> {
+  try {
+    const data = await fetchLayoutViewSettings(layoutId);
+    if (!data) return;
+    useSeatingStore.getState().syncLayoutViewSettings(layoutId, data);
+  } catch {
+    // intentionally swallow transient realtime/network errors
   }
 }
 
@@ -130,10 +141,26 @@ export function SeatingChartDataSync() {
   }, [selectedLayoutId]);
 
   useEffect(() => {
+    const handleViewSettingsChanged = (event: Event) => {
+      const detail = (event as CustomEvent<SeatingViewSettingsChangedDetail>).detail;
+      if (!detail?.layoutId || detail.layoutId !== selectedLayoutId) return;
+      useSeatingStore.getState().syncLayoutViewSettings(detail.layoutId, detail);
+    };
+
+    window.addEventListener(STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED, handleViewSettingsChanged as EventListener);
+    return () =>
+      window.removeEventListener(
+        STUDENT_EVENTS.SEATING_VIEW_SETTINGS_CHANGED,
+        handleViewSettingsChanged as EventListener
+      );
+  }, [selectedLayoutId]);
+
+  useEffect(() => {
     const handleSeatingEditMode = (event: Event) => {
       const detail = (event as CustomEvent<{ isEditMode?: boolean }>).detail;
       if (detail?.isEditMode === false && selectedLayoutId) {
         void refreshSeatingGroupsForLayout(selectedLayoutId);
+        void refreshLayoutViewSettings(selectedLayoutId);
       }
     };
     window.addEventListener(STUDENT_EVENTS.SEATING_EDIT_MODE, handleSeatingEditMode as EventListener);

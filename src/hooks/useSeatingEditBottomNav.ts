@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { fetchLayoutViewSettings, updateLayoutViewSettings } from '@/lib/api/seating';
+import { useSeatingStore } from '@/stores/useSeatingStore';
 import {
   emitSeatingAddMultipleGroups,
   emitSeatingAutoAssignSeats,
@@ -116,6 +117,7 @@ export function useSeatingEditBottomNav(): SeatingEditBottomNavViewProps {
       setShowGrid(newValue);
       try {
         await updateLayoutViewSettings(layoutId, { show_grid: newValue });
+        useSeatingStore.getState().syncLayoutViewSettings(layoutId, { show_grid: newValue });
         emitViewSettingsChanged({ show_grid: newValue });
       } catch (err) {
         console.error('Unexpected error updating show_grid:', err);
@@ -131,6 +133,7 @@ export function useSeatingEditBottomNav(): SeatingEditBottomNavViewProps {
       setShowFurniture(newValue);
       try {
         await updateLayoutViewSettings(layoutId, { show_objects: newValue });
+        useSeatingStore.getState().syncLayoutViewSettings(layoutId, { show_objects: newValue });
         emitViewSettingsChanged({ show_objects: newValue });
       } catch (err) {
         console.error('Unexpected error updating show_objects:', err);
@@ -142,10 +145,13 @@ export function useSeatingEditBottomNav(): SeatingEditBottomNavViewProps {
 
   const onToggleTeachersDeskLeft = useCallback(
     async (newValue: boolean) => {
-      if (!layoutId) return;
+      if (!layoutId || !showFurniture) return;
       setTeachersDeskLeft(newValue);
       try {
         await updateLayoutViewSettings(layoutId, {
+          layout_orientation: newValue ? 'Left' : 'Right',
+        });
+        useSeatingStore.getState().syncLayoutViewSettings(layoutId, {
           layout_orientation: newValue ? 'Left' : 'Right',
         });
         emitViewSettingsChanged({ layout_orientation: newValue ? 'Left' : 'Right' });
@@ -154,16 +160,14 @@ export function useSeatingEditBottomNav(): SeatingEditBottomNavViewProps {
         setTeachersDeskLeft(!newValue);
       }
     },
-    [layoutId, emitViewSettingsChanged]
+    [layoutId, showFurniture, emitViewSettingsChanged]
   );
 
   const onToggleColorByGender = useCallback(() => {
-    setColorByGender((prev) => {
-      const newValue = !prev;
-      emitSeatingColorCodeBy({ colorCodeBy: newValue ? 'Gender' : 'Level' });
-      return newValue;
-    });
-  }, []);
+    const next = !colorByGender;
+    setColorByGender(next);
+    emitSeatingColorCodeBy({ colorCodeBy: next ? 'Gender' : 'Level' });
+  }, [colorByGender]);
 
   const onRandomize = useCallback(() => {
     emitSeatingRandomize();

@@ -46,6 +46,14 @@ interface SeatingStore {
     show_objects?: boolean | null;
     layout_orientation?: string | null;
   }) => void;
+  syncLayoutViewSettings: (
+    layoutId: string,
+    patch: {
+      show_grid?: boolean | null;
+      show_objects?: boolean | null;
+      layout_orientation?: string | null;
+    }
+  ) => void;
   setUnseatedStudents: (next: UnseatedSet) => void;
   setSelectedStudentForGroup: (next: SelectedForGroupSet) => void;
   addStudentToGroup: (studentId: string, groupId: string) => void;
@@ -90,6 +98,33 @@ export const useSeatingStore = create<SeatingStore>((set, get) => ({
       showGrid: data.show_grid ?? true,
       showObjects: data.show_objects ?? true,
       layoutOrientation: data.layout_orientation ?? 'Left',
+    }),
+
+  syncLayoutViewSettings: (layoutId, patch) =>
+    set((s) => {
+      const nextLayouts = s.layouts.map((layout) => {
+        if (layout.id !== layoutId) return layout;
+        return {
+          ...layout,
+          ...(patch.show_grid !== undefined ? { show_grid: patch.show_grid ?? undefined } : {}),
+          ...(patch.show_objects !== undefined ? { show_objects: patch.show_objects ?? undefined } : {}),
+          ...(patch.layout_orientation !== undefined
+            ? { layout_orientation: patch.layout_orientation ?? undefined }
+            : {}),
+        };
+      });
+
+      if (s.selectedLayoutId !== layoutId) {
+        return { layouts: nextLayouts };
+      }
+
+      return {
+        layouts: nextLayouts,
+        showGrid: patch.show_grid !== undefined ? (patch.show_grid ?? true) : s.showGrid,
+        showObjects: patch.show_objects !== undefined ? (patch.show_objects ?? true) : s.showObjects,
+        layoutOrientation:
+          patch.layout_orientation !== undefined ? (patch.layout_orientation ?? 'Left') : s.layoutOrientation,
+      };
     }),
 
   setUnseatedStudents: (next) =>

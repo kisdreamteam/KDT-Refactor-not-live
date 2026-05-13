@@ -30,6 +30,8 @@ export default function SeatingViewSettingsMenu({
 }: SeatingViewSettingsMenuProps) {
   if (!isOpen) return null;
 
+  const teachersDeskEnabled = showFurniture;
+
   return (
     <MenuSurface
       data-view-settings-menu
@@ -73,22 +75,37 @@ export default function SeatingViewSettingsMenu({
         </button>
       </div>
 
-      <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50">
+      <div
+        className={`flex items-center justify-between px-4 py-2 hover:bg-gray-50 ${teachersDeskEnabled ? '' : 'opacity-50'}`}
+      >
         <span className="text-sm font-medium text-gray-700">Teacher&apos;s Desk Left</span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            void onToggleTeachersDeskLeft(!teachersDeskLeft);
-          }}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${teachersDeskLeft ? toggleTrackOn : toggleTrackOff
-            }`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${teachersDeskLeft ? 'translate-x-6' : 'translate-x-1'
+        {teachersDeskEnabled ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              void onToggleTeachersDeskLeft(!teachersDeskLeft);
+            }}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${teachersDeskLeft ? toggleTrackOn : toggleTrackOff
               }`}
-          />
-        </button>
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${teachersDeskLeft ? 'translate-x-6' : 'translate-x-1'
+                }`}
+            />
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="relative inline-flex h-6 w-11 cursor-not-allowed items-center rounded-full bg-gray-300 transition-colors"
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${teachersDeskLeft ? 'translate-x-6' : 'translate-x-1'
+                }`}
+            />
+          </button>
+        )}
       </div>
 
       <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50">
