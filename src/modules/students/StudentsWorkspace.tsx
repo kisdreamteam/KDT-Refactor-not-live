@@ -159,11 +159,11 @@ export default function StudentsWorkspace({
   }
 
   return (
-    <div className={currentView === 'seating' ? 'h-full min-h-0 w-full' : ''}>
+    <div className="h-full min-h-0 w-full min-w-0">
       <div
         className={
           currentView === 'grid'
-            ? 'max-w-10xl mx-auto text-white-500 pr-[5.75rem] sm:pr-24'
+            ? 'h-full min-h-0 w-full min-w-0 max-w-10xl mx-auto text-white-500 pr-[5.75rem] sm:pr-24'
             : 'h-full min-h-0 w-full text-white-500'
         }
       >
