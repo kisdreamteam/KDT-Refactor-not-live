@@ -11,7 +11,7 @@ import IconCheckBox from '@/components/ui/icons/iconCheckBox';
 import IconSettingsWheel from '@/components/ui/icons/iconSettingsWheel';
 import BotNavGrayButton from '@/components/ui/BotNavGrayButton';
 import BaseBottomNav from '@/components/ui/BaseBottomNav';
-import BottomNavRandomTimerCenter from '@/components/dashboard/shell/BottomNavRandomTimerCenter';
+import BottomNavRandomTimerCenter from '@/components/dashboard/frame/BottomNavRandomTimerCenter';
 
 interface StudentsBottomNavProps {
   currentClassName: string | null;

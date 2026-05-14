@@ -27,7 +27,7 @@ The application operates under two distinct visual and logical paradigms. You mu
 ### Tier 1: Scaffolding (The Buildings)
 
 * **Auth Shell:** Centered, restricted width (`max-w-md`), focus on readability.
-* **Dashboard Shell:** Persistent **7-Zone CSS Grid** (`grid-cols-[19rem_1fr]`). Located in `@/components/dashboard/shell/`.
+* **Dashboard Shell:** Persistent **7-Zone CSS Grid** (`grid-cols-[19rem_1fr]`). Located in `@/components/dashboard/frame/`.
 
 ### Tier 2: The Stage (The Sets)
 

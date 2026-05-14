@@ -1,6 +1,6 @@
 'use client';
 
-import SeatingEditorBottomNav from '@/components/dashboard/navbars/SeatingEditorBottomNav';
+import SeatingEditorBottomNav from '@/components/dashboard/frame/navbars/SeatingEditorBottomNav';
 import { useSeatingEditBottomNav } from '@/hooks/useSeatingEditBottomNav';
 
 type Props = {

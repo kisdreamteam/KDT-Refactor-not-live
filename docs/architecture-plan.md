@@ -63,8 +63,9 @@ During the migration, old Context files will remain until fully deprecated. The 
 ```text
 /src
   /components
-    /dashboard    # Tier 2 views + workspace; Tier 1 shell nested here
-      /shell      # Navbars, DashboardLayout, AuthLayout
+    /dashboard    # Tier 2 views + workspace; Tier 1 frame nested here
+      /frame      # DashboardLayout, dashboardZoneConfig, bottom-nav center widgets
+        /navbars  # LeftNav, TopNav, bottom navs, seating editor nav
     /ui           # Tier 3 (StudentCards, Buttons, Modals)
   /hooks          # Layer 1 (Business Logic & Orchestration)
     /sync         # Route + store sync (DashboardLayout children)

@@ -182,7 +182,7 @@ Status: Finished
 
 Status: Finished
 
-**File:** `src/components/dashboard/shell/DashboardLayout.tsx`  
+**File:** `src/components/dashboard/frame/DashboardLayout.tsx`  
 **Issue:** layout shell contains route-state business orchestration.
 
 ### Create

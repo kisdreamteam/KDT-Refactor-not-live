@@ -147,7 +147,7 @@ export default function LeftNav() {
       </div>
 
       <div className="flex-shrink-0 mt-auto">
-        <div className="bg-[#dd7f81] text-white p-3 rounded-lg mb-2">
+        <div className="bg-brand-pink text-white p-3 rounded-lg mb-2">
           <div className="text-center font-semibold">KI-EUN</div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import type { DashboardToolbarDef } from '@/components/dashboard/shell/dashboardZoneConfig';
+import type { DashboardToolbarDef } from '@/components/dashboard/frame/dashboardZoneConfig';
 import { toCanvasAction } from '@/components/dashboard/stage/canvasToolbarPresets';
 
 export function useCanvasToolbarActions(toolbarConfig: DashboardToolbarDef) {

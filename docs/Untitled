@@ -25,9 +25,9 @@ Related docs: `docs/tech-stack.md`, `docs/zustand-migration-plan.md`, `docs/3-ti
 
 - **Routes:** `/dashboard`, `/dashboard/classes/[classId]` with `?view=` / `?mode=` query params
 - **App entry:** `src/app/dashboard/layout.tsx` mounts long-lived `DashboardClassesSync`; pages render `DashboardView` + `DashboardViewSwitch`
-- **Layout:** `src/components/dashboard/shell/DashboardLayout.tsx` — persistent **7-zone CSS grid** (`grid-cols-[19rem_1fr]` when the sidebar is open)
+- **Layout:** `src/components/dashboard/frame/DashboardLayout.tsx` — persistent **7-zone CSS grid** (`grid-cols-[19rem_1fr]` when the sidebar is open)
 - **State:** Zustand stores under `src/stores/` (see §4)
-- **Sync:** renderless sync workers mounted from `src/modules/dashboard/DashboardView.tsx` and route hooks inside the shell
+- **Sync:** renderless sync workers mounted from `src/components/dashboard/frame/DashboardView.tsx` and route hooks inside the shell
 
 **Rule:** Do not apply dashboard grid/zone rules to auth pages, or flex centering rules to the dashboard workspace.
 
@@ -41,8 +41,8 @@ Related docs: `docs/tech-stack.md`, `docs/zustand-migration-plan.md`, `docs/3-ti
 
 **Primary locations**
 
-- `src/components/dashboard/shell/` — `DashboardLayout.tsx`, `dashboardZoneConfig.ts`
-- `src/components/dashboard/navbars/` — `LeftNav`, `TopNav`, bottom nav bridges, seating editor nav
+- `src/components/dashboard/frame/` — `DashboardView.tsx`, `DashboardLayout.tsx`, `dashboardZoneConfig.ts`, `BottomNavRandomTimerCenter.tsx`
+- `src/components/dashboard/frame/navbars/` — `LeftNav`, `TopNav`, bottom nav bridges, seating editor nav
 - `src/modules/auth/AuthLayout.tsx`
 - `src/app/**/layout.tsx` — route wrappers only
 
@@ -144,7 +144,7 @@ Renderless workers (return `null` or export imperative refresh helpers) keep **s
 **Mounting today**
 
 - `DashboardClassesSync` — `src/app/dashboard/layout.tsx` (survives page swaps)
-- `DashboardStudentSync`, `SeatingChartDataSync`, `DashboardProfileSync`, `DashboardClassesFilterSync` — `src/modules/dashboard/DashboardView.tsx`
+- `DashboardStudentSync`, `SeatingChartDataSync`, `DashboardProfileSync`, `DashboardClassesFilterSync` — `src/components/dashboard/frame/DashboardView.tsx`
 - `useDashboardRouteStateSync` — inside `DashboardLayout.tsx`
 
 ### Layer 2 — Desk (`src/stores/`)
@@ -232,8 +232,8 @@ src/
   components/
     ui/                   # Tier 3 shared presentational
     dashboard/
-      shell/              # Tier 1 grid + zone config
-      navbars/            # Tier 1 chrome
+      frame/              # Tier 1 grid, zone config, navbars
+        navbars/          # Tier 1 chrome
       stage/              # Canvas toolbar presets
       cards|modals|menus|forms|seating|tools/
   hooks/                  # Layer 1 orchestration

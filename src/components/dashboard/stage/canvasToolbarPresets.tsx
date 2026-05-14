@@ -9,7 +9,7 @@ import IconDocumentClock from '@/components/ui/icons/iconDocumentClock';
 import type {
   ToolbarActionDef,
   ToolbarActionId,
-} from '@/components/dashboard/shell/dashboardZoneConfig';
+} from '@/components/dashboard/frame/dashboardZoneConfig';
 import type { CanvasToolbarAction } from '@/components/ui/CanvasToolbar';
 import { STUDENT_EVENTS } from '@/lib/events/students';
 

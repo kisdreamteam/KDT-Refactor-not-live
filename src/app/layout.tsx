@@ -18,7 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen w-full antialiased bg-brand-purple">
+      <body
+        className="min-h-screen w-full antialiased bg-brand-purple"
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>
