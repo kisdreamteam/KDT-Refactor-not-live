@@ -14,7 +14,7 @@ interface StudentCardActionsMenuProps {
   studentId: string;
   studentName: string;
   onEdit: (studentId: string) => void;
-  onDelete: (studentId: string, studentName: string) => void;
+  onDelete?: (studentId: string, studentName: string) => void;
 }
 
 export default function StudentCardActionsMenu({
@@ -23,7 +23,6 @@ export default function StudentCardActionsMenu({
   studentId,
   studentName,
   onEdit,
-  onDelete,
 }: StudentCardActionsMenuProps) {
   const { isMounted, portalStyle } = useAnchoredDropdownPortal({ isOpen, anchorRef });
 
@@ -55,6 +54,7 @@ export default function StudentCardActionsMenu({
 
     // absolute bottom-full right-0 z-[100] mb-2
     <MenuSurface
+      data-dropdown-container
       style={portalStyle}
       className="w-56 absolute bottom-top z-[100] -translate-y-5 bg-brand-cream"
       onClick={(e) => {
@@ -81,10 +81,12 @@ export default function StudentCardActionsMenu({
       <MenuItem
         icon={deleteIcon}
         intent="danger"
+        disabled
+        aria-disabled
+        className="cursor-not-allowed opacity-50"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          onDelete(studentId, studentName);
         }}
       >
         Delete Student
