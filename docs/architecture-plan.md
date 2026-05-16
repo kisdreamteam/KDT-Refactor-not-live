@@ -10,8 +10,9 @@ Prototype 1 uses a **dual-shell** layout model and a **dual-boundary** data mode
 - Zustand migration is effectively complete; dashboard global state does not use React Context.
 - **Dashboard visual boundaries:** Tier 1 frame and Tier 3 actors live under `src/components/dashboard/`; Tier 2 view containers live under `src/modules/{dashboard,classes,students,seating}/`. **Modal flows** that need Layer 1 wiring above a presentational modal use a **Tier 2 host in `modules/dashboard/` + controller hook in `src/hooks/`** (see §1.3 / §1.4).
 - **Auth/landing:** self-contained under `src/modules/` (not subject to the dashboard `components/` vs `modules/` tier split).
+- **Student attendance:** daily `attendance_events` append-only log, `absentStudentIds` in the dashboard store, bottom-nav attendance sheet, and macro point exclusions for absent students (see §2.1).
 
-Related docs: `docs/tech-stack.md`, `docs/zustand-migration-plan.md`, `docs/3-tier-3-layer-refactor-plan.md`.
+Related docs: `docs/tech-stack.md`, `docs/zustand-migration-plan.md`, `docs/3-tier-3-layer-refactor-plan.md`, `docs/db-schema.md`.
 
 ---
 
@@ -139,6 +140,7 @@ components/ui/            # shared atoms + auth/landing chrome
 | File | Notes |
 |------|-------|
 | `PointsLogDrawer.tsx` | Props only; workspace owns data |
+| `menus/AttendanceMenuBody.tsx` | Props only; checkbox roster for daily absences (wired from `StudentsBottomNav`) |
 
 ---
 
@@ -172,9 +174,12 @@ components/ui/            # shared atoms + auth/landing chrome
 | Seating editor toolbar state/actions | `useSeatingEditBottomNav.ts` (view settings, groups, auto-assign/randomize; consumed by `SeatingEditorCanvasToolbar`) |
 | Award points modal (controller) | `useAwardPointsModalController.ts` (composes `usePointAwarding`, `useSkillManagement`, `useAvailable*` for add-skill UX) |
 | Edit skills modal (controller) | `useEditSkillsModalController.ts` (list/delete/edit orchestration + icon picker data for `EditSkillForm`) |
+| Daily attendance toggle | `useAttendanceActions.ts` |
+| Attendance hydration | `useAttendanceSync.ts` (`AttendanceSync`) |
+| Batch points open (seating group) | `useBatchPointsAward.ts` → `openMultiStudentPointsAward` |
 | UI utilities | `useAnchoredDropdownPortal.ts` (portaled dropdown positioning), `useSortedStudents.ts`, `useClassPointLog.ts`, `useStudentsUrlState.ts`, `useStudentsToolbarEvents.ts`, `useDashboardToolbarInset.ts`, `useSkillManagement.ts`, `useAvailableIcons.ts` |
 
-Pure helpers (no React): `src/lib/awardPointsService.ts`, `src/lib/seatingLogic.ts`, `src/lib/iconUtils.ts`.
+Pure helpers (no React): `src/lib/awardPointsService.ts` (includes `filterEligibleStudentIds` for bulk awards vs `absentStudentIds`), `src/lib/seatingLogic.ts`, `src/lib/iconUtils.ts`.
 
 ### Layer 1b — Route & store sync (`src/hooks/sync/`)
 
@@ -187,11 +192,13 @@ Pure helpers (no React): `src/lib/awardPointsService.ts`, `src/lib/seatingLogic.
 | `useDashboardProfileSync.tsx` | Teacher profile → `useUserStore` |
 | `useSeatingChartDataSync.tsx` | Class/layout changes → `useSeatingStore` |
 | `useViewPreferenceSync.ts` | Persist preferred grid vs seating view |
+| `useAttendanceSync.ts` / `AttendanceSync` | Class change → clear + fetch today’s `absentStudentIds` |
 
 **Mounting**
 
 - `DashboardClassesSync` — `src/app/dashboard/layout.tsx`
 - `DashboardStudentSync`, `SeatingChartDataSync`, `DashboardProfileSync`, `DashboardClassesFilterSync` — `src/components/dashboard/frame/DashboardView.tsx`
+- `AttendanceSync` — **recommended** in `DashboardView.tsx` next to `DashboardStudentSync` (hydrates absences on class load; toggles work in-session without it)
 - `useDashboardRouteStateSync`, `useViewPreferenceSync` — `src/components/dashboard/frame/DashboardLayout.tsx`
 
 ### Layer 2 — Desk (`src/stores/`)
@@ -199,7 +206,7 @@ Pure helpers (no React): `src/lib/awardPointsService.ts`, `src/lib/seatingLogic.
 | Store | Owns |
 |-------|------|
 | `useLayoutStore.ts` | `activeView`, sidebar, multi-select, timer/random overlays, edit mode flags |
-| `useDashboardStore.ts` | `activeClassId`, classes, students, loading, `applyPointsDelta` |
+| `useDashboardStore.ts` | `activeClassId`, classes, students, `absentStudentIds`, loading, `applyPointsDelta`, `setAbsentStudentIds` |
 | `useModalStore.ts` | Modal type, targets, open/close |
 | `useSeatingStore.ts` | Layouts, groups, assignments, seating view settings |
 | `usePreferenceStore.ts` | `sortBy`, `viewMode`, `viewPreference` |
@@ -217,8 +224,54 @@ Pure helpers (no React): `src/lib/awardPointsService.ts`, `src/lib/seatingLogic.
 | `points.ts` | Awards, logs |
 | `skills.ts` | Skill definitions |
 | `seating.ts` | Layouts, groups, assignments |
+| `attendanceService.ts` | Daily absence log (`attendance_events`) |
 
-Shared types: `src/lib/types.ts`.
+Shared types: `src/lib/types.ts` (includes `AttendanceEvent`).
+
+### 2.1 Student attendance (data + UI)
+
+**Data model:** table `attendance_events` — see `docs/db-schema.md` §5. Type `AttendanceEvent` in `src/lib/types.ts`.
+
+| Layer / tier | File | Role |
+|--------------|------|------|
+| Layer 3 | `src/lib/api/attendanceService.ts` | `logAbsence`, `removeAbsence`, `fetchDailyAbsences` (today via UTC `toISOString().split('T')[0]`) |
+| Layer 2 | `useDashboardStore.ts` | `absentStudentIds: string[]` (empty = all present), `setAbsentStudentIds` |
+| Layer 1 | `useAttendanceActions.ts` | `toggleAttendance(studentId)`: optimistic store update → API → silent rollback on failure |
+| Layer 1b | `useAttendanceSync.ts`, `AttendanceSync` | On `classId` change: clear `absentStudentIds`, then fetch today’s absences |
+| Tier 3 | `menus/AttendanceMenuBody.tsx` | Props: `students`, `absentStudentIds`, `onToggleAbsence`; checkbox checked = **absent**; no stores/API |
+| Tier 1 chrome | `frame/navbars/StudentsBottomNav.tsx` | Attendance button, `createPortal` bottom sheet (`data-attendance-menu`), composes actions + store |
+
+```mermaid
+flowchart LR
+  nav[StudentsBottomNav]
+  actions[useAttendanceActions]
+  sync[AttendanceSync]
+  store[useDashboardStore]
+  api[attendanceService]
+  body[AttendanceMenuBody]
+  nav --> body
+  nav --> actions
+  actions --> store
+  actions --> api
+  sync --> store
+  sync --> api
+```
+
+### 2.2 Absent students and point awards
+
+Macro flows **exclude** students in `absentStudentIds`. Manual single-student and explicit multi-select awards **do not** (teacher override).
+
+| Flow | Excludes absent? |
+|------|------------------|
+| Whole class (`wholeClass`) | Yes — `resolveAwardTargetStudentIds` + `useAwardPointsService` |
+| Multi-class (`multiClass`) | Yes |
+| Seating group header click | Yes — `openMultiStudentPointsAward(..., { excludeAbsent: true })` |
+| Multi-select footer → Award (`multiStudent`, explicit IDs) | **No** |
+| Single student / seat click | **No** |
+| Select All (multi-select) | Yes — `useStudentsSelection.selectAll` |
+| Individual card tap in multi-select | **No** — may add absent students manually |
+
+Early return when no eligible students remain (`eligibleStudentIds.length === 0`) with a user-facing alert.
 
 ---
 
@@ -233,6 +286,7 @@ Shared types: `src/lib/types.ts`.
 ### Optimistic UI
 
 - Point awards: `applyPointsDelta` before `lib/api/points`; rollback on failure.
+- Attendance toggles: `setAbsentStudentIds` before `attendanceService`; silent rollback on failure (`useAttendanceActions`).
 - `DashboardClassModalsHost` may pass `skipRefreshAfterAward` when the store already reflects the change.
 
 ### Window event bus (legacy)
@@ -345,6 +399,9 @@ src/
 | done | Edit skills list: `useEditSkillsModalController` + `EditSkillsModalHost`; Tier 3 `EditSkillsModal` |
 | done | Skill forms Tier 3: `AddSkillForm` / `EditSkillForm` have no `@/hooks`; controllers pass icons + handlers |
 | done | **Do not** move `modules/auth/*` or `modules/landing/*` for tier-folder policy |
+| done | Attendance: schema/types, `attendanceService`, store slice, sync, actions, `AttendanceMenuBody`, `StudentsBottomNav` portal |
+| done | Absent macro exclusions: `awardPointsService`, `useAwardPointsService`, `useStudentsSelection`, `useBatchPointsAward` |
+| todo | Mount `<AttendanceSync />` in `DashboardView.tsx` (recommended for class-load hydration) |
 
 ---
 
@@ -356,5 +413,6 @@ Dashboard T1   →  components/dashboard/frame/
 Dashboard T2   →  modules/{dashboard,classes,students,seating}/  (+ *ModalHost.tsx for gated modal flows)
 Dashboard T3   →  components/dashboard/* + components/ui/  (presentational modals/forms; compose Tier 2 hosts when needed)
 Data layers    →  hooks/ · stores/ · lib/api/
+Attendance     →  attendanceService · absentStudentIds · AttendanceMenuBody · StudentsBottomNav
 Seating edit   →  SeatingEditorCanvasToolbar + portaled menus; StudentsBottomNav disabled
 ```

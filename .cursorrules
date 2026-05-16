@@ -26,7 +26,7 @@ You must identify the active shell before applying layout or state rules. They a
 * **Modal host (Tier 2):** `@/modules/dashboard/DashboardClassModalsHost.tsx` (mounted in `DashboardLayout`).
 * **Award / edit-skills (Tier 2 + Layer 1):** `@/modules/dashboard/AwardPointsModalHost.tsx` + `hooks/useAwardPointsModalController.ts`; `@/modules/dashboard/EditSkillsModalHost.tsx` + `hooks/useEditSkillsModalController.ts`. Prefer this **host + controller** pattern when a dashboard modal subtree needs orchestration hooks but the UI itself should stay Tier 3.
 * **Layout Logic:** Uses the **7-Zone Fixed Grid System** (`dashboardZoneConfig.ts`).
-* **State:** `useUserStore`, `useDashboardStore`, `useLayoutStore`, `useSeatingStore`, `useModalStore`, `usePreferenceStore`.
+* **State:** `useUserStore`, `useDashboardStore` (includes `absentStudentIds` for daily attendance), `useLayoutStore`, `useSeatingStore`, `useModalStore`, `usePreferenceStore`.
 * **Source of Truth:** The **URL** is the primary source of truth for `classId`, `view`, and `mode`.
 * **Rule:** Do not apply dashboard grid rules to auth/landing, or auth flex rules to the dashboard workspace.
 
@@ -114,6 +114,7 @@ The Dashboard is a fixed coordinate system. Do not use these rules for Auth/Land
 * **Naming conventions:**
   * `use...Service.ts` / `use...Actions.ts` — hooks handling data persistence and orchestration.
   * `use...Sync.ts` / `*Sync.tsx` — renderless workers aligning URL/state.
+  * `attendanceService.ts` — Layer 3 API module (not `useAttendanceService`).
 * **Selectors:** Subscribe to the smallest possible slice for large rosters (30+ students).
 * **Absolute positioning:** Permitted **only** for internal UI styling (icons, mascots). Must be contained within a `relative` parent that respects the grid.
 
@@ -149,3 +150,30 @@ Applies when URL/layout reflect **seating chart + edit mode** (`?view=seating` +
 ### Exit edit mode
 
 Toolbar Close (X) dispatches `STAGE_CLOSE_EDITOR` → `useSeatingChart.ts` / route sync clears `isEditMode` → `SeatingChartView` + enabled `StudentsBottomNav`.
+
+---
+
+## 7. Student attendance (Dashboard)
+
+Table DDL: `docs/db-schema.md` §5. Architecture flow: `docs/architecture-plan.md` §2.1–§2.2.
+
+### Layers (do not blur boundaries)
+
+* **Layer 3:** `attendanceService.ts` only — no React/Zustand.
+* **Layer 2:** `absentStudentIds` on `useDashboardStore` — no API calls in store actions.
+* **Layer 1:** `useAttendanceActions` — optimistic toggle + silent rollback; no UI.
+* **Layer 1b:** `useAttendanceSync` / `AttendanceSync` — hydrate on class change; mount in `DashboardView` with other sync workers (recommended; see architecture plan).
+* **Tier 3:** `AttendanceMenuBody` — props/callbacks only; **no** `@/stores` or `@/hooks` for orchestration.
+* **Tier 1 chrome:** `StudentsBottomNav` may wire store + hooks + `createPortal` bottom sheet (`data-attendance-menu`); use Tailwind transitions, not Framer Motion.
+
+### Point awards with absent students
+
+* **Bulk modes** (`wholeClass`, `multiClass`): filter via `filterEligibleStudentIds` / `toEligibleStudentIds`; return early if none eligible.
+* **Seating group batch:** use `openMultiStudentPointsAward(ids, { excludeAbsent: true })` from `useBatchPointsAward.ts` — do not call `openModal` directly for new seating batch flows.
+* **Manual multi-select award** and **single-student award:** do **not** filter absent (teacher override allowed).
+* **`selectAll`** in `useStudentsSelection`: exclude `absentStudentIds`; leave `handleSelectStudent` unchanged.
+
+### Forbidden for attendance work
+
+* Do not add attendance API calls inside Tier 3 components or Zustand store actions.
+* Do not filter absent students from manual multi-select awards unless product explicitly changes override rules.
