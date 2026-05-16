@@ -8,6 +8,7 @@ import StudentsSettingsMenu from '@/components/dashboard/menus/StudentsSettingsM
 import IconViewDots from '@/components/ui/icons/iconViewDots';
 import IconSortingArrows from '@/components/ui/icons/iconSortingArrows';
 import IconCheckBox from '@/components/ui/icons/iconCheckBox';
+import IconAttendanceCheck from '@/components/ui/icons/iconAttendanceCheck';
 import IconRandomArrows from '@/components/ui/icons/iconRandomArrows';
 import IconTimerClock from '@/components/ui/icons/iconTimerClock';
 import IconSettingsWheel from '@/components/ui/icons/iconSettingsWheel';
@@ -144,6 +145,13 @@ export default function StudentsBottomNav({
             onToggleMultiSelect();
           }}
           enabled={navEnabled}
+        />
+
+        <BotNavGrayButton
+          icon={<IconAttendanceCheck />}
+          label="Attendance"
+          onClick={() => {}}
+          enabled={false}
         />
 
         <BotNavGrayButton
