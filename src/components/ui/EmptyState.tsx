@@ -41,19 +41,11 @@ export default function EmptyState({
     ) : null;
 
   return (
-    <div className="py-16 text-center">
-      <div className="mb-8 text-gray-400">
-        <svg className="mx-auto h-24 w-24" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fillRule="evenodd"
-            d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a2 2 0 114 0 2 2 0 01-4 0zm8 0a2 2 0 114 0 2 2 0 01-4 0z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </div>
+    <div className="flex flex-row items-center h-full text-center">
 
-      <h2 className="mb-4 text-2xl font-bold text-gray-400">{title}</h2>
-      <p className="mx-auto mb-8 max-w-md text-gray-400">{message}</p>
+
+      {/* <h2 className="mb-4 text-2xl font-bold text-gray-400">{title}</h2>
+      <p className="mx-auto mb-8 max-w-md text-gray-400">{message}</p> */}
 
       {actionButton &&
         (showStudentMascots ? (
@@ -67,8 +59,12 @@ export default function EmptyState({
                 className={mascotImageClassName}
               />
             </div>
-            {actionButton}
-            <div className="flex min-w-0 flex-1 items-center justify-start">
+            <div className="flex flex-col min-w-0 w-100 flex-1 items-center justify-center">
+              <h2 className="mb-4 text-2xl font-bold text-gray-400">{title}</h2>
+              <p className="mx-auto mb-8 max-w-md text-gray-400">{message}</p>
+              {actionButton}
+            </div>
+            <div className="flex min-w-0 w-100 flex-1 items-center justify-start">
               <Image
                 src={STUDENT_MASCOT_RIGHT}
                 alt=""
