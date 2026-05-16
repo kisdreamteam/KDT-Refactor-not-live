@@ -95,7 +95,7 @@ export default function SeatingChartWorkspace({
   const showGroupsLayer = hasLayouts && !isLoadingLayouts && !layoutsError;
 
   return (
-    <div className="font-spartan w-full h-full min-h-0 bg-brand-purple relative flex flex-col">
+    <div className="font-spartan relative w-full h-full min-h-0 bg-brand-purple flex flex-col">
       <PointsLogDrawer
         isOpen={isPointLogOpen}
         position="fixed"
@@ -126,11 +126,14 @@ export default function SeatingChartWorkspace({
         onRenameLayout={onRenameLayoutInline}
         onDeleteLayout={onDeleteLayoutInline}
       />
-      {/* Style whiteboard instide the container */}
-      <div
-        className="bg-brand-cream mt-0 overflow-hidden min-h-0 h-full w-full relative flex-1"
-        style={{ zIndex: 1 }}
-      >
+      <div className="w-full h-full min-h-0 bg-brand-purple relative overflow-hidden flex-1">
+        <div className="h-full min-h-0 relative" style={{ zIndex: 1 }}>
+          <div className="h-full min-h-0 flex flex-col relative">
+            {/* Style whiteboard inside the container */}
+            <div
+              className="bg-brand-cream pt-2 h-full w-full min-h-0 relative flex-1 overflow-auto"
+              style={{ zIndex: 1 }}
+            >
         {isLoadingLayouts && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-brand-cream/80">
             <p className="text-brand-purple text-xl font-medium">Loading seating charts...</p>
@@ -185,6 +188,9 @@ export default function SeatingChartWorkspace({
             />
           </div>
         )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <ConfirmationModal
