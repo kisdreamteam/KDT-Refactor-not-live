@@ -4,6 +4,8 @@ import { type CSSProperties, type RefObject, useCallback, useEffect, useState } 
 
 export type AnchoredDropdownPlacement =
   | 'below'
+  /** Below anchor; right edges aligned (menu width = widthPx). */
+  | 'belowAnchorAlignEnd'
   | 'leftOfAnchor'
   | 'leftOfAnchorDown'
   | 'leftOfAnchorAbove';
@@ -65,6 +67,14 @@ export function useAnchoredDropdownPortal({
         top: Math.round(rect.bottom),
         left: Math.round(rect.left - widthPx - gapPx),
         transform: `translateY(calc(-100% - ${gapPx}px))`,
+      });
+      return;
+    }
+
+    if (placement === 'belowAnchorAlignEnd') {
+      setPosition({
+        top: Math.round(rect.bottom + gapPx),
+        left: Math.round(rect.right - widthPx),
       });
       return;
     }

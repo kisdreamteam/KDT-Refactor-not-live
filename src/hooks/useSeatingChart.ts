@@ -253,7 +253,6 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
       return getNextSeatIndexInColumn(list, col, C);
     }, [groupAssignments]);
     const [openSettingsMenuId, setOpenSettingsMenuId] = useState<string | null>(null);
-    const [settingsMenuPosition, setSettingsMenuPosition] = useState<{ top: number; right: number } | null>(null);
     const [selectedStudentForSwap, setSelectedStudentForSwap] = useState<{ studentId: string; groupId: string } | null>(null);
     const [editingGroupNameId, setEditingGroupNameId] = useState<string | null>(null);
     const [editingGroupNameValue, setEditingGroupNameValue] = useState<string>('');
@@ -1923,8 +1922,6 @@ export function useSeatingChartEditor(params: UseSeatingChartEditorParams) {
     nextSeatIndexInColumn,
     openSettingsMenuId,
     setOpenSettingsMenuId,
-    settingsMenuPosition,
-    setSettingsMenuPosition,
     selectedStudentForSwap,
     setSelectedStudentForSwap,
     editingGroupNameId,

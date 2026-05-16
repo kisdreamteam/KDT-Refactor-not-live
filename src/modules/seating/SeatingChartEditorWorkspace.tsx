@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useShallow } from 'zustand/react/shallow';
 import { useSeatingStore } from '@/stores/useSeatingStore';
@@ -12,6 +13,8 @@ import SuccessNotificationModal from '@/components/ui/modals/SuccessNotification
 import IconSettingsWheel from '@/components/ui/icons/iconSettingsWheel';
 import IconEditPencil from '@/components/ui/icons/iconEditPencil';
 import SeatingCanvasDecor from '@/components/dashboard/seating/SeatingCanvasDecor';
+import SeatingEditorGroupSettingsMenu from '@/components/dashboard/menus/SeatingEditorGroupSettingsMenu';
+import { useAnchoredDropdownPortal } from '@/hooks/useAnchoredDropdownPortal';
 import { useSeatingChartEditor } from '@/hooks/useSeatingChart';
 
 interface SeatingChartEditorWorkspaceProps {
@@ -89,8 +92,6 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
     handleExpandInColumn,
     openSettingsMenuId,
     setOpenSettingsMenuId,
-    settingsMenuPosition,
-    setSettingsMenuPosition,
     handleDoubleClickGroupName,
     editingGroupNameValue,
     setEditingGroupNameValue,
@@ -125,48 +126,33 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
     setSuccessNotification,
   } = seating;
 
-  useEffect(() => {
-    if (openSettingsMenuId) {
-      const settingsButton = document.querySelector(`[data-settings-button="${openSettingsMenuId}"]`) as HTMLElement;
-      if (settingsButton) {
-        const rect = settingsButton.getBoundingClientRect();
-        setSettingsMenuPosition({
-          top: rect.bottom + 4,
-          right: window.innerWidth - rect.right
-        });
-      }
-    } else {
-      setSettingsMenuPosition(null);
-    }
-  }, [openSettingsMenuId]);
+  const groupSettingsAnchorRef = useRef<HTMLButtonElement | null>(null);
+  const groupSettingsMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const {
+    isMounted: isGroupSettingsMenuMounted,
+    portalStyle: groupSettingsPortalStyle,
+  } = useAnchoredDropdownPortal({
+    isOpen: !!openSettingsMenuId,
+    anchorRef: groupSettingsAnchorRef,
+    placement: 'belowAnchorAlignEnd',
+    widthPx: 220,
+    gapPx: 4,
+  });
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (openSettingsMenuId) {
-        const target = event.target as HTMLElement;
-        const settingsMenu = document.querySelector('[data-settings-menu]');
-        const settingsButton = document.querySelector(`[data-settings-button="${openSettingsMenuId}"]`);
+    if (!openSettingsMenuId) return;
 
-        if (settingsMenu && settingsMenu.contains(target)) {
-          return;
-        }
-        if (settingsButton && settingsButton.contains(target)) {
-          return;
-        }
-
-        setOpenSettingsMenuId(null);
-      }
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (groupSettingsMenuRef.current?.contains(target)) return;
+      if (groupSettingsAnchorRef.current?.contains(target)) return;
+      setOpenSettingsMenuId(null);
     };
 
-    if (openSettingsMenuId) {
-      setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-      }, 0);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [openSettingsMenuId]);
+    document.addEventListener('click', handleClickOutside, true);
+    return () => document.removeEventListener('click', handleClickOutside, true);
+  }, [openSettingsMenuId, setOpenSettingsMenuId]);
 
   if (isLoading) {
     return (
@@ -222,7 +208,7 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
         <div className="h-full min-h-0 relative" style={{ zIndex: 1 }}>
           <div className="h-full min-h-0 flex flex-col relative">
             <div
-              className="bg-brand-cream border-2 border-black rounded-lg pt-2 h-full w-full min-h-0 relative flex-1 overflow-auto"
+              className="bg-brand-cream pt-2 h-full w-full min-h-0 relative flex-1 overflow-auto"
               style={{
                 zIndex: 1
               }}
@@ -328,8 +314,8 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                               }
                             }}
                             className={`p-0.5 flex-shrink-0 ${isRandomizing
-                                ? 'text-gray-400 cursor-not-allowed'
-                                : 'text-red-500 hover:text-red-700'
+                              ? 'text-gray-400 cursor-not-allowed'
+                              : 'text-red-500 hover:text-red-700'
                               }`}
                             style={{ width: '16px', height: '16px' }}
                             title={isRandomizing ? 'Cannot remove during animation' : 'Remove from group'}
@@ -354,10 +340,10 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                         onDragEnd={handleDragEnd}
                         onClick={() => handleGroupClick(group.id)}
                         className={`bg-white rounded-lg border-2 shadow-lg flex flex-col ${draggedGroupId === group.id ? 'shadow-2xl border-purple-600 opacity-50' :
-                            isTarget ? 'border-purple-500 ring-4 ring-purple-300' :
-                              isTargetForMove ? 'border-green-400 hover:border-green-500 cursor-pointer ring-2 ring-green-200' :
-                                selectedStudentForGroup ? 'border-purple-400 hover:border-purple-500 cursor-pointer' :
-                                  'border-gray-300'
+                          isTarget ? 'border-purple-500 ring-4 ring-purple-300' :
+                            isTargetForMove ? 'border-green-400 hover:border-green-500 cursor-pointer ring-2 ring-green-200' :
+                              selectedStudentForGroup ? 'border-purple-400 hover:border-purple-500 cursor-pointer' :
+                                'border-gray-300'
                           }`}
                         style={{
                           position: 'absolute',
@@ -446,52 +432,15 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
                               e.stopPropagation();
                               setOpenSettingsMenuId(openSettingsMenuId === group.id ? null : group.id);
                             }}
-                            onMouseDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => {
+                              e.stopPropagation();
+                              groupSettingsAnchorRef.current = e.currentTarget;
+                            }}
                             className="absolute top-2 right-2 p-1 hover:bg-purple-100 rounded transition-colors"
                             title="Settings"
                           >
                             <IconSettingsWheel className="w-5 h-5 text-gray-600" />
                           </button>
-
-                          {openSettingsMenuId === group.id && (
-                            <div
-                              data-settings-menu
-                              className="absolute top-[calc(100%+4px)] right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] min-w-[140px]"
-                              style={{
-                                maxWidth: 'min(90vw, 16rem)',
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              onMouseDown={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditTeam(group.id);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg"
-                              >
-                                Edit Team
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleClearTeam(group.id);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              >
-                                Clear Team
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteTeam(group.id);
-                                }}
-                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg"
-                              >
-                                Delete Team
-                              </button>
-                            </div>
-                          )}
                         </div>
 
                         {Array.from({ length: numRows }, (_, rowIndex) => (
@@ -570,6 +519,23 @@ export default function SeatingChartEditorWorkspace({ classId, students }: Seati
           </div>
         </div>
       </div>
+
+      {openSettingsMenuId &&
+        isGroupSettingsMenuMounted &&
+        groupSettingsPortalStyle &&
+        createPortal(
+          <div ref={groupSettingsMenuRef}>
+            <SeatingEditorGroupSettingsMenu
+              isOpen
+              style={groupSettingsPortalStyle}
+              onCloseMenu={() => setOpenSettingsMenuId(null)}
+              onEditTeam={() => handleEditTeam(openSettingsMenuId)}
+              onClearTeam={() => handleClearTeam(openSettingsMenuId)}
+              onDeleteTeam={() => handleDeleteTeam(openSettingsMenuId)}
+            />
+          </div>,
+          document.body
+        )}
 
       <CreateLayoutModal
         isOpen={isCreateModalOpen}
