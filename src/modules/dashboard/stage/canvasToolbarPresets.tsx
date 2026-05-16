@@ -2,10 +2,10 @@
 
 import type { ReactNode } from 'react';
 
-import IconAddPlus from '@/components/ui/icons/iconAddPlus';
-import IconEditPencil from '@/components/ui/icons/iconEditPencil';
-import IconPresentationBoard from '@/components/ui/icons/iconPresentationBoard';
-import IconDocumentClock from '@/components/ui/icons/iconDocumentClock';
+import AddPlusIcon from '@/components/ui/icons/AddPlusIcon';
+import CanvasPointsLogIcon from '@/components/ui/icons/CanvasPointsLogIcon';
+import CanvasTeachersViewIcon from '@/components/ui/icons/CanvasTeachersViewIcon';
+import EditPencilIcon from '@/components/ui/icons/EditPencilIcon';
 import type {
   ToolbarActionDef,
   ToolbarActionId,
@@ -30,12 +30,12 @@ const PRESETS: Record<ToolbarActionId, Preset> = {
   },
   add: {
     event: STUDENT_EVENTS.STAGE_CREATE_LAYOUT,
-    renderIcon: (d) => <IconAddPlus className={d ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'} />,
+    renderIcon: (d) => <AddPlusIcon className={d ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'} />,
   },
   edit: {
     event: STUDENT_EVENTS.STAGE_OPEN_SEATING_EDITOR,
     renderIcon: (d) => (
-      <IconEditPencil className={d ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'} strokeWidth={2} />
+      <EditPencilIcon className={d ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'} />
     ),
   },
   'layout-manager': {
@@ -49,16 +49,15 @@ const PRESETS: Record<ToolbarActionId, Preset> = {
   'teacher-view': {
     event: STUDENT_EVENTS.STAGE_TOGGLE_TEACHER_VIEW,
     renderIcon: (d) => (
-      <IconPresentationBoard
-        className={d ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'}
-        strokeWidth={2}
-      />
+      <CanvasTeachersViewIcon className={d ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'} />
     ),
     variant: 'muted',
   },
   'point-log': {
     event: STUDENT_EVENTS.STAGE_TOGGLE_POINT_LOG,
-    renderIcon: () => <IconDocumentClock className="w-6 h-6 text-black" strokeWidth={2} />,
+    renderIcon: (d) => (
+      <CanvasPointsLogIcon className={d ? 'w-6 h-6 text-gray-500' : 'w-6 h-6 text-black'} />
+    ),
   },
 };
 

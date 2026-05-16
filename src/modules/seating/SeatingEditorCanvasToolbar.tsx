@@ -5,10 +5,12 @@ import { createPortal } from 'react-dom';
 import CanvasToolbar, { toolbarButtonClass, type CanvasToolbarAction } from '@/components/ui/CanvasToolbar';
 import SeatingEditorAddGroupsMenu from '@/components/dashboard/menus/SeatingEditorAddGroupsMenu';
 import SeatingSettingsMenu from '@/components/dashboard/menus/SeatingSettingsMenu';
-import IconAddPlus from '@/components/ui/icons/iconAddPlus';
 import SeatingViewSettingsMenu from '@/components/dashboard/menus/SeatingViewSettingsMenu';
-import IconAutoAssign from '@/components/ui/icons/iconAutoAssign';
-import IconRandomArrows from '@/components/ui/icons/iconRandomArrows';
+import AddPlusIcon from '@/components/ui/icons/AddPlusIcon';
+import EditorAddMultipleIcon from '@/components/ui/icons/EditorAddMultipleIcon';
+import EditorAutoAssignSeatsIcon from '@/components/ui/icons/EditorAutoAssignSeatsIcon';
+import EditorRandomSeatsIcon from '@/components/ui/icons/EditorRandomSeatsIcon';
+import EditorViewPreferencesIcon from '@/components/ui/icons/EditorViewPreferencesIcon';
 import IconSettingsWheel from '@/components/ui/icons/iconSettingsWheel';
 import type { DashboardToolbarDef } from '@/components/dashboard/frame/dashboardZoneConfig';
 import { useCanvasToolbarActions } from '@/hooks/dashboard/useCanvasToolbarActions';
@@ -52,7 +54,7 @@ export default function SeatingEditorCanvasToolbar({
       {
         id: 'add-group',
         title: 'Add group',
-        icon: <IconAddPlus className="w-6 h-6 text-white" />,
+        icon: <AddPlusIcon className="w-6 h-6 text-white" />,
         onClick: () => onAddGroups(1),
         variant: 'danger',
       },
@@ -207,15 +209,15 @@ export default function SeatingEditorCanvasToolbar({
             <div ref={viewSettingsButtonRef}>
               <button
                 type="button"
-                title="View Settings"
-                aria-label="View Settings"
+                title="View Preferences"
+                aria-label="View Preferences"
                 className={toolbarButtonClass({ active: isViewSettingsMenuOpen })}
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsViewSettingsMenuOpen((open) => !open);
                 }}
               >
-                <IconSettingsWheel className="w-6 h-6 text-black" />
+                <EditorViewPreferencesIcon className="w-6 h-6 text-black" />
               </button>
             </div>
             <button
@@ -228,7 +230,7 @@ export default function SeatingEditorCanvasToolbar({
                 onAutoAssignSeats();
               }}
             >
-              <IconAutoAssign className="w-6 h-6 text-black" />
+              <EditorAutoAssignSeatsIcon className="w-6 h-6" />
             </button>
             <button
               type="button"
@@ -240,7 +242,7 @@ export default function SeatingEditorCanvasToolbar({
                 onRandomize();
               }}
             >
-              <IconRandomArrows className="w-6 h-6 text-black" />
+              <EditorRandomSeatsIcon className="w-6 h-6 text-black" />
             </button>
           </div>
         }
@@ -273,7 +275,7 @@ export default function SeatingEditorCanvasToolbar({
                   setIsAddGroupsMenuOpen((open) => !open);
                 }}
               >
-                <IconAddPlus className="w-6 h-6 text-black" />
+                <EditorAddMultipleIcon className="w-6 h-6 text-black" />
               </button>
             </div>
           </div>
