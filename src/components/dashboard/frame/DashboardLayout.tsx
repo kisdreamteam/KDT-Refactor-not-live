@@ -221,7 +221,7 @@ const DashboardLayout: FC<DashboardLayoutProps> = ({ children }) => {
             )}
           </div>
         </aside>
-        <main className="h-full overflow-hidden pl-1 pr-1 mt-0">
+        <main className="min-w-0 w-full h-full overflow-hidden pl-1 pr-1 mt-0">
           <div
             className={[
               'grid h-full min-h-0 grid-rows-[auto_1fr_auto] gap-0',
